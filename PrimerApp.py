@@ -30,7 +30,7 @@ class PrimerFrame(wx.Frame):
         # begin wxGlade: PrimerFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-
+        
         # Menu Bar
         self.MainFrame_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
@@ -40,16 +40,23 @@ class PrimerFrame(wx.Frame):
         # Menu Bar end
         self.MainFrame_statusbar = self.CreateStatusBar(1, 0)
         self.primer3_notebook = wx.Notebook(self, -1, style=0)
+        self.primer3_notebook_optional = wx.Panel(self.primer3_notebook, -1)
         self.primer3_notebook_required = wx.Panel(self.primer3_notebook, -1)
         self.bam_label = wx.StaticText(self.primer3_notebook_required, -1, "BAM file(s):")
         self.bam_button = wx.Button(self.primer3_notebook_required, -1, "Choose . . .")
+        self.panel_2 = wx.ScrolledWindow(self.primer3_notebook_required, -1, style=wx.TAB_TRAVERSAL)
+        self.bam_label_output = wx.StaticText(self.panel_2, -1, "")
         self.fasta_label = wx.StaticText(self.primer3_notebook_required, -1, "FASTA file:")
         self.fasta_button = wx.Button(self.primer3_notebook_required, -1, "Choose . . .")
-        self.coordinates_label = wx.StaticText(self.primer3_notebook_required, -1, "Coordinates:")
-        self.coordinates_text_input = wx.TextCtrl(self.primer3_notebook_required, -1, "")
+        self.panel_1 = wx.ScrolledWindow(self.primer3_notebook_required, -1, style=wx.TAB_TRAVERSAL)
+        self.fasta_label_output = wx.StaticText(self.panel_1, -1, "")
         self.gtf_label = wx.StaticText(self.primer3_notebook_required, -1, "GTF:")
         self.gtf_button = wx.Button(self.primer3_notebook_required, -1, "Choose . . .")
-        self.primer3_notebook_optional = wx.Panel(self.primer3_notebook, -1)
+        self.panel_4 = wx.ScrolledWindow(self.primer3_notebook_required, -1, style=wx.TAB_TRAVERSAL)
+        self.gtf_label_output = wx.StaticText(self.panel_4, -1, "")
+        self.sizer_8_staticbox = wx.StaticBox(self.primer3_notebook_required, -1, "Load Files")
+        self.coordinates_label = wx.StaticText(self, -1, "Coodinates: \n(ex. +chr1:2000-20000)")
+        self.coordinates_text_input = wx.TextCtrl(self, -1, "", style=wx.TE_MULTILINE)
         self.run_button = wx.Button(self, -1, "Run PrimerSeq")
 
         self.__set_properties()
@@ -57,7 +64,6 @@ class PrimerFrame(wx.Frame):
 
         self.Bind(wx.EVT_BUTTON, self.OnOpenBamFileButton, self.bam_button)
         self.Bind(wx.EVT_BUTTON, self.OnOpenFastaFileButton, self.fasta_button)
-        self.Bind(wx.EVT_TEXT_ENTER, self.OnEnterCoordinates, self.coordinates_text_input)
         self.Bind(wx.EVT_BUTTON, self.OnOpenGtfFileButton, self.gtf_button)
         self.Bind(wx.EVT_BUTTON, self.OnRunPrimerSeq, self.run_button)
         # end wxGlade
@@ -76,28 +82,51 @@ class PrimerFrame(wx.Frame):
         for i in range(len(MainFrame_statusbar_fields)):
             self.MainFrame_statusbar.SetStatusText(MainFrame_statusbar_fields[i], i)
         self.bam_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.bam_label_output.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.panel_2.SetScrollRate(10, 10)
         self.fasta_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        self.coordinates_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        self.coordinates_text_input.SetMinSize((120, 25))
+        self.fasta_label_output.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.panel_1.SetScrollRate(10, 10)
         self.gtf_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.gtf_label_output.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.panel_4.SetScrollRate(10, 10)
+        self.coordinates_label.SetFont(wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         # end wxGlade
 
     def __do_layout(self):
         # begin wxGlade: PrimerFrame.__do_layout
         sizer_2 = wx.BoxSizer(wx.VERTICAL)
-        grid_sizer_1 = wx.GridSizer(5, 4, 0, 0)
+        sizer_6 = wx.BoxSizer(wx.VERTICAL)
+        sizer_7 = wx.BoxSizer(wx.VERTICAL)
+        self.sizer_8_staticbox.Lower()
+        sizer_8 = wx.StaticBoxSizer(self.sizer_8_staticbox, wx.HORIZONTAL)
+        grid_sizer_1 = wx.GridSizer(4, 3, 0, 0)
+        sizer_6_copy = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_3 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_4 = wx.BoxSizer(wx.HORIZONTAL)
         grid_sizer_1.Add(self.bam_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.bam_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_4.Add(self.bam_label_output, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.panel_2.SetSizer(sizer_4)
+        grid_sizer_1.Add(self.panel_2, 1, wx.EXPAND, 0)
         grid_sizer_1.Add(self.fasta_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.fasta_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        grid_sizer_1.Add(self.coordinates_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
-        grid_sizer_1.Add(self.coordinates_text_input, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 3)
+        sizer_3.Add(self.fasta_label_output, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.panel_1.SetSizer(sizer_3)
+        grid_sizer_1.Add(self.panel_1, 1, wx.EXPAND, 1)
         grid_sizer_1.Add(self.gtf_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.gtf_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        self.primer3_notebook_required.SetSizer(grid_sizer_1)
+        sizer_6_copy.Add(self.gtf_label_output, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.panel_4.SetSizer(sizer_6_copy)
+        grid_sizer_1.Add(self.panel_4, 1, wx.EXPAND, 0)
+        sizer_8.Add(grid_sizer_1, 1, wx.EXPAND, 0)
+        self.primer3_notebook_required.SetSizer(sizer_8)
         self.primer3_notebook.AddPage(self.primer3_notebook_required, "Required")
-        self.primer3_notebook.AddPage(self.primer3_notebook_optional, "Optional")
-        sizer_2.Add(self.primer3_notebook, 1, wx.EXPAND, 1)
+        sizer_6.Add(self.primer3_notebook, 1, wx.EXPAND, 1)
+        sizer_7.Add(self.coordinates_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_7.Add(self.coordinates_text_input, 0, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_6.Add(sizer_7, 1, wx.EXPAND, 0)
+        sizer_2.Add(sizer_6, 1, wx.EXPAND, 0)
         sizer_2.Add(self.run_button, 0, wx.EXPAND, 0)
         self.SetSizer(sizer_2)
         sizer_2.Fit(self)
@@ -128,6 +157,7 @@ class PrimerFrame(wx.Frame):
                     samfile = samfile._open(filename, 'rb')  # re-open bam file with index
                 self.bam.append(samfile)  # [pysam.Samfile, pysam.Samfile, ...]
             load_progress.Update(100, 'Done.')
+            self.bam_label_output.SetLabel(', '.join(filenames_without_path))
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
@@ -158,6 +188,7 @@ class PrimerFrame(wx.Frame):
             load_progress.Update(50, 'Loading the FASTA file')  # update after indexing
             self.fasta = pysam.Fastafile(filename)  # open fasta file
             load_progress.Update(100)  # update dialog after loading fasta
+            self.fasta_label_output.SetLabel(filename.split('/')[-1])  # set label to just the filename and not the whole path
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
