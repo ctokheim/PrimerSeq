@@ -30,7 +30,7 @@ class PrimerFrame(wx.Frame):
         # begin wxGlade: PrimerFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-        
+
         # Menu Bar
         self.MainFrame_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
@@ -208,11 +208,16 @@ class PrimerFrame(wx.Frame):
                                               | wx.PD_APP_MODAL
                                               | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
             load_progress.Update(0, 'Indexing GTF file . . .')  # indexing gtf msg
-            pysam.tabix_index(filename)  # index gtf file
+            pysam.tabix_index(filename, force=True, seq_col=0, start_col=3, end_col=4)  # index gtf file
             load_progress.Update(50, 'Loading GTF file . . .')  # load gtf msg
+            filename = filename if filename.endswith('.gz') else filename + '.gz'  # add the .gz after compression in `pysam.tabix_index` if needed
             self.tabix = pysam.Tabixfile(filename)  # get tabix file
             load_progress.Update(100, 'Done.')
-            print self.tabix.fetch('chr1:100000-200000')
+            for thing in self.tabix.fetch():
+                print thing
+                print pysam.asGTF(thing)
+                print dir(pysam.asGTF(thing))
+                break
 
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
