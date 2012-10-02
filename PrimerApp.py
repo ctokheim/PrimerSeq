@@ -5,6 +5,7 @@ from __future__ import division
 import wx
 import os
 import pysam
+import re
 
 # begin wxGlade: extracode
 # end wxGlade
@@ -167,7 +168,14 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def OnRunPrimerSeq(self, event):  # wxGlade: PrimerFrame.<event_handler>
-        print "Event handler `OnRunPrimerSeq' not implemented"
+        strandList, chrList, startList, endList = [], [], [], []  # stores all coordinate info
+
+        # handle the coordinates in self.coordinates_text_input
+        coordinates_string = self.coordinates_text_input.GetValue()  # a string
+        coordinates = filter(lambda x: x != '', re.split('\s*,*\s*', coordinates_string))  # ['(strand)(chr):(start)-(end)', ...]
+        coordinates = map(lambda x: x.replace('-', 'dash'), coordinates)  # command line from argparse fix
+        cmd = 'primer3_core -io_version=3 < ' + outfiles_PATH + jobs_ID + '.conf' + ' > ' + outfiles_PATH + jobs_ID + '.Primer3'  # primer3 cmd
+        subprocess.check_call(cmd, shell=True)
         event.Skip()
 
     def OnOpenFastaFileButton(self, event):  # wxGlade: PrimerFrame.<event_handler>
