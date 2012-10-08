@@ -107,7 +107,7 @@ class Sam(object):
                 BIN_DIR, self.path, tmp_sam_path, chr, start, end)
             subprocess.check_call(cmd, shell=True)
             logging.debug('Finished getting sam reads. Parsing jcts . . .')
-            junctionDict = self.__getSamJct(tmp_sam_path)
+            junctionDict = self.__get_sam_jct(tmp_sam_path)
             logging.debug('Finished reading jcts')
             return junctionDict
         except:

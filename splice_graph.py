@@ -92,6 +92,7 @@ def no_edges_graph(exons):
     G.add_nodes_from(exons)
     return G
 
+
 def add_annotation_edge_weights(graph, exon_forms, weights):
     """
     Only try to find weights for already existing edges in the graph.
@@ -182,13 +183,13 @@ def main(options, args_output='tmp/debug.json'):
     for line in args_target:  # was line in handle
         line = line.strip()
         strand = line[0]
-        chr = gene_dict[line[1:]]['chr']
         try:
             genes = list(set(gene_lookup[line]))
         except KeyError:
             output.append('The coordinates of ' + line + ' did not match an exon')
             continue  # skip to next if exon lookup failed
         target = get_pos(line)
+        chr = gene_dict[genes[0]]['chr']
 
         # check how many genes the exon matches
         if len(genes) > 1:
@@ -198,7 +199,7 @@ def main(options, args_output='tmp/debug.json'):
         # construct output if no problems with genes
         elif options['annotation_flag']:
             # get information on flanking constitutive exons
-            tmp_graph = annotation_graph(gene_dict[line[1:]]['graph'])  # construct graph based on annotation
+            tmp_graph = annotation_graph(gene_dict[genes[0]]['graph'])  # construct graph based on annotation
             tmp = get_flanking_biconnected(line, target,
                                            tmp_graph,
                                            chr,
@@ -206,8 +207,8 @@ def main(options, args_output='tmp/debug.json'):
                                            genome)
             output.append(tmp)
         elif options['rnaseq_flag']:
-            tmp_graph = no_edges_graph(list(gene_dict[line[1:]]['exons']))
-            tmp_start, tmp_end = get_pos(target)
+            tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
+            tmp_start, tmp_end = target
             edge_weights = sam_obj.extractSamRegion(chr, tmp_start, tmp_end)
             tmp_graph = add_all_possible_edge_weights(tmp_graph.copy(),
                                                       chr,

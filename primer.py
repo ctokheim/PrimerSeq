@@ -55,6 +55,8 @@ def primer3(options, primer3_options):
     # tmp directory
     outfiles_PATH = 'tmp/'  # directory for intermediate files
     if not os.path.exists('tmp'): os.mkdir('tmp')  # make directory to put tmp files
+    if not os.path.exists('tmp/sam'): os.mkdir('tmp/sam')
+    if not os.path.exists('tmp/jct'): os.mkdir('tmp/jct')
 
     # read in targets
     with open(options['target']) as handle:
@@ -62,7 +64,7 @@ def primer3(options, primer3_options):
         options['target'] = target_list
 
     # find flanking exons
-    logging.debug('Calling gtf.main to find flanking exons')
+    logging.debug('Calling splice_graph.main to find flanking exons')
     flanking_info = splice_graph.main(options)
     logging.debug('Finished gtf.main')
 

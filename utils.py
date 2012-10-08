@@ -11,6 +11,7 @@ def get_end_pos(coordinate):
     """
     return int(coordinate.split(":")[1].split("-")[1])
 
+
 def get_pos(coordinate):
     """
     get (start, stop) from 'chr:start-stop'
