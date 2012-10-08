@@ -63,6 +63,18 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
     return p[sorted_nodes[-1]], no_newly_visited
 
 
+def all_path_lengths(G, component, target):
+    # get possible lengths
+    inc_length, skip_length = [], []
+    sub_graph = nx.subgraph(G, component)
+    for path in nx.all_simple_paths(sub_graph.copy(), source=component[0], target=component[-1]):
+        if target in path:
+            inc_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
+        else:
+            skip_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
+    return inc_length, skip_length
+
+
 def read_count_em(bcc_paths, sub_graph):
     # useful convenience dicts
     indexToEdge = {i: e for i, e in enumerate(sub_graph.edges())}

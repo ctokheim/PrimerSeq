@@ -71,4 +71,7 @@ nosetests.xml
 *.vrb
 *.xdy
 
-
+# custom ignores
+log
+tmp
+primer3/
