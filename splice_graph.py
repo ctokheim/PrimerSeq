@@ -49,9 +49,9 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
         gene_dict[gene_id].setdefault('chr', tx[0].seqname)  # add chr if doesn't exist
         gene_dict[gene_id].setdefault('strand', strand)  # add strand if doesn't exist
         gene_dict[gene_id].setdefault('graph', []).append(tx_path)  # append the tx path
-        gene_dict[gene_id].setdefault('start', 0)
+        gene_dict[gene_id].setdefault('start', float('inf'))
         gene_dict[gene_id]['start'] = min(gene_dict[gene_id]['start'], tx_path[0][0])  # change start if this tx has lower start position
-        gene_dict[gene_id].setdefault('end', float('inf'))
+        gene_dict[gene_id].setdefault('end', 0)
         gene_dict[gene_id]['end'] = max(gene_dict[gene_id]['end'], tx_path[-1][1])
         gene_dict[gene_id].setdefault('exons', set())
         for ex in tx_path:
@@ -93,7 +93,7 @@ def no_edges_graph(exons):
     return G
 
 
-def add_annotation_edge_weights(graph, exon_forms, weights):
+def add_annotation_edge_weights(graph, chr, weights):
     """
     Only try to find weights for already existing edges in the graph.
     This function is intended to add weight values to edges defined
@@ -102,10 +102,10 @@ def add_annotation_edge_weights(graph, exon_forms, weights):
     # add edge weights to edges from annotation
     for u, v in graph.edges():
         try:
-            tmpChr = get_chr(exon_forms[u])
-            start = get_start_pos(exon_forms[u])
-            end = get_end_pos(exon_forms[v])
-            tmpWeight = weights[tmpChr][start][end]
+            #tmpChr = get_chr(exon_forms[u])
+            start = u[1]  # get_start_pos(exon_forms[u])
+            end = v[0]  # get_end_pos(exon_forms[v])
+            tmpWeight = weights[chr][start][end]
             graph[u][v]['weight'] = tmpWeight
         except KeyError:
             graph[u][v]['weight'] = 0.01
@@ -163,7 +163,142 @@ def get_flanking_biconnected(name, target, graph, chr, strand, genome):
                     chr + ':' + '-'.join(map(str, downstream)),
                     inc_length, skip_length, str(upstream_seq).upper(),
                     str(target_seq).upper(), str(downstream_seq).upper()]
-    return name + ' was not found in a biconnected component'
+    return [name + ' was not found in a biconnected component']
+
+
+def find_closest_exon_above_cutoff(G, comp, possible_exons, CUT_OFF=.95):
+    my_subgraph = G.subgraph(comp)
+    paths, counts = algs.generate_isoforms(G, my_subgraph.copy())
+    for exon in possible_exons:
+        psi = algs.estimate_psi(exon, paths, counts)
+        if psi >= CUT_OFF:
+            return exon
+
+
+def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
+    """
+    More elegantly handle finding constitutive exons
+    """
+    biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(graph))
+
+    if len(graph.predecessors(target)) == 0 or len(graph.successors) == 0:
+        return None, None, [target]
+    elif len(biconnected_comp) == 0:
+        # add information to log file
+        logging.debug('It appears %s has two imediate flanking constitutive exons' % str(target))
+        if len(graph.successors(target)) > 1:
+            logging.debug('Conflict between biconnected components and successors')
+        if len(graph.predecessors(target)) > 1:
+            logging.debug('Conflict between biconnected components and predecessors')
+
+        # define adjacent exons as flanking constitutive since all three (the
+        # target exon, upstream exon, and downstream exon) are constitutive
+        upstream = graph.predecessors(target)[0] if strand == '+' else graph.successors(target)[0]
+        downstream = graph.successors(target)[0] if strand == '+' else graph.predecessors(target)[0]
+        total_components = [upstream, target, downstream]
+
+    elif len(biconnected_comp) == 1:
+        component = sorted(biconnected_comp[0], lambda x: (x[0], x[1]))  # make sure component is sorted by position
+
+        # constitutive exon of biconnected component, exons with > start pos are
+        # not constitutive. However, the immediate preceding exon will be
+        # constitutive
+        if target == component[0]:
+            if len(graph.predecessors(target)) > 1:
+                logging.debug('Conflict between biconnected components and predecessors')
+            if strand == '+':
+                upstream = graph.predecessors(target)[0]
+                downstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                            component, component[1:])
+            else:
+                upstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                          component, component[1:])
+                downstream = graph.predecessors(target)[0]
+        # constitutive exon of biconnected component, exons with < start pos are not
+        # constitutive. However, the immediate successor exon will be
+        # constitutive.
+        elif target == component[-1]:
+            if len(graph.successors(target)) > 1:
+                logging.debug('Conflict between biconnected components and successors')
+
+            possible_const = component[:-1]
+            possible_const.reverse()  # reverse the order since closer exons should be looked at first
+            if strand == '+':
+                upstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                          component, possible_const)
+                downstream = graph.successors(target)[0]
+            else:
+                upstream = graph.successors(target)[0]
+                downstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                            component, possible_const)
+        # non constitutive exon case
+        else:
+            index = component.index(target)
+            if strand == '+':
+                upstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                          component,
+                                                          component[index + 1:])
+                downstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                            component,
+                                                            list(reversed(component[:index])))
+            else:
+                upstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                          component,
+                                                          list(reversed(component[:index])))
+                downstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                            component,
+                                                            component[index + 1:])
+        total_components = component
+    # constitutive target exon straddled by non constitutive regions
+    elif len(biconnected_comp) == 2:
+        if biconnected_comp[0][-1] == target:
+            before_component, after_component = biconnected_comp
+        else:
+            after_component, before_component = biconnected_comp
+
+        if strand == '+':
+            upstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                      before_component,
+                                                      list(reversed(before_component[:-1])))
+            downstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                        after_component,
+                                                        after_component[1:])
+        else:
+            upstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                      after_component,
+                                                      after_component[1:])
+            downstream = find_closest_exon_above_cutoff(graph.copy(),
+                                                        before_component,
+                                                        list(reversed(before_component[:-1])))
+        total_components = before_component[:-1] + after_component
+    return upstream, downstream, total_components
+
+
+def get_flanking_exons(name, target, graph, chr, strand, genome):
+    # find appropriate flanking "constitutive" exon for primers
+    upstream, downstream, component = find_fuzzy_constitutive(target, graph, strand)
+
+    # lack of successor/predecessor nodes
+    if upstream is None or downstream is None:
+        logging.debug("%s does not have an upstream exon, downstream exon, or possibly both" % str(component))
+        return "%s does not have an upstream exon, downstream exon, or possibly both" % str(component)
+
+    # get possible lengths
+    inc_length, skip_length = algs.all_path_lengths(graph,
+                                                    component, target)
+
+    # get sequence of upstream/target/downstream combo
+    genome_chr = genome[chr]  # chr object from pygr
+    upstream_seq, target_seq, downstream_seq = genome_chr[upstream[0]:upstream[1]], genome_chr[target[0]:target[1]], genome_chr[downstream[0]:downstream[1]]
+    if strand == '-':
+        upstream_seq, target_seq, downstream_seq =  \
+            -upstream_seq, -target_seq, -downstream_seq
+
+    return [strand, name[1:],
+            chr + ':' + '-'.join(map(str, upstream)),
+            chr + ':' + '-'.join(map(str, downstream)),
+            inc_length, skip_length, str(upstream_seq).upper(),
+            str(target_seq).upper(), str(downstream_seq).upper()]
 
 
 def main(options, args_output='tmp/debug.json'):
@@ -209,7 +344,7 @@ def main(options, args_output='tmp/debug.json'):
         elif options['rnaseq_flag']:
             tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
             tmp_start, tmp_end = target
-            edge_weights = sam_obj.extractSamRegion(chr, tmp_start, tmp_end)
+            edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
             tmp_graph = add_all_possible_edge_weights(tmp_graph.copy(),
                                                       chr,
                                                       edge_weights)  # add any edge w/ weight if sufficient read support
@@ -218,6 +353,18 @@ def main(options, args_output='tmp/debug.json'):
                                            chr,
                                            strand,
                                            genome)
+            output.append(tmp)
+        elif options['fuzzy_rnaseq']:
+            tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
+            edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
+            tmp_graph = add_all_possible_edge_weights(tmp_graph.copy(),
+                                                      chr,
+                                                      edge_weights)  # add any edge w/ weight if sufficient read support
+            tmp = get_flanking_exons(line, target,
+                                     tmp_graph,
+                                     chr,
+                                     strand,
+                                     genome)
             output.append(tmp)
 
     # if they specify a output file then write to it
@@ -240,6 +387,7 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--annotaton', dest='annotation_flag', action='store_true')
     group.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true')
+    group.add_argument('--fuzy_rnaseq', dest='fuzzy_rnaseq', action='store', type=float)
     parser.add_argument('-o', '--output', action='store', dest='output', required=True)
     options = vars(parser.parse_args())
 

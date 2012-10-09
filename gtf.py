@@ -15,7 +15,6 @@ class Gtf(object):
 
         self.start, self.end = int(self.start) - 1, int(self.end)
 
-
 def gtf_reader(fileObject, delim):
     """
     Iterate over a file to extract 'exon' features of tx

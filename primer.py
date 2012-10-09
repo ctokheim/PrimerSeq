@@ -28,14 +28,14 @@ def call_primer3(target_string, jobs_ID):
     os.chdir('..')  # go back to top level
 
 
-def read_primer3(outfiles_PATH, jobs_ID):
+def read_primer3(path):
     """
     Read the output from primer3_core into a dictionary containing
     the key:value relationship for the output tags.
     """
     primer3_dict = {}
     # read primer3 file
-    with open(outfiles_PATH + jobs_ID + '.Primer3', 'r') as infile:
+    with open(path, 'r') as infile:
         for line in infile:
             try:
                 primer3_dict[line.split('=')[0]] = line.split('=')[1].rstrip()
@@ -72,13 +72,13 @@ def primer3(options, primer3_options):
     STRAND, EXON_TARGET, UPSTREAM_TARGET, DOWNSTREAM_TARGET, INC_LIST, SKIP_LIST, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ = range(9)
     output_list = []
     for z in range(len(flanking_info)):
-        tar = flanking_info[z][1]  # target interval (used for print statements)
         # no flanking exon information case
         if type('') == type(flanking_info[z]):
-            logging.debug('No flanking exons were found for %s' % tar)
+            logging.debug('No flanking exons were found')
             output_list.append(flanking_info[z] + '\n')  # write problem msg
         # has flanking exon information case
         else:
+            tar = flanking_info[z][1]  # target interval (used for print statements)
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
             PRIMER_EXPLAIN_FLAG = '1'
@@ -111,7 +111,7 @@ def primer3(options, primer3_options):
             call_primer3(tar, jobs_ID)  # command line call to Primer3!
 
             #################### Parse '.Primer3' ################################
-            primer3_dict = read_primer3(outfiles_PATH, jobs_ID)
+            primer3_dict = read_primer3(outfiles_PATH + jobs_ID + '.Primer3')
 
             # checks if no output
             if(primer3_dict.keys().count('PRIMER_LEFT_0_SEQUENCE') == 0):
@@ -200,6 +200,18 @@ class ValidateRnaseq(argparse.Action):
         # simply assign the string as is
         setattr(namespace, self.dest, values)  # set the value
 
+class ValidateCutoff(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        # if error print help and exit
+        if 0 <= values <= 1:
+            setattr(namespace, self.dest, values)  # set the value
+        else:
+            parser.print_help()
+            parser.exit(status=1,
+                        message='\n' + '#' * 40 +
+                        '\nInclusion levels can only be between 0 and 1\n' +
+                        '#' * 40 + '\n')
+
 
 if __name__ == '__main__':
     # command line arguments
@@ -211,6 +223,7 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--annotaton', dest='annotation_flag', action='store_true')
     group.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true')
+    group.add_argument('--fuzzy_rnaseq', dest='fuzzy_rnaseq', action=ValidateCutoff, type=float)
     parser.add_argument('-o', required=True, dest='output', action='store', help='Output directory')
     options = vars(parser.parse_args())  # make it a dictionary
 

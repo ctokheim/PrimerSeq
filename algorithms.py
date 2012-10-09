@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import sys
 
+
 def get_biconnected(G):
     """
     Wrapper arround the networkx biconnected_components function. To find out why the biconnected
@@ -37,8 +38,7 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
     d = [float('-inf')] * num_nodes  # was len(G)
     d[sorted_nodes[0]] = 0   # initialize source to have 0 distance
     p = [[]] * num_nodes  # was len(G)
-    p[sorted_nodes[0]] = [sorted_nodes[0]]
-        # initialize source path to be it's self
+    p[sorted_nodes[0]] = [sorted_nodes[0]]  # initialize source path to be it's self
 
     # "edge relax"
     for tail_node in sorted_nodes:
@@ -123,7 +123,22 @@ def read_count_em(bcc_paths, sub_graph):
     return tx_counts
 
 
-def generate_isoforms(G, tx_paths):
+def estimate_psi(exon_of_interest, paths, counts):
+    """
+    Uses the estimated isoform count information from read_count_em to
+    estimate the exon inclusion level (psi).
+    """
+    inc_count, skip_count = 0, 0
+    for i, num in enumerate(counts):
+        if exon_of_interest in paths[i]:
+            inc_count += num
+        else:
+            skip_count += num
+    psi = float(inc_count) / (inc_count + skip_count)
+    return psi
+
+
+def generate_isoforms(G, component_subgraph):
     """
     Take in a digraph and output isoforms of its biconnected components (splice modules)
 
@@ -133,64 +148,56 @@ def generate_isoforms(G, tx_paths):
     output
         paths - a list of isoforms for splice modules
     """
-    paths, module_info, naive = [], [], []
-    for component in get_biconnected(G):
-        # define subgraph of biconnected nodes
-        component_subgraph = nx.subgraph(G, component)
-        component_paths = []
+    module_info, naive = [], []
+    #for component in get_biconnected(G):
+    # define subgraph of biconnected nodes
+    #component_subgraph = nx.subgraph(G, component)
+    component = component_subgraph.nodes()
+    component_paths = []
 
-        # mark all edges as unvisited
-        visited_edges = {}
-        for u, v in component_subgraph.edges():
-            try:
-                visited_edges[u][v] = 0
-            except:
-                visited_edges[u] = {}
-                visited_edges[u][v] = 0
-        num_visited_edges = 0  # no edges visited to start with
+    # mark all edges as unvisited
+    visited_edges = {}
+    for u, v in component_subgraph.edges():
+        try:
+            visited_edges[u][v] = 0
+        except:
+            visited_edges[u] = {}
+            visited_edges[u][v] = 0
+    num_visited_edges = 0  # no edges visited to start with
 
-        # mark visited edges if in known annotation
-        for path in tx_paths:
-            for i in range(len(path) - 1):
-                try:
-                    if not visited_edges[path[i]][path[i + 1]]:
-                        visited_edges[path[i]][path[i + 1]] = 1
-                        num_visited_edges += 1
-                except:
-                    pass
+    # mark visited edges if in known annotation
+    #for path in tx_paths:
+    #    for i in range(len(path) - 1):
+    #        try:
+    #            if not visited_edges[path[i]][path[i + 1]]:
+    #                visited_edges[path[i]][path[i + 1]] = 1
+    #                num_visited_edges += 1
+    #        except:
+    #            pass
 
-        # Iterate until atleast one isoform explains each edge
-        while num_visited_edges < component_subgraph.number_of_edges():
-            # find maximum weight path
-            path, no_new_edges = bellman_ford_longest_path(component_subgraph.copy(), num_nodes=G.number_of_nodes(), visited=visited_edges)
-            if not no_new_edges:
-                component_paths.append(path)
+    # Iterate until atleast one isoform explains each edge
+    while num_visited_edges < component_subgraph.number_of_edges():
+        # find maximum weight path
+        path, no_new_edges = bellman_ford_longest_path(component_subgraph.copy(), num_nodes=G.number_of_nodes(), visited=visited_edges)
+        if not no_new_edges:
+            component_paths.append(path)
 
-            # bookeeping on visited edges
-            for i in range(len(path) - 1):
-                if visited_edges[path[i]][path[i + 1]] == 0:
-                    visited_edges[path[i]][path[i + 1]] = 1
-                    num_visited_edges += 1
-                G[path[i]][path[i + 1]]['weight'] = G[path[
-                    i]][path[i + 1]]['weight'] / 10.0  # down scale path
+        # bookeeping on visited edges
+        for i in range(len(path) - 1):
+            if visited_edges[path[i]][path[i + 1]] == 0:
+                visited_edges[path[i]][path[i + 1]] = 1
+                num_visited_edges += 1
+            G[path[i]][path[i + 1]]['weight'] = G[path[
+                i]][path[i + 1]]['weight'] / 10.0  # down scale path
 
-        tmp = sorted(component)  # make sure nodes are sorted
-        start = tmp[0] if tmp[0] != 0 else tmp[1]  # find min non-dummy node
-        stop = tmp[-1] if tmp[-1] != len(G) - 1 else tmp[-2]
-                                         # find max non-dummy node
-        component_paths += [filter(lambda x: x >= start and x <= stop, p) for p in tx_paths]  # add paths known from transcript annotation
-        component_paths = map(list, list(
-            set(map(tuple, component_paths))))  # remove redundant paths
+    tmp = sorted(component)  # make sure nodes are sorted
+    # component_paths += [filter(lambda x: x >= start and x <= stop, p) for p in tx_paths]  # add paths known from transcript annotation
+    component_paths = map(list, list(
+        set(map(tuple, component_paths))))  # remove redundant paths
 
-        # remove dummy nodes if possible
-        if tmp[-1] == len(G) - 1:
-            component_subgraph.remove_node(tmp[-1])
-        if tmp[0] == 0:
-            component_subgraph.remove_node(0)
+    count_info = read_count_em(component_paths, component_subgraph)
+    #original_count = sum([component_subgraph[arc_tail][arc_head]['weight'] for arc_tail, arc_head in component_subgraph.edges()])  # total actual read counts that the subgraph has
+    #module_info.append([[start, stop], list(count_info), original_count])   # module starts at first node and ends at last node
+    # paths.append(component_paths)  # add paths
 
-        count_info = read_count_em(component_paths, component_subgraph)
-        original_count = sum([component_subgraph[arc_tail][arc_head]['weight'] for arc_tail, arc_head in component_subgraph.edges()])  # total actual read counts that the subgraph has
-        module_info.append([[start, stop], list(count_info), original_count])   # module starts at first node and ends at last node
-        paths.append(component_paths)  # add paths
-
-    return paths, module_info
+    return component_paths, count_info
