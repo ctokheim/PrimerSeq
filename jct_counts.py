@@ -30,10 +30,8 @@ def main(options):
         for i in range(len(incs) - 1):
             jct_start = start_pos + incs[i]
             jct_stop = jct_start + skips[i]
-            try:
-                weights[(line[RNAME], jct_start, jct_stop)] += 1
-            except KeyError:
-                weights[(line[RNAME], jct_start, jct_stop)] = 1
+            weights.setdefault((line[RNAME], jct_start, jct_stop), 1)
+            weights[(line[RNAME], jct_start, jct_stop)] += 1
             start_pos = jct_stop
     file_input.close()  # close input
 

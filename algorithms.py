@@ -35,9 +35,11 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
 
     # initialize variables
     sorted_nodes = sorted(G.nodes())
-    d = [float('-inf')] * num_nodes  # was len(G)
+    #d = [float('-inf')] * num_nodes  # was len(G)
+    d = {nde:float('-inf') for nde in sorted_nodes}
     d[sorted_nodes[0]] = 0   # initialize source to have 0 distance
-    p = [[]] * num_nodes  # was len(G)
+    #p = [[]] * num_nodes  # was len(G)
+    p = {nde:[] for nde in sorted_nodes}
     p[sorted_nodes[0]] = [sorted_nodes[0]]  # initialize source path to be it's self
 
     # "edge relax"
@@ -57,8 +59,11 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
                 p[head_node] = p[tail_node] + [head_node]
 
     longest_path = p[sorted_nodes[-1]]
-    no_newly_visited = reduce(
-        lambda x, y: x and (visited[x][y] == 1), longest_path)
+    no_newly_visited = True
+    for i in range(len(longest_path)-1):
+        no_newly_visited &= (visited[longest_path[i]][longest_path[i+1]])
+    #no_newly_visited = reduce(
+        #lambda x, y: x and (visited[x][y] == 1), longest_path)
 
     return p[sorted_nodes[-1]], no_newly_visited
 
@@ -160,7 +165,7 @@ def generate_isoforms(G, component_subgraph):
     for u, v in component_subgraph.edges():
         try:
             visited_edges[u][v] = 0
-        except:
+        except KeyError:
             visited_edges[u] = {}
             visited_edges[u][v] = 0
     num_visited_edges = 0  # no edges visited to start with

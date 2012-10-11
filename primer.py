@@ -73,9 +73,10 @@ def primer3(options, primer3_options):
     output_list = []
     for z in range(len(flanking_info)):
         # no flanking exon information case
-        if type('') == type(flanking_info[z]):
+        #if type('') == type(flanking_info[z]):
+        if len(flanking_info[z]) == 1:
             logging.debug('No flanking exons were found')
-            output_list.append(flanking_info[z] + '\n')  # write problem msg
+            output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
             tar = flanking_info[z][1]  # target interval (used for print statements)

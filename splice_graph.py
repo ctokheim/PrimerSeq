@@ -181,8 +181,8 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
     """
     biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(graph))
 
-    if len(graph.predecessors(target)) == 0 or len(graph.successors) == 0:
-        return None, None, [target]
+    if len(graph.predecessors(target)) == 0 or len(graph.successors(target)) == 0:
+        return None, None, target
     elif len(biconnected_comp) == 0:
         # add information to log file
         logging.debug('It appears %s has two imediate flanking constitutive exons' % str(target))
@@ -198,7 +198,7 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
         total_components = [upstream, target, downstream]
 
     elif len(biconnected_comp) == 1:
-        component = sorted(biconnected_comp[0], lambda x: (x[0], x[1]))  # make sure component is sorted by position
+        component = sorted(biconnected_comp[0], key=lambda x: (x[0], x[1]))  # make sure component is sorted by position
 
         # constitutive exon of biconnected component, exons with > start pos are
         # not constitutive. However, the immediate preceding exon will be
@@ -281,7 +281,7 @@ def get_flanking_exons(name, target, graph, chr, strand, genome):
     # lack of successor/predecessor nodes
     if upstream is None or downstream is None:
         logging.debug("%s does not have an upstream exon, downstream exon, or possibly both" % str(component))
-        return "%s does not have an upstream exon, downstream exon, or possibly both" % str(component)
+        return ["%s does not have an upstream exon, downstream exon, or possibly both" % str(component)]
 
     # get possible lengths
     inc_length, skip_length = algs.all_path_lengths(graph,
@@ -321,16 +321,16 @@ def main(options, args_output='tmp/debug.json'):
         try:
             genes = list(set(gene_lookup[line]))
         except KeyError:
-            output.append('The coordinates of ' + line + ' did not match an exon')
+            output.append(['The coordinates of ' + line + ' did not match an exon'])
             continue  # skip to next if exon lookup failed
         target = get_pos(line)
         chr = gene_dict[genes[0]]['chr']
 
         # check how many genes the exon matches
         if len(genes) > 1:
-            output.append(str(line) + 'is in multiple genes ' + str(genes))
+            output.append([str(line) + 'is in multiple genes ' + str(genes)])
         elif len(genes) < 1:
-            output.append(str(line) + 'is not in any genes')
+            output.append([str(line) + 'is not in any genes'])
         # construct output if no problems with genes
         elif options['annotation_flag']:
             # get information on flanking constitutive exons
