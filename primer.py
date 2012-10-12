@@ -69,13 +69,13 @@ def primer3(options, primer3_options):
     logging.debug('Finished gtf.main')
 
     # iterate over all target sequences
-    STRAND, EXON_TARGET, UPSTREAM_TARGET, DOWNSTREAM_TARGET, INC_LIST, SKIP_LIST, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ = range(9)
+    STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, INC_LIST, SKIP_LIST, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ = range(12)
     output_list = []
     for z in range(len(flanking_info)):
         # no flanking exon information case
         #if type('') == type(flanking_info[z]):
         if len(flanking_info[z]) == 1:
-            logging.debug('No flanking exons were found')
+            logging.debug(flanking_info[z][0])
             output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
@@ -131,16 +131,16 @@ def primer3(options, primer3_options):
                 inclusion_size = ';'.join(inclusion_size_list)
 
                 # append results to output_list
-                tmp = [tar, flanking_info[z][EXON_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
+                tmp = [tar, flanking_info[z][EXON_TARGET], flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
-                       flanking_info[z][UPSTREAM_TARGET], flanking_info[z][DOWNSTREAM_TARGET]]
+                       flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET], flanking_info[z][PSI_DOWNSTREAM]]
                 output_list.append(tmp)
 
     # write output information
     with open(outfiles_PATH + jobs_ID + '.txt', 'wb') as outputfile_tab:
         # define csv header
-        header = ['Exon_name', 'Target_Exon_coordinates', 'Left_primer', 'Right_primer', 'Average_Tm',
-                  'Skipping_production_size', 'Inclusion_production_size', 'Upstream_coordinates', 'Downstream_coordinates']
+        header = ['Exon_name', 'Target_Exon_coordinates', 'PSI_TARGET', 'Left_primer', 'Right_primer', 'Average_Tm',
+                  'Skipping_production_size', 'Inclusion_production_size', 'Upstream_coordinates', 'PSI_UPSTREAM', 'Downstream_coordinates', 'PSI_DOWNSTREAM']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
     shutil.copy(outfiles_PATH + jobs_ID + '.txt', options['output'])  # copy file to output destination

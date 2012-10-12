@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import gtf
 from utils import get_chr, get_start_pos, get_end_pos, get_pos
 import sam
+import sys
 
 # logging imports
 import logging
@@ -112,7 +113,7 @@ def add_annotation_edge_weights(graph, chr, weights):
     return graph
 
 
-def add_all_possible_edge_weights(graph, chr, weights, READ_THRESHOLD=1):  # use to have exon_forms rather than chr
+def add_all_possible_edge_weights(graph, chr, weights, READ_THRESHOLD=5):  # use to have exon_forms rather than chr
     """
     Add edge/weights to graph if supported by atleast READ_THRESHOLD number of reads
     """
@@ -168,11 +169,18 @@ def get_flanking_biconnected(name, target, graph, chr, strand, genome):
 
 def find_closest_exon_above_cutoff(G, comp, possible_exons, CUT_OFF=.95):
     my_subgraph = G.subgraph(comp)
-    paths, counts = algs.generate_isoforms(G, my_subgraph.copy())
+    paths, counts = algs.generate_isoforms(G, my_subgraph)
     for exon in possible_exons:
         psi = algs.estimate_psi(exon, paths, counts)
         if psi >= CUT_OFF:
-            return exon
+            return exon, psi
+
+
+def find_closest_exon_above_cutoff2(paths, counts, possible_exons, CUT_OFF=.95):
+    for exon in possible_exons:
+        psi = algs.estimate_psi(exon, paths, counts)
+        if psi >= CUT_OFF:
+            return exon, psi
 
 
 def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
@@ -206,14 +214,23 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
         if target == component[0]:
             if len(graph.predecessors(target)) > 1:
                 logging.debug('Conflict between biconnected components and predecessors')
+            my_subgraph = graph.subgraph(component)
+            paths, counts = algs.generate_isoforms(graph, my_subgraph)
             if strand == '+':
                 upstream = graph.predecessors(target)[0]
-                downstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                            component, component[1:])
+                psi_upstream = 1.0  # defined by biconnected component alg as constitutive
+                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
+                #                                                            component, component[1:])
+                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
+                                                                             counts, component[1:])
             else:
-                upstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                          component, component[1:])
+                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
+                #                                                        component, component[1:])
+                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
+                                                                         counts, component[1:])
                 downstream = graph.predecessors(target)[0]
+                psi_downstream = 1.0
+            psi_target = 1.0
         # constitutive exon of biconnected component, exons with < start pos are not
         # constitutive. However, the immediate successor exon will be
         # constitutive.
@@ -223,32 +240,56 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
 
             possible_const = component[:-1]
             possible_const.reverse()  # reverse the order since closer exons should be looked at first
+            my_subgraph = graph.subgraph(component)
+            paths, counts = algs.generate_isoforms(graph, my_subgraph)
             if strand == '+':
-                upstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                          component, possible_const)
+                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
+                #                                                        component, possible_const)
+                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
+                                                                         counts, possible_const)
                 downstream = graph.successors(target)[0]
+                psi_downstream = 1.0
             else:
                 upstream = graph.successors(target)[0]
-                downstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                            component, possible_const)
+                psi_upstream = 1.0
+                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
+                #                                                            component, possible_const)
+                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
+                                                                             counts, possible_const)
+            psi_target = 1.0  # the target is constitutive in this case
         # non constitutive exon case
         else:
             index = component.index(target)
+            my_subgraph = graph.subgraph(component)
+            paths, counts = algs.generate_isoforms(graph, my_subgraph)
             if strand == '+':
-                upstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                          component,
-                                                          component[index + 1:])
-                downstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                            component,
-                                                            list(reversed(component[:index])))
+                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
+                #                                                        component,
+                #                                                        component[index + 1:])
+                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
+                #                                                            component,
+                #                                                            list(reversed(component[:index])))
+                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
+                                                                         counts,
+                                                                         component[index + 1:])
+                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
+                                                                             counts,
+                                                                             list(reversed(component[:index])))
             else:
-                upstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                          component,
-                                                          list(reversed(component[:index])))
-                downstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                            component,
-                                                            component[index + 1:])
+                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
+                #                                                        component,
+                #                                                        list(reversed(component[:index])))
+                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
+                #                                                            component,
+                #                                                            component[index + 1:])
+                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
+                                                                         counts,
+                                                                         list(reversed(component[:index])))
+                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
+                                                                             counts,
+                                                                             component[index + 1:])
         total_components = component
+        psi_target = algs.estimate_psi(target, paths, counts)
     # constitutive target exon straddled by non constitutive regions
     elif len(biconnected_comp) == 2:
         if biconnected_comp[0][-1] == target:
@@ -256,27 +297,36 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
         else:
             after_component, before_component = biconnected_comp
 
+        # since there is two components I need two subgraphs/paths. One for
+        # before and after the target exon (before/after are defined by
+        # chromosome position)
+        my_before_subgraph = graph.subgraph(before_component)
+        before_paths, before_counts = algs.generate_isoforms(graph, my_before_subgraph)
+        my_before_subgraph = graph.subgraph(before_component)
+        after_paths, after_counts = algs.generate_isoforms(graph, my_before_subgraph)
+
         if strand == '+':
-            upstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                      before_component,
-                                                      list(reversed(before_component[:-1])))
-            downstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                        after_component,
-                                                        after_component[1:])
+            upstream, psi_upstream = find_closest_exon_above_cutoff2(before_paths,
+                                                                     before_counts,
+                                                                     list(reversed(before_component[:-1])))
+            downstream, psi_downstream = find_closest_exon_above_cutoff2(after_paths,
+                                                                         after_counts,
+                                                                         after_component[1:])
         else:
-            upstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                      after_component,
-                                                      after_component[1:])
-            downstream = find_closest_exon_above_cutoff(graph.copy(),
-                                                        before_component,
-                                                        list(reversed(before_component[:-1])))
+            upstream, psi_upstream = find_closest_exon_above_cutoff2(after_paths,
+                                                                     after_counts,
+                                                                     after_component[1:])
+            downstream, psi_downstream = find_closest_exon_above_cutoff2(before_paths,
+                                                                         before_counts,
+                                                                         list(reversed(before_component[:-1])))
         total_components = before_component[:-1] + after_component
-    return upstream, downstream, total_components
+        psi_target = 1.0
+    return upstream, downstream, total_components, (psi_target, psi_upstream, psi_downstream)
 
 
 def get_flanking_exons(name, target, graph, chr, strand, genome):
     # find appropriate flanking "constitutive" exon for primers
-    upstream, downstream, component = find_fuzzy_constitutive(target, graph, strand)
+    upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, graph, strand)
 
     # lack of successor/predecessor nodes
     if upstream is None or downstream is None:
@@ -294,9 +344,9 @@ def get_flanking_exons(name, target, graph, chr, strand, genome):
         upstream_seq, target_seq, downstream_seq =  \
             -upstream_seq, -target_seq, -downstream_seq
 
-    return [strand, name[1:],
-            chr + ':' + '-'.join(map(str, upstream)),
-            chr + ':' + '-'.join(map(str, downstream)),
+    return [strand, name[1:], psi_target,
+            chr + ':' + '-'.join(map(str, upstream)), psi_upstream,
+            chr + ':' + '-'.join(map(str, downstream)), psi_downstream,
             inc_length, skip_length, str(upstream_seq).upper(),
             str(target_seq).upper(), str(downstream_seq).upper()]
 
@@ -326,46 +376,53 @@ def main(options, args_output='tmp/debug.json'):
         target = get_pos(line)
         chr = gene_dict[genes[0]]['chr']
 
-        # check how many genes the exon matches
-        if len(genes) > 1:
-            output.append([str(line) + 'is in multiple genes ' + str(genes)])
-        elif len(genes) < 1:
-            output.append([str(line) + 'is not in any genes'])
-        # construct output if no problems with genes
-        elif options['annotation_flag']:
-            # get information on flanking constitutive exons
-            tmp_graph = annotation_graph(gene_dict[genes[0]]['graph'])  # construct graph based on annotation
-            tmp = get_flanking_biconnected(line, target,
-                                           tmp_graph,
-                                           chr,
-                                           strand,
-                                           genome)
-            output.append(tmp)
-        elif options['rnaseq_flag']:
-            tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
-            tmp_start, tmp_end = target
-            edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
-            tmp_graph = add_all_possible_edge_weights(tmp_graph.copy(),
-                                                      chr,
-                                                      edge_weights)  # add any edge w/ weight if sufficient read support
-            tmp = get_flanking_biconnected(line, target,
-                                           tmp_graph,
-                                           chr,
-                                           strand,
-                                           genome)
-            output.append(tmp)
-        elif options['fuzzy_rnaseq']:
-            tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
-            edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
-            tmp_graph = add_all_possible_edge_weights(tmp_graph.copy(),
-                                                      chr,
-                                                      edge_weights)  # add any edge w/ weight if sufficient read support
-            tmp = get_flanking_exons(line, target,
-                                     tmp_graph,
-                                     chr,
-                                     strand,
-                                     genome)
-            output.append(tmp)
+        # This try block is to catch assertions made about the graph. If an
+        # assertion is raised it only impacts a single target for primer design
+        # so complete exiting of the program is not warranted.
+        try:
+            # check how many genes the exon matches
+            if len(genes) > 1:
+                output.append([str(line) + 'is in multiple genes ' + str(genes)])
+            elif len(genes) < 1:
+                output.append([str(line) + 'is not in any genes'])
+            # construct output if no problems with genes
+            elif options['annotation_flag']:
+                # get information on flanking constitutive exons
+                tmp_graph = annotation_graph(gene_dict[genes[0]]['graph'])  # construct graph based on annotation
+                tmp = get_flanking_biconnected(line, target,
+                                               tmp_graph,
+                                               chr,
+                                               strand,
+                                               genome)
+                output.append(tmp)
+            elif options['rnaseq_flag']:
+                tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
+                tmp_start, tmp_end = target
+                edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
+                tmp_graph = add_all_possible_edge_weights(tmp_graph,
+                                                          chr,
+                                                          edge_weights)  # add any edge w/ weight if sufficient read support
+                tmp = get_flanking_biconnected(line, target,
+                                               tmp_graph,
+                                               chr,
+                                               strand,
+                                               genome)
+                output.append(tmp)
+            elif options['fuzzy_rnaseq']:
+                tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
+                edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
+                tmp_graph = add_all_possible_edge_weights(tmp_graph,
+                                                          chr,
+                                                          edge_weights)  # add any edge w/ weight if sufficient read support
+                tmp = get_flanking_exons(line, target,
+                                         tmp_graph,
+                                         chr,
+                                         strand,
+                                         genome)
+                output.append(tmp)
+        except AssertionError:
+            t, v, trace = sys.exc_info()
+            output.append([str(v)])  # just append assertion msg
 
     # if they specify a output file then write to it
     if args_output:

@@ -1,6 +1,8 @@
 import networkx as nx
 import numpy as np
 import sys
+import logging
+import matplotlib.pyplot as plt
 
 
 def get_biconnected(G):
@@ -29,10 +31,6 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
     output:
         path - longest path from first node to last
     """
-    if not nx.is_biconnected(G.to_undirected()):
-        print "ERROR: component should be biconnected"
-        sys.exit(1)
-
     # initialize variables
     sorted_nodes = sorted(G.nodes())
     #d = [float('-inf')] * num_nodes  # was len(G)
@@ -72,7 +70,7 @@ def all_path_lengths(G, component, target):
     # get possible lengths
     inc_length, skip_length = [], []
     sub_graph = nx.subgraph(G, component)
-    for path in nx.all_simple_paths(sub_graph.copy(), source=component[0], target=component[-1]):
+    for path in nx.all_simple_paths(sub_graph, source=component[0], target=component[-1]):
         if target in path:
             inc_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
         else:
@@ -153,12 +151,23 @@ def generate_isoforms(G, component_subgraph):
     output
         paths - a list of isoforms for splice modules
     """
+    logging.debug('Start generating isoforms . . .')
     module_info, naive = [], []
     #for component in get_biconnected(G):
     # define subgraph of biconnected nodes
     #component_subgraph = nx.subgraph(G, component)
     component = component_subgraph.nodes()
     component_paths = []
+
+    # assert statements about the connectivity of the graph
+    assert nx.is_weakly_connected(component_subgraph), 'Yikes! expected weakly connected graph'
+    assert nx.is_biconnected(component_subgraph.to_undirected()), 'Yikes! expected a biconnected component'
+
+    # assert statements about AFE/ALE testing
+    num_first_exons = len(filter(lambda x: len(component_subgraph.predecessors(x)) == 0, component_subgraph.nodes()))
+    assert num_first_exons <= 1, 'Yikes! AFE like event is not expected'
+    num_last_exons = len(filter(lambda x: len(component_subgraph.successors(x)) == 0, component_subgraph.nodes()))
+    assert num_last_exons <= 1, 'Yikes! ALE like event is not expected'
 
     # mark all edges as unvisited
     visited_edges = {}
@@ -183,7 +192,7 @@ def generate_isoforms(G, component_subgraph):
     # Iterate until atleast one isoform explains each edge
     while num_visited_edges < component_subgraph.number_of_edges():
         # find maximum weight path
-        path, no_new_edges = bellman_ford_longest_path(component_subgraph.copy(), num_nodes=G.number_of_nodes(), visited=visited_edges)
+        path, no_new_edges = bellman_ford_longest_path(component_subgraph, num_nodes=G.number_of_nodes(), visited=visited_edges)
         if not no_new_edges:
             component_paths.append(path)
 
@@ -195,12 +204,15 @@ def generate_isoforms(G, component_subgraph):
             G[path[i]][path[i + 1]]['weight'] = G[path[
                 i]][path[i + 1]]['weight'] / 10.0  # down scale path
 
+    logging.debug('Finished generating isoforms.')
     tmp = sorted(component)  # make sure nodes are sorted
     # component_paths += [filter(lambda x: x >= start and x <= stop, p) for p in tx_paths]  # add paths known from transcript annotation
     component_paths = map(list, list(
         set(map(tuple, component_paths))))  # remove redundant paths
 
+    logging.debug('Start read count EM algorithm . . . ')
     count_info = read_count_em(component_paths, component_subgraph)
+    logging.debug('Finished calculating counts.')
     #original_count = sum([component_subgraph[arc_tail][arc_head]['weight'] for arc_tail, arc_head in component_subgraph.edges()])  # total actual read counts that the subgraph has
     #module_info.append([[start, stop], list(count_info), original_count])   # module starts at first node and ends at last node
     # paths.append(component_paths)  # add paths
