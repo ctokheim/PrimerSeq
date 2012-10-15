@@ -85,8 +85,10 @@ def primer3(options, primer3_options):
             PRIMER_EXPLAIN_FLAG = '1'
             PRIMER_THERMODYNAMIC_PARAMETERS_PATH = '../primer3/src/primer3_config/'
             SEQUENCE_ID = tar  # use the 'chr:start-stop' format for the sequence ID in primer3
+            #SEQUENCE_TEMPLATE = flanking_info[z][UPSTREAM_Seq] + flanking_info[z][TARGET_SEQ].lower() + flanking_info[z][DOWNSTREAM_SEQ]
+            #SEQUENCE_TARGET = str(len(flanking_info[z][UPSTREAM_Seq]) + 1) + ',' + str(len(flanking_info[z][TARGET_SEQ]))
             SEQUENCE_TEMPLATE = flanking_info[z][UPSTREAM_Seq] + flanking_info[z][TARGET_SEQ].lower() + flanking_info[z][DOWNSTREAM_SEQ]
-            SEQUENCE_TARGET = str(len(flanking_info[z][UPSTREAM_Seq]) + 1) + ',' + str(len(flanking_info[z][TARGET_SEQ]))
+            SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,' + str(len(flanking_info[z][UPSTREAM_Seq])) + ',' + str(len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ])) + ',' + str(len(flanking_info[z][DOWNSTREAM_SEQ]))
             #############################################################
 
             ####################### Write jobs_ID.conf##################
@@ -94,7 +96,8 @@ def primer3(options, primer3_options):
                 # hard coded options
                 outfile.write('SEQUENCE_ID=' + SEQUENCE_ID + '\n')
                 outfile.write('SEQUENCE_TEMPLATE=' + SEQUENCE_TEMPLATE + '\n')
-                outfile.write('SEQUENCE_TARGET=' + SEQUENCE_TARGET + '\n')
+                #outfile.write('SEQUENCE_TARGET=' + SEQUENCE_TARGET + '\n')
+                outfile.write('SEQUENCE_PRIMER_PAIR_OK_REGION_LIST=' + SEQUENCE_PRIMER_PAIR_OK_REGION_LIST + '\n')
                 outfile.write('P3_FILE_FLAG=' + P3_FILE_FLAG + '\n')
                 outfile.write('PRIMER_EXPLAIN_FLAG=' + PRIMER_EXPLAIN_FLAG + '\n')
                 outfile.write('PRIMER_THERMODYNAMIC_PARAMETERS_PATH=' + PRIMER_THERMODYNAMIC_PARAMETERS_PATH + '\n')  # make sure primer3 finds the config files
@@ -222,9 +225,11 @@ if __name__ == '__main__':
     parser.add_argument('-r', required=True, dest='rnaseq', action=ValidateRnaseq, help='path to SAM/BAM file(s) ("," delimited)')
     parser.add_argument('-t', required=True, dest='target', action='store', help='path to txt file with <strand><chr>:<start>-<end> for each target on separate lines.')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--annotaton', dest='annotation_flag', action='store_true')
-    group.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true')
-    group.add_argument('--fuzzy_rnaseq', dest='fuzzy_rnaseq', action=ValidateCutoff, type=float)
+    group.add_argument('--annotaton', dest='annotation_flag', action='store_true', help='only use junctions supported from annotation')
+    group.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true', help='only use junctions supported from RNA-Seq')
+    group.add_argument('--both', dest='both_flag', action='store_true', help='use junctions from both RNA-Seq and annotation')
+    parser.add_argument('--psi', dest='psi', action=ValidateCutoff, default=1.0, type=float, help='Define inclusion level sufficient to define constitutive exon. Valid: 0<psi<1.')
+    parser.add_argument('--read-threshold', dest='read_threshold', default=5, action='store', type=int, help='Define the minimum number of read support necessary to call a junction from RNA-Seq')
     parser.add_argument('-o', required=True, dest='output', action='store', help='Output directory')
     options = vars(parser.parse_args())  # make it a dictionary
 

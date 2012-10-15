@@ -67,81 +67,94 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
     return gene_dict, gene_lookup
 
 
-def annotation_graph(g, FILTER_FACTOR=1000):
-    """
-    Create a nx DiGraph from list of tx in gene. FILTER_FACTOR defines a cutoff for
-    using a tx of a gene. A tx must have x num of exon where x > MAX tx exon num / FILTER_FACTOR.
-    Note by default FILTER_FACTOR is set to 1000 to prevent filtering of low exon number tx.
-    """
-    # filter low exon tx
-    max_exons = max(map(len, g))  # figure out max num exons
-    txs = filter(lambda x: len(x) > max_exons / FILTER_FACTOR, g)
+class SpliceGraph(object):
+    '''
+    The SpliceGraph class is meant to provide a common repository for creation
+    of splice graphs for a single gene.
+    '''
 
-    # create graph
-    graph = nx.DiGraph()
-    for tx in txs:
-        graph.add_path(tx)
-    return graph
+    def __init__(self, annotation, chr, strand, read_threshold=5):
+        self.chr = chr
+        self.strand = strand
+        self.READ_THRESHOLD = read_threshold
+        if annotation is not None:
+            self.set_graph_as_annotation(annotation)
+        else:
+            self.graph = None
 
+    def get_graph(self):
+        return self.graph
 
-def no_edges_graph(exons):
-    """
-    Simple function that makes a DAG (nx.DiGraph) with only edges and no nodes.
-    Meant to be used to before add_all_possible_edge_weights.
-    """
-    G = nx.DiGraph()
-    G.add_nodes_from(exons)
-    return G
+    def set_graph_as_annotation(self, annotation, FILTER_FACTOR=1000):
+        """
+        Create a nx DiGraph from list of tx in gene. FILTER_FACTOR defines a cutoff for
+        using a tx of a gene. A tx must have x num of exon where x > MAX tx exon num / FILTER_FACTOR.
+        Note by default FILTER_FACTOR is set to 1000 to prevent filtering of low exon number tx.
+        """
+        # filter low exon tx
+        max_exons = max(map(len, annotation))  # figure out max num exons
+        txs = filter(lambda x: len(x) > max_exons / FILTER_FACTOR, annotation)  # filter based on max num exons criteria
 
+        # create graph
+        graph = nx.DiGraph()
+        for tx in txs:
+            graph.add_path(tx)
+        self.graph = graph  # set graph attribute
 
-def add_annotation_edge_weights(graph, chr, weights):
-    """
-    Only try to find weights for already existing edges in the graph.
-    This function is intended to add weight values to edges defined
-    in the gtf annotation.
-    """
-    # add edge weights to edges from annotation
-    for u, v in graph.edges():
-        try:
-            #tmpChr = get_chr(exon_forms[u])
-            start = u[1]  # get_start_pos(exon_forms[u])
-            end = v[0]  # get_end_pos(exon_forms[v])
-            tmpWeight = weights[chr][start][end]
-            graph[u][v]['weight'] = tmpWeight
-        except KeyError:
-            graph[u][v]['weight'] = 0.01
-    return graph
-
-
-def add_all_possible_edge_weights(graph, chr, weights, READ_THRESHOLD=5):  # use to have exon_forms rather than chr
-    """
-    Add edge/weights to graph if supported by atleast READ_THRESHOLD number of reads
-    """
-    # add novel edges if well supported
-    sorted_nodes = sorted(graph.nodes())
-    for i in range(len(sorted_nodes) - 1):
-        for j in range(i + 1, len(sorted_nodes)):
+    def set_annotation_edge_weights(self, weights):
+        """
+        Only try to find weights for already existing edges in the graph.
+        This function is intended to add weight values to edges defined
+        in the gtf annotation.
+        """
+        # add edge weights to edges from annotation
+        for u, v in self.graph.edges():
             try:
-                # tmpChr = get_chr(exon_forms[sorted_nodes[i]])
-                start = sorted_nodes[i][1]   # get_start_pos(exon_forms[sorted_nodes[i]])
-                end = sorted_nodes[j][0]    # get_end_pos(exon_forms[sorted_nodes[j]])
-                if weights[chr][start][end] >= READ_THRESHOLD:
-                    graph.add_edge(sorted_nodes[i], sorted_nodes[j])
-                    graph[sorted_nodes[i]][sorted_nodes[
-                        j]]['weight'] = weights[chr][start][end]
+                #tmpChr = get_chr(exon_forms[u])
+                start = u[1]  # get_start_pos(exon_forms[u])
+                end = v[0]  # get_end_pos(exon_forms[v])
+                tmpWeight = weights[self.chr][start][end]
+                self.graph[u][v]['weight'] = tmpWeight
             except KeyError:
-                pass
+                self.graph[u][v]['weight'] = 1
 
-    return graph
+    def set_graph_as_nodes_only(self, exons):
+        """
+        Simple function that makes a DAG (nx.DiGraph) with only nodes and no edges.
+        Meant to be used to before add_all_possible_edge_weights.
+        """
+        G = nx.DiGraph()
+        G.add_nodes_from(exons)
+        self.graph = G
+
+    def add_all_possible_edge_weights(self, weights):  # use to have exon_forms rather than chr
+        """
+        Add edge/weights to graph if supported by atleast READ_THRESHOLD number of reads
+        """
+        # add novel edges if well supported
+        sorted_nodes = sorted(self.graph.nodes())
+        for i in range(len(sorted_nodes) - 1):
+            for j in range(i + 1, len(sorted_nodes)):
+                try:
+                    # tmpChr = get_chr(exon_forms[sorted_nodes[i]])
+                    start = sorted_nodes[i][1]   # get_start_pos(exon_forms[sorted_nodes[i]])
+                    end = sorted_nodes[j][0]    # get_end_pos(exon_forms[sorted_nodes[j]])
+                    if weights[self.chr][start][end] >= self.READ_THRESHOLD:
+                        self.graph.add_edge(sorted_nodes[i], sorted_nodes[j])
+                        self.graph[sorted_nodes[i]][sorted_nodes[
+                            j]]['weight'] = weights[self.chr][start][end]
+                except KeyError:
+                    pass
 
 
-def get_flanking_biconnected(name, target, graph, chr, strand, genome):
+def get_flanking_biconnected(name, target, sGraph, genome):
+    graph = sGraph.get_graph()  # nx.DiGraph
     # search through each biconnected component
     for component in algs.get_biconnected(graph):
         component = sorted(component, key=lambda x: (x[0], x[1]))  # ensure first component is first exon, etc
         if target in component[1:-1]:
             # define upstream/downstream flanking exon
-            if strand == '+':
+            if sGraph.strand == '+':
                 upstream = component[0]
                 downstream = component[-1]
             else:
@@ -153,15 +166,15 @@ def get_flanking_biconnected(name, target, graph, chr, strand, genome):
                                                             component, target)
 
             # get sequence of upstream/target/downstream combo
-            genome_chr = genome[chr]  # chr object from pygr
+            genome_chr = genome[sGraph.chr]  # chr object from pygr
             upstream_seq, target_seq, downstream_seq = genome_chr[upstream[0]:upstream[1]], genome_chr[target[0]:target[1]], genome_chr[downstream[0]:downstream[1]]
-            if strand == '-':
+            if sGraph.strand == '-':
                 upstream_seq, target_seq, downstream_seq =  \
                     -upstream_seq, -target_seq, -downstream_seq
 
-            return [strand, name[1:],
-                    chr + ':' + '-'.join(map(str, upstream)),
-                    chr + ':' + '-'.join(map(str, downstream)),
+            return [sGraph.strand, name[1:],
+                    sGraph.chr + ':' + '-'.join(map(str, upstream)),
+                    sGraph.chr + ':' + '-'.join(map(str, downstream)),
                     inc_length, skip_length, str(upstream_seq).upper(),
                     str(target_seq).upper(), str(downstream_seq).upper()]
     return [name + ' was not found in a biconnected component']
@@ -183,10 +196,11 @@ def find_closest_exon_above_cutoff2(paths, counts, possible_exons, CUT_OFF=.95):
             return exon, psi
 
 
-def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
+def find_fuzzy_constitutive(target, spl_graph, cutoff=.95):
     """
     More elegantly handle finding constitutive exons
     """
+    graph = spl_graph.get_graph()
     biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(graph))
 
     if len(graph.predecessors(target)) == 0 or len(graph.successors(target)) == 0:
@@ -201,8 +215,8 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
 
         # define adjacent exons as flanking constitutive since all three (the
         # target exon, upstream exon, and downstream exon) are constitutive
-        upstream = graph.predecessors(target)[0] if strand == '+' else graph.successors(target)[0]
-        downstream = graph.successors(target)[0] if strand == '+' else graph.predecessors(target)[0]
+        upstream = graph.predecessors(target)[0] if spl_graph.strand == '+' else graph.successors(target)[0]
+        downstream = graph.successors(target)[0] if spl_graph.strand == '+' else graph.predecessors(target)[0]
         total_components = [upstream, target, downstream]
 
     elif len(biconnected_comp) == 1:
@@ -216,16 +230,12 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
                 logging.debug('Conflict between biconnected components and predecessors')
             my_subgraph = graph.subgraph(component)
             paths, counts = algs.generate_isoforms(graph, my_subgraph)
-            if strand == '+':
+            if spl_graph.strand == '+':
                 upstream = graph.predecessors(target)[0]
                 psi_upstream = 1.0  # defined by biconnected component alg as constitutive
-                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
-                #                                                            component, component[1:])
                 downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
                                                                              counts, component[1:])
             else:
-                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
-                #                                                        component, component[1:])
                 upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
                                                                          counts, component[1:])
                 downstream = graph.predecessors(target)[0]
@@ -242,9 +252,7 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
             possible_const.reverse()  # reverse the order since closer exons should be looked at first
             my_subgraph = graph.subgraph(component)
             paths, counts = algs.generate_isoforms(graph, my_subgraph)
-            if strand == '+':
-                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
-                #                                                        component, possible_const)
+            if spl_graph.strand == '+':
                 upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
                                                                          counts, possible_const)
                 downstream = graph.successors(target)[0]
@@ -252,8 +260,6 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
             else:
                 upstream = graph.successors(target)[0]
                 psi_upstream = 1.0
-                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
-                #                                                            component, possible_const)
                 downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
                                                                              counts, possible_const)
             psi_target = 1.0  # the target is constitutive in this case
@@ -262,13 +268,7 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
             index = component.index(target)
             my_subgraph = graph.subgraph(component)
             paths, counts = algs.generate_isoforms(graph, my_subgraph)
-            if strand == '+':
-                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
-                #                                                        component,
-                #                                                        component[index + 1:])
-                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
-                #                                                            component,
-                #                                                            list(reversed(component[:index])))
+            if spl_graph.strand == '+':
                 upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
                                                                          counts,
                                                                          component[index + 1:])
@@ -276,12 +276,6 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
                                                                              counts,
                                                                              list(reversed(component[:index])))
             else:
-                #upstream, psi_upstream = find_closest_exon_above_cutoff(graph,
-                #                                                        component,
-                #                                                        list(reversed(component[:index])))
-                #downstream, psi_downstream = find_closest_exon_above_cutoff(graph,
-                #                                                            component,
-                #                                                            component[index + 1:])
                 upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
                                                                          counts,
                                                                          list(reversed(component[:index])))
@@ -305,7 +299,7 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
         my_before_subgraph = graph.subgraph(before_component)
         after_paths, after_counts = algs.generate_isoforms(graph, my_before_subgraph)
 
-        if strand == '+':
+        if spl_graph.strand == '+':
             upstream, psi_upstream = find_closest_exon_above_cutoff2(before_paths,
                                                                      before_counts,
                                                                      list(reversed(before_component[:-1])))
@@ -324,9 +318,9 @@ def find_fuzzy_constitutive(target, graph, strand, cutoff=.95):
     return upstream, downstream, total_components, (psi_target, psi_upstream, psi_downstream)
 
 
-def get_flanking_exons(name, target, graph, chr, strand, genome):
+def get_flanking_exons(name, target, sGraph, genome):
     # find appropriate flanking "constitutive" exon for primers
-    upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, graph, strand)
+    upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
 
     # lack of successor/predecessor nodes
     if upstream is None or downstream is None:
@@ -334,19 +328,19 @@ def get_flanking_exons(name, target, graph, chr, strand, genome):
         return ["%s does not have an upstream exon, downstream exon, or possibly both" % str(component)]
 
     # get possible lengths
-    inc_length, skip_length = algs.all_path_lengths(graph,
+    inc_length, skip_length = algs.all_path_lengths(sGraph.get_graph(),
                                                     component, target)
 
     # get sequence of upstream/target/downstream combo
-    genome_chr = genome[chr]  # chr object from pygr
+    genome_chr = genome[sGraph.chr]  # chr object from pygr
     upstream_seq, target_seq, downstream_seq = genome_chr[upstream[0]:upstream[1]], genome_chr[target[0]:target[1]], genome_chr[downstream[0]:downstream[1]]
-    if strand == '-':
+    if sGraph.strand == '-':
         upstream_seq, target_seq, downstream_seq =  \
             -upstream_seq, -target_seq, -downstream_seq
 
-    return [strand, name[1:], psi_target,
-            chr + ':' + '-'.join(map(str, upstream)), psi_upstream,
-            chr + ':' + '-'.join(map(str, downstream)), psi_downstream,
+    return [sGraph.strand, name[1:], psi_target,
+            sGraph.chr + ':' + '-'.join(map(str, upstream)), psi_upstream,
+            sGraph.chr + ':' + '-'.join(map(str, downstream)), psi_downstream,
             inc_length, skip_length, str(upstream_seq).upper(),
             str(target_seq).upper(), str(downstream_seq).upper()]
 
@@ -385,41 +379,40 @@ def main(options, args_output='tmp/debug.json'):
                 output.append([str(line) + 'is in multiple genes ' + str(genes)])
             elif len(genes) < 1:
                 output.append([str(line) + 'is not in any genes'])
-            # construct output if no problems with genes
+            # next elif statements perform work
+            elif options['both_flag']:
+                splice_graph = SpliceGraph(annotation=gene_dict[genes[0]]['graph'],  # use junctions from annotation
+                                           chr=chr,
+                                           strand=strand,
+                                           read_threshold=options['read_threshold'])
+                edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
+                splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
+                splice_graph.add_all_possible_edge_weights(edge_weights)  # also use junctions from RNA-Seq
             elif options['annotation_flag']:
-                # get information on flanking constitutive exons
-                tmp_graph = annotation_graph(gene_dict[genes[0]]['graph'])  # construct graph based on annotation
-                tmp = get_flanking_biconnected(line, target,
-                                               tmp_graph,
-                                               chr,
-                                               strand,
-                                               genome)
-                output.append(tmp)
+                splice_graph = SpliceGraph(annotation=gene_dict[genes[0]]['graph'],  # use annotation
+                                           chr=chr,
+                                           strand=strand,
+                                           read_threshold=options['read_threshold'])
             elif options['rnaseq_flag']:
-                tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
-                tmp_start, tmp_end = target
+                splice_graph = SpliceGraph(annotation=None,  # set to None to not use annotation
+                                           chr=chr,
+                                           strand=strand,
+                                           read_threshold=options['read_threshold'])
+                splice_graph.set_graph_as_nodes_only(list(gene_dict[genes[0]]['exons']))
                 edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
-                tmp_graph = add_all_possible_edge_weights(tmp_graph,
-                                                          chr,
-                                                          edge_weights)  # add any edge w/ weight if sufficient read support
+                splice_graph.add_all_possible_edge_weights(edge_weights)  # add all edges supported by rna seq
+
+            # default case
+            if options['psi'] > .9999:
                 tmp = get_flanking_biconnected(line, target,
-                                               tmp_graph,
-                                               chr,
-                                               strand,
-                                               genome)
-                output.append(tmp)
-            elif options['fuzzy_rnaseq']:
-                tmp_graph = no_edges_graph(list(gene_dict[genes[0]]['exons']))
-                edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
-                tmp_graph = add_all_possible_edge_weights(tmp_graph,
-                                                          chr,
-                                                          edge_weights)  # add any edge w/ weight if sufficient read support
+                                               splice_graph,
+                                               genome)  # note this function ignores edge weights
+            # user specified a sufficient psi value to call constitutive exons
+            else:
                 tmp = get_flanking_exons(line, target,
-                                         tmp_graph,
-                                         chr,
-                                         strand,
+                                         splice_graph,
                                          genome)
-                output.append(tmp)
+            output.append(tmp)
         except AssertionError:
             t, v, trace = sys.exc_info()
             output.append([str(v)])  # just append assertion msg
@@ -444,7 +437,9 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--annotaton', dest='annotation_flag', action='store_true')
     group.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true')
-    group.add_argument('--fuzy_rnaseq', dest='fuzzy_rnaseq', action='store', type=float)
+    group.add_argument('--both', dest='both_flag', action='store_true')
+    parser.add_argument('--psi', dest='psi', action='store', type=float)
+    parser.add_argument('--read-threshold', dest='read_threshold', type=int, action='store')
     parser.add_argument('-o', '--output', action='store', dest='output', required=True)
     options = vars(parser.parse_args())
 
