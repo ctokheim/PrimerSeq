@@ -46,14 +46,14 @@ class Sam(object):
             logging.debug('Converting %s to a sorted BAM file . . .' % myPath)
             beginTime = time.time()
             sorted_bam_path = myPath[:-4] + '.sorted.bam'
-            cmd = 'java -jar %sConvert2SortedBam.jar %s %s' % (BIN_DIR, myPath, sorted_bam_path)
+            cmd = 'java -jar -Xmx1024m %sConvert2SortedBam.jar %s %s' % (BIN_DIR, myPath, sorted_bam_path)
             subprocess.check_call(cmd, shell=True)
             endTime = time.time()
             runTime = endTime - beginTime
             logging.debug('Finished converting %s to %s in %.2d:%.2d:%.2d' % (
                 myPath, sorted_bam_path, runTime / 3600, (runTime % 3600) / 60, runTime % 60))
             return sorted_bam_path
-        except:
+        except subprocess.CalledProcessError:
             t, v, trace = sys.exc_info()  # exception information
             logging.debug('Error! Call to Convert2SortedBam.jar with non-zero exit status')
             logging.debug('Type: ' + str(t))
@@ -103,14 +103,14 @@ class Sam(object):
             start += 1  # extraction is done in 1-based coordinates
             logging.debug('Extracting reads for %s:%d-%d' % (chr, start, end))
             tmp_sam_path = '%s%s_%d_%d.sam' % (TMP_DIR, chr, start, end)  # path to tmp sam file with region specific reads
-            cmd = 'java -jar %sExtractSamRegion.jar %s %s %s %d %d' % (
+            cmd = 'java -jar -Xmx1024m %sExtractSamRegion.jar %s %s %s %d %d' % (
                 BIN_DIR, self.path, tmp_sam_path, chr, start, end)
             subprocess.check_call(cmd, shell=True)
             logging.debug('Finished getting sam reads. Parsing jcts . . .')
             junctionDict = self.__get_sam_jct(tmp_sam_path)
             logging.debug('Finished reading jcts')
             return junctionDict
-        except:
+        except subprocess.CalledProcessError:
             t, v, trace = sys.exc_info()  # exception information
             logging.debug('Error! Extracting sam reads using ExtractSamRegion.jar failed')
             logging.debug('Type: ' + str(t))

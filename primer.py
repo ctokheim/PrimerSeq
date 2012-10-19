@@ -183,6 +183,13 @@ def main(options):
         logging.debug('Traceback:\n' + traceback.format_exc())
         raise
 
+    # delete temporary sam files (may eventually delete more tmp files)
+    logging.debug('Deleting tmp files')
+    if not options['keep_temp']:
+        tmp_sam = 'tmp/sam'
+        for f in os.listdir(tmp_sam):
+            os.remove(os.path.join(tmp_sam, f))
+
     ### record end of running primer3 ###
     logging.debug("Program ended")
     currentTime = time.time()
@@ -220,7 +227,7 @@ class ValidateCutoff(argparse.Action):
 if __name__ == '__main__':
     # command line arguments
     parser = argparse.ArgumentParser(description='Command line interface for designing primers')
-    parser.add_argument('-g', required=True, dest='gtf', action='store', help='gtf file that defines the possible exons in a gene')
+    parser.add_argument('-b', required=True, dest='big_bed', action='store', help='big bed file that defines the possible exons in a gene')
     parser.add_argument('-f', required=True, dest='fasta', action='store', help='path to fasta file')
     parser.add_argument('-r', required=True, dest='rnaseq', action=ValidateRnaseq, help='path to SAM/BAM file(s) ("," delimited)')
     parser.add_argument('-t', required=True, dest='target', action='store', help='path to txt file with <strand><chr>:<start>-<end> for each target on separate lines.')
@@ -230,6 +237,7 @@ if __name__ == '__main__':
     group.add_argument('--both', dest='both_flag', action='store_true', help='use junctions from both RNA-Seq and annotation')
     parser.add_argument('--psi', dest='psi', action=ValidateCutoff, default=1.0, type=float, help='Define inclusion level sufficient to define constitutive exon. Valid: 0<psi<1.')
     parser.add_argument('--read-threshold', dest='read_threshold', default=5, action='store', type=int, help='Define the minimum number of read support necessary to call a junction from RNA-Seq')
+    parser.add_argument('--keep-temp', dest='keep_temp', action='store_true', help='Keep temporary files in your tmp directory')
     parser.add_argument('-o', required=True, dest='output', action='store', help='Output directory')
     options = vars(parser.parse_args())  # make it a dictionary
 

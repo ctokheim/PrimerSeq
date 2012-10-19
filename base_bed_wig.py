@@ -2,6 +2,7 @@ import logging
 import sys
 import subprocess
 import traceback
+import os
 
 
 class BaseBedWig(object):
@@ -10,10 +11,13 @@ class BaseBedWig(object):
     class (bed.py) and the Wig class (wig.py). Both call the same
     ExtractBigRegion.jar file.
     """
-    def __init__(self, bbfile):
+    def __init__(self, bbfile, ext='bed'):
         # expected file paths
         self.TMP_DIR = 'tmp'
         self.BIN_DIR = 'bin'
+        self.ext = ext  # the file extension (either "bed" or "wig")
+        if not os.path.exists(self.TMP_DIR + '/' + self.ext):
+            os.mkdir(self.TMP_DIR + '/' + self.ext)  # mkdir in case it doesn't exist
 
         self.bbfile = bbfile
         self.current_file = None
@@ -32,14 +36,14 @@ class BaseBedWig(object):
 
     def extractBigRegion(self, strand, chr, start, end):
         try:
-            logging.debug('Extracting bed lines overlaping %s:%d-%d' % (chr, start, end))
-            cmd = 'java -jar %s/ExtractBigRegion.jar %s %s/bed/%s_%d_%d.bed %s %d %d true' % (
+            logging.debug('Extracting %s lines overlaping %s:%d-%d' % (self.ext, chr, start, end))
+            cmd = 'java -jar -Xmx512m %s/ExtractBigRegion.jar %s %s/bed/%s_%d_%d.bed %s %d %d true' % (
                 self.BIN_DIR, self.bbfile, self.TMP_DIR, chr, start, end, chr, start, end)
-            subprocess.check_call(cmd, shell=True)
-            self.current_file = self.TMP_DIR + '/bed/%s_%d_%d.bed'  # path to current bed file the class is working on
+            subprocess.check_call(cmd, shell=True)  # call to ExtractBigRegion.jar
             self.strand, self.chr, self.start, self.end = strand, chr, start, end  # hold on to target information just in case
-            logging.debug('Finished extracting bed lines for %s:%d-%d' % (chr, start, end))
-        except:
+            self.current_file = self.TMP_DIR + '/%s/%s_%d_%d.%s' % (self.ext, self.chr, self.start, self.end, self.ext)  # path to current bed file the class is working on
+            logging.debug('Finished extracting %s lines for %s:%d-%d' % (self.ext, chr, start, end))
+        except subprocess.CalledProcessError:
             t, v, trace = sys.exc_info()
             logging.debug('ERROR! Call to ExtractBigRegion.jar with non-zero exit status')
             logging.debug('Type: ' + str(t))

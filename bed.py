@@ -16,7 +16,7 @@ class Bed(BaseBedWig):
                 # ignore lines that do not match the target strand or chr
                 if line[0] == self.chr and line[5] == self.strand:
                     self.verbatim_content.append(line)  # store all content just in case
-                    self.genes.add(line[3])
+                    genes.add(line[3])
                     chr, tx_start = line[0], int(line[1])
                     exon_lengths = map(int, line[-2].split(',')[:-1])
                     exon_offsets = map(int, line[-1].split(',')[:-1])
@@ -34,6 +34,13 @@ class Bed(BaseBedWig):
             assert len(genes) != 0, 'Your coordinates did not match anything in the annotation'
             assert len(genes) == 1, 'There is multiple genes overlapping the target. Perhaps the "name" column in the bed file is actually transcript names rather than gene names'
 
+            self.annotation['gene_name'] = list(genes)[0]  # assign gene name after knowing its unique
 
-
+            # find the exon which the target is contained
+            is_contained = False
+            for strt, end in self.annotation['exons']:
+                if self.start >= strt and self.end <= end:
+                    is_contained = True
+                    self.annotation['target'] = (strt, end)
+            assert is_contained is True, "Expected target to be completely within an exon"
 

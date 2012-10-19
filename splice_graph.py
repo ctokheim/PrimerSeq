@@ -11,6 +11,8 @@ import gtf
 from utils import get_chr, get_start_pos, get_end_pos, get_pos
 import sam
 import sys
+from bed import Bed
+from wig import Wig
 
 # logging imports
 import logging
@@ -196,6 +198,33 @@ def find_closest_exon_above_cutoff2(paths, counts, possible_exons, CUT_OFF=.95):
             return exon, psi
 
 
+class Exons(object):
+    '''
+    This class handles the finding of exons use a psi cutoff value.
+    '''
+
+    def __init__(self, target, component, graph, strand):
+        self.target = target
+        self.component = component
+        self.graph = graph
+        self.strand = strand
+        self.upstream, self.downstream, self.total_components = None, None, None
+
+    def target_not_in_biconnected(self):
+        # add information to log file
+        logging.debug('It appears %s has two imediate flanking constitutive exons' % str(self.target))
+        if len(self.graph.successors(self.target)) > 1:
+            logging.debug('Conflict between biconnected components and successors')
+        if len(self.graph.predecessors(self.target)) > 1:
+            logging.debug('Conflict between biconnected components and predecessors')
+
+        # define adjacent exons as flanking constitutive since all three (the
+        # target exon, upstream exon, and downstream exon) are constitutive
+        self.upstream = self.graph.predecessors(self.target)[0] if self.strand == '+' else self.graph.successors(self.target)[0]
+        self.downstream = self.graph.successors(self.target)[0] if self.strand == '+' else self.graph.predecessors(self.target)[0]
+        self.total_components = [self.upstream, self.target, self.downstream]
+
+
 def find_fuzzy_constitutive(target, spl_graph, cutoff=.95):
     """
     More elegantly handle finding constitutive exons
@@ -204,7 +233,7 @@ def find_fuzzy_constitutive(target, spl_graph, cutoff=.95):
     biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(graph))
 
     if len(graph.predecessors(target)) == 0 or len(graph.successors(target)) == 0:
-        return None, None, target
+        return None, None, target, (0, 0, 0)
     elif len(biconnected_comp) == 0:
         # add information to log file
         logging.debug('It appears %s has two imediate flanking constitutive exons' % str(target))
@@ -350,9 +379,9 @@ def main(options, args_output='tmp/debug.json'):
     The gtf main function is the function designed to be called from other scripts. It iterates through each target
     exons and returns the necessary information for primer design.
     """
-    fasta, args_gtf, args_target = options['fasta'], options['gtf'], options['target']
+    fasta, args_big_bed, args_target = options['fasta'], options['big_bed'], options['target']
     genome = SequenceFileDB(fasta)  # load fasta file from file
-    gene_dict, gene_lookup = gene_annotation_reader(args_gtf)  # create splice graphs based on gene annotation
+    bed = Bed(args_big_bed, ext='bed')
 
     # the sam object interfaces with the user specified BAM/SAM file!!!
     sam_obj = sam.Sam(options['rnaseq'])
@@ -362,34 +391,28 @@ def main(options, args_output='tmp/debug.json'):
     for line in args_target:  # was line in handle
         line = line.strip()
         strand = line[0]
-        try:
-            genes = list(set(gene_lookup[line]))
-        except KeyError:
-            output.append(['The coordinates of ' + line + ' did not match an exon'])
-            continue  # skip to next if exon lookup failed
-        target = get_pos(line)
-        chr = gene_dict[genes[0]]['chr']
+        tmp_start, tmp_end = get_pos(line)
+        chr = get_chr(line[1:])
 
         # This try block is to catch assertions made about the graph. If an
         # assertion is raised it only impacts a single target for primer design
         # so complete exiting of the program is not warranted.
         try:
-            # check how many genes the exon matches
-            if len(genes) > 1:
-                output.append([str(line) + 'is in multiple genes ' + str(genes)])
-            elif len(genes) < 1:
-                output.append([str(line) + 'is not in any genes'])
-            # next elif statements perform work
-            elif options['both_flag']:
-                splice_graph = SpliceGraph(annotation=gene_dict[genes[0]]['graph'],  # use junctions from annotation
+            # get gene annotation from bigBed file
+            bed.extractBigRegion(strand, chr, tmp_start, tmp_end)
+            bed.load_bed_file()
+            gene_dict = bed.get_annotation()
+
+            if options['both_flag']:
+                splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
                                            chr=chr,
                                            strand=strand,
                                            read_threshold=options['read_threshold'])
-                edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
+                edge_weights = sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
                 splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
                 splice_graph.add_all_possible_edge_weights(edge_weights)  # also use junctions from RNA-Seq
             elif options['annotation_flag']:
-                splice_graph = SpliceGraph(annotation=gene_dict[genes[0]]['graph'],  # use annotation
+                splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use annotation
                                            chr=chr,
                                            strand=strand,
                                            read_threshold=options['read_threshold'])
@@ -398,18 +421,18 @@ def main(options, args_output='tmp/debug.json'):
                                            chr=chr,
                                            strand=strand,
                                            read_threshold=options['read_threshold'])
-                splice_graph.set_graph_as_nodes_only(list(gene_dict[genes[0]]['exons']))
-                edge_weights = sam_obj.extractSamRegion(chr, gene_dict[genes[0]]['start'], gene_dict[genes[0]]['end'])
+                splice_graph.set_graph_as_nodes_only(list(gene_dict['exons']))
+                edge_weights = sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
                 splice_graph.add_all_possible_edge_weights(edge_weights)  # add all edges supported by rna seq
 
             # default case
             if options['psi'] > .9999:
-                tmp = get_flanking_biconnected(line, target,
+                tmp = get_flanking_biconnected(line, gene_dict['target'],
                                                splice_graph,
                                                genome)  # note this function ignores edge weights
             # user specified a sufficient psi value to call constitutive exons
             else:
-                tmp = get_flanking_exons(line, target,
+                tmp = get_flanking_exons(line, gene_dict['target'],
                                          splice_graph,
                                          genome)
             output.append(tmp)
@@ -429,7 +452,7 @@ if __name__ == '__main__':
     """Running this script directly is only for debug purposes"""
     # process command line arguments
     parser = argparse.ArgumentParser(description='Get flanking constitutive exons')
-    parser.add_argument('-g', '--gtf', action='store', dest='gtf', required=True,
+    parser.add_argument('-b', '--big-bed', action='store', dest='big_bed', required=True,
                         help='annotation file with legitimate gene_id\'s')
     parser.add_argument('-t', '--target', action='store', dest='target', required=True,
                         help='file of list of coordinate targets')
