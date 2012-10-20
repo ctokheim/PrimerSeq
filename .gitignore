@@ -77,3 +77,4 @@ primer3/
 myDir
 *.txt
 *.gtf
+*bed

@@ -13,6 +13,7 @@ import sam
 import sys
 from bed import Bed
 from wig import Wig
+from exon_seek import ExonSeek
 
 # logging imports
 import logging
@@ -87,11 +88,10 @@ class SpliceGraph(object):
     def get_graph(self):
         return self.graph
 
-    def set_graph_as_annotation(self, annotation, FILTER_FACTOR=1000):
+    def set_graph_as_annotation(self, annotation, FILTER_FACTOR=2):
         """
         Create a nx DiGraph from list of tx in gene. FILTER_FACTOR defines a cutoff for
         using a tx of a gene. A tx must have x num of exon where x > MAX tx exon num / FILTER_FACTOR.
-        Note by default FILTER_FACTOR is set to 1000 to prevent filtering of low exon number tx.
         """
         # filter low exon tx
         max_exons = max(map(len, annotation))  # figure out max num exons
@@ -182,174 +182,11 @@ def get_flanking_biconnected(name, target, sGraph, genome):
     return [name + ' was not found in a biconnected component']
 
 
-def find_closest_exon_above_cutoff(G, comp, possible_exons, CUT_OFF=.95):
-    my_subgraph = G.subgraph(comp)
-    paths, counts = algs.generate_isoforms(G, my_subgraph)
-    for exon in possible_exons:
-        psi = algs.estimate_psi(exon, paths, counts)
-        if psi >= CUT_OFF:
-            return exon, psi
-
-
-def find_closest_exon_above_cutoff2(paths, counts, possible_exons, CUT_OFF=.95):
-    for exon in possible_exons:
-        psi = algs.estimate_psi(exon, paths, counts)
-        if psi >= CUT_OFF:
-            return exon, psi
-
-
-class Exons(object):
-    '''
-    This class handles the finding of exons use a psi cutoff value.
-    '''
-
-    def __init__(self, target, component, graph, strand):
-        self.target = target
-        self.component = component
-        self.graph = graph
-        self.strand = strand
-        self.upstream, self.downstream, self.total_components = None, None, None
-
-    def target_not_in_biconnected(self):
-        # add information to log file
-        logging.debug('It appears %s has two imediate flanking constitutive exons' % str(self.target))
-        if len(self.graph.successors(self.target)) > 1:
-            logging.debug('Conflict between biconnected components and successors')
-        if len(self.graph.predecessors(self.target)) > 1:
-            logging.debug('Conflict between biconnected components and predecessors')
-
-        # define adjacent exons as flanking constitutive since all three (the
-        # target exon, upstream exon, and downstream exon) are constitutive
-        self.upstream = self.graph.predecessors(self.target)[0] if self.strand == '+' else self.graph.successors(self.target)[0]
-        self.downstream = self.graph.successors(self.target)[0] if self.strand == '+' else self.graph.predecessors(self.target)[0]
-        self.total_components = [self.upstream, self.target, self.downstream]
-
-
-def find_fuzzy_constitutive(target, spl_graph, cutoff=.95):
-    """
-    More elegantly handle finding constitutive exons
-    """
-    graph = spl_graph.get_graph()
-    biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(graph))
-
-    if len(graph.predecessors(target)) == 0 or len(graph.successors(target)) == 0:
-        return None, None, target, (0, 0, 0)
-    elif len(biconnected_comp) == 0:
-        # add information to log file
-        logging.debug('It appears %s has two imediate flanking constitutive exons' % str(target))
-        if len(graph.successors(target)) > 1:
-            logging.debug('Conflict between biconnected components and successors')
-        if len(graph.predecessors(target)) > 1:
-            logging.debug('Conflict between biconnected components and predecessors')
-
-        # define adjacent exons as flanking constitutive since all three (the
-        # target exon, upstream exon, and downstream exon) are constitutive
-        upstream = graph.predecessors(target)[0] if spl_graph.strand == '+' else graph.successors(target)[0]
-        downstream = graph.successors(target)[0] if spl_graph.strand == '+' else graph.predecessors(target)[0]
-        total_components = [upstream, target, downstream]
-
-    elif len(biconnected_comp) == 1:
-        component = sorted(biconnected_comp[0], key=lambda x: (x[0], x[1]))  # make sure component is sorted by position
-
-        # constitutive exon of biconnected component, exons with > start pos are
-        # not constitutive. However, the immediate preceding exon will be
-        # constitutive
-        if target == component[0]:
-            if len(graph.predecessors(target)) > 1:
-                logging.debug('Conflict between biconnected components and predecessors')
-            my_subgraph = graph.subgraph(component)
-            paths, counts = algs.generate_isoforms(graph, my_subgraph)
-            if spl_graph.strand == '+':
-                upstream = graph.predecessors(target)[0]
-                psi_upstream = 1.0  # defined by biconnected component alg as constitutive
-                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
-                                                                             counts, component[1:])
-            else:
-                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
-                                                                         counts, component[1:])
-                downstream = graph.predecessors(target)[0]
-                psi_downstream = 1.0
-            psi_target = 1.0
-        # constitutive exon of biconnected component, exons with < start pos are not
-        # constitutive. However, the immediate successor exon will be
-        # constitutive.
-        elif target == component[-1]:
-            if len(graph.successors(target)) > 1:
-                logging.debug('Conflict between biconnected components and successors')
-
-            possible_const = component[:-1]
-            possible_const.reverse()  # reverse the order since closer exons should be looked at first
-            my_subgraph = graph.subgraph(component)
-            paths, counts = algs.generate_isoforms(graph, my_subgraph)
-            if spl_graph.strand == '+':
-                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
-                                                                         counts, possible_const)
-                downstream = graph.successors(target)[0]
-                psi_downstream = 1.0
-            else:
-                upstream = graph.successors(target)[0]
-                psi_upstream = 1.0
-                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
-                                                                             counts, possible_const)
-            psi_target = 1.0  # the target is constitutive in this case
-        # non constitutive exon case
-        else:
-            index = component.index(target)
-            my_subgraph = graph.subgraph(component)
-            paths, counts = algs.generate_isoforms(graph, my_subgraph)
-            if spl_graph.strand == '+':
-                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
-                                                                         counts,
-                                                                         component[index + 1:])
-                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
-                                                                             counts,
-                                                                             list(reversed(component[:index])))
-            else:
-                upstream, psi_upstream = find_closest_exon_above_cutoff2(paths,
-                                                                         counts,
-                                                                         list(reversed(component[:index])))
-                downstream, psi_downstream = find_closest_exon_above_cutoff2(paths,
-                                                                             counts,
-                                                                             component[index + 1:])
-        total_components = component
-        psi_target = algs.estimate_psi(target, paths, counts)
-    # constitutive target exon straddled by non constitutive regions
-    elif len(biconnected_comp) == 2:
-        if biconnected_comp[0][-1] == target:
-            before_component, after_component = biconnected_comp
-        else:
-            after_component, before_component = biconnected_comp
-
-        # since there is two components I need two subgraphs/paths. One for
-        # before and after the target exon (before/after are defined by
-        # chromosome position)
-        my_before_subgraph = graph.subgraph(before_component)
-        before_paths, before_counts = algs.generate_isoforms(graph, my_before_subgraph)
-        my_before_subgraph = graph.subgraph(before_component)
-        after_paths, after_counts = algs.generate_isoforms(graph, my_before_subgraph)
-
-        if spl_graph.strand == '+':
-            upstream, psi_upstream = find_closest_exon_above_cutoff2(before_paths,
-                                                                     before_counts,
-                                                                     list(reversed(before_component[:-1])))
-            downstream, psi_downstream = find_closest_exon_above_cutoff2(after_paths,
-                                                                         after_counts,
-                                                                         after_component[1:])
-        else:
-            upstream, psi_upstream = find_closest_exon_above_cutoff2(after_paths,
-                                                                     after_counts,
-                                                                     after_component[1:])
-            downstream, psi_downstream = find_closest_exon_above_cutoff2(before_paths,
-                                                                         before_counts,
-                                                                         list(reversed(before_component[:-1])))
-        total_components = before_component[:-1] + after_component
-        psi_target = 1.0
-    return upstream, downstream, total_components, (psi_target, psi_upstream, psi_downstream)
-
-
 def get_flanking_exons(name, target, sGraph, genome):
     # find appropriate flanking "constitutive" exon for primers
-    upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
+    # upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
+    exon_seek_obj = ExonSeek(target, sGraph.strand, sGraph.get_graph())
+    upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
 
     # lack of successor/predecessor nodes
     if upstream is None or downstream is None:
