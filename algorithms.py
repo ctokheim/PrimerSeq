@@ -66,16 +66,43 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
     return p[sorted_nodes[-1]], no_newly_visited
 
 
-def all_path_lengths(G, component, target):
-    # get possible lengths
-    inc_length, skip_length = [], []
-    sub_graph = nx.subgraph(G, component)
-    for path in nx.all_simple_paths(sub_graph, source=component[0], target=component[-1]):
-        if target in path:
-            inc_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
+class AllPaths(object):
+    '''
+    Handle all possible paths in a biconnected component
+    '''
+    def __init__(self, G, component, target, chr=None, strand=None):
+        self.graph = G
+        self.component = component
+        self.sub_graph = nx.subgraph(self.graph, self.component)
+        self.target = target
+        self.all_paths = list(nx.all_simple_paths(self.sub_graph, source=self.component[0], target=self.component[-1]))
+        self.chr = chr
+        self.strand = strand
+
+    def set_chr(self, chr):
+        self.chr = chr
+
+    def set_strand(self, strand):
+        if strand == '+' or strand == '-':
+            self.strand = strand
         else:
-            skip_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
-    return inc_length, skip_length
+            raise ValueError('Strand should either be + or -')
+
+    def get_all_path_coordinates(self):
+        tmp = []
+        for p in self.all_paths:
+            tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.all_paths))
+        return tmp
+
+    def get_all_path_lengths(self):
+        # get possible lengths
+        inc_length, skip_length = [], []
+        for path in self.all_paths:
+            if self.target in path:
+                inc_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
+            else:
+                skip_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
+        return inc_length, skip_length
 
 
 def read_count_em(bcc_paths, sub_graph):

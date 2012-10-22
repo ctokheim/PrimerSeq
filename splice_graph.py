@@ -166,8 +166,9 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
                 downstream = component[0]
 
             # get possible lengths
-            inc_length, skip_length = algs.all_path_lengths(graph,
-                                                            component, target)
+            all_paths = algs.AllPaths(graph, component, target,
+                                      chr=sGraph.chr, strand=sGraph.strand)
+            inc_length, skip_length = all_paths.get_all_path_lengths()
 
             # get sequence of upstream/target/downstream combo
             genome_chr = genome[sGraph.chr]  # chr object from pygr
@@ -196,8 +197,9 @@ def get_sufficient_psi_exons(name, target, sGraph, genome):
         return ["%s does not have an upstream exon, downstream exon, or possibly both" % str(component)]
 
     # get possible lengths
-    inc_length, skip_length = algs.all_path_lengths(sGraph.get_graph(),
-                                                    component, target)
+    all_paths = algs.AllPaths(sGraph.get_graph(), component, target,
+                              chr=sGraph.chr, strand=sGraph.strand)
+    inc_length, skip_length = all_paths.get_all_path_lengths()
 
     # get sequence of upstream/target/downstream combo
     genome_chr = genome[sGraph.chr]  # chr object from pygr
