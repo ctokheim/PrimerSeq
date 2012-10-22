@@ -129,35 +129,44 @@ def read_count_em(bcc_paths, sub_graph):
 def estimate_psi(exon_of_interest, paths, counts):
     """
     Uses the estimated isoform count information from read_count_em to
-    estimate the exon inclusion level (psi).
+    estimate the exon inclusion level (psi). Note that read counts are normalized
+    using the number of junctions (edges) for that isoform.
     """
     inc_count, skip_count = 0, 0
     for i, num in enumerate(counts):
         if exon_of_interest in paths[i]:
-            inc_count += num
+            inc_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
         else:
-            skip_count += num
+            skip_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
     psi = float(inc_count) / (inc_count + skip_count)
     return psi
 
 
-def generate_isoforms(G, component_subgraph):
+def generate_isoforms(component_subgraph, s_graph):
     """
     Take in a digraph and output isoforms of its biconnected components (splice modules)
 
     input
         G - a directed acyclic graph
-        tx_paths - a list of paths from the annotated bed file
+        tx_paths - a list of paths from the annotation
     output
         paths - a list of isoforms for splice modules
     """
     logging.debug('Start generating isoforms . . .')
-    module_info, naive = [], []
+    tx_paths, G = s_graph.annotation, s_graph.get_graph()
     #for component in get_biconnected(G):
     # define subgraph of biconnected nodes
     #component_subgraph = nx.subgraph(G, component)
-    component = component_subgraph.nodes()
-    component_paths = []
+    component = sorted(component_subgraph.nodes(), key=lambda x: (x[0], x[1]))  # make sure it is sorted
+
+    # trim tx_paths to only contain paths within component_subgraph
+    tmp = set()
+    for p in tx_paths:
+        # make sure this tx path has the biconnected component
+        if component[0] in p and component[-1] in p:
+            tmp.add(tuple(
+                p[p.index(component[0]):p.index(component[-1]) + 1]))  # make sure there is no redundant paths
+    tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
 
     # assert statements about the connectivity of the graph
     assert nx.is_weakly_connected(component_subgraph), 'Yikes! expected weakly connected graph'
@@ -180,19 +189,22 @@ def generate_isoforms(G, component_subgraph):
     num_visited_edges = 0  # no edges visited to start with
 
     # mark visited edges if in known annotation
-    #for path in tx_paths:
-    #    for i in range(len(path) - 1):
-    #        try:
-    #            if not visited_edges[path[i]][path[i + 1]]:
-    #                visited_edges[path[i]][path[i + 1]] = 1
-    #                num_visited_edges += 1
-    #        except:
-    #            pass
+    for path in tx_paths:
+        for i in range(len(path) - 1):
+            try:
+                if not visited_edges[path[i]][path[i + 1]]:
+                    visited_edges[path[i]][path[i + 1]] = 1
+                    num_visited_edges += 1
+            except:
+                pass
 
     # Iterate until atleast one isoform explains each edge
+    component_paths = tx_paths
     while num_visited_edges < component_subgraph.number_of_edges():
         # find maximum weight path
-        path, no_new_edges = bellman_ford_longest_path(component_subgraph, num_nodes=G.number_of_nodes(), visited=visited_edges)
+        path, no_new_edges = bellman_ford_longest_path(component_subgraph,
+                                                       num_nodes=G.number_of_nodes(),
+                                                       visited=visited_edges)
         if not no_new_edges:
             component_paths.append(path)
 

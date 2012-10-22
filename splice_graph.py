@@ -80,6 +80,7 @@ class SpliceGraph(object):
         self.chr = chr
         self.strand = strand
         self.READ_THRESHOLD = read_threshold
+        self.annotation = []  # set value using set_graph_as_annotation
         if annotation is not None:
             self.set_graph_as_annotation(annotation)
         else:
@@ -95,11 +96,12 @@ class SpliceGraph(object):
         """
         # filter low exon tx
         max_exons = max(map(len, annotation))  # figure out max num exons
-        txs = filter(lambda x: len(x) > max_exons / FILTER_FACTOR, annotation)  # filter based on max num exons criteria
+        self.annotation = map(lambda y: sorted(y, key=lambda z:(z[0], z[1])),  # make sure exons are sorted by position
+                              filter(lambda x: len(x) > max_exons / FILTER_FACTOR, annotation))  # filter based on max num exons criteria
 
         # create graph
         graph = nx.DiGraph()
-        for tx in txs:
+        for tx in self.annotation:
             graph.add_path(tx)
         self.graph = graph  # set graph attribute
 
@@ -149,7 +151,7 @@ class SpliceGraph(object):
                     pass
 
 
-def get_flanking_biconnected(name, target, sGraph, genome):
+def get_flanking_biconnected_exons(name, target, sGraph, genome):
     graph = sGraph.get_graph()  # nx.DiGraph
     # search through each biconnected component
     for component in algs.get_biconnected(graph):
@@ -182,10 +184,10 @@ def get_flanking_biconnected(name, target, sGraph, genome):
     return [name + ' was not found in a biconnected component']
 
 
-def get_flanking_exons(name, target, sGraph, genome):
+def get_sufficient_psi_exons(name, target, sGraph, genome):
     # find appropriate flanking "constitutive" exon for primers
     # upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
-    exon_seek_obj = ExonSeek(target, sGraph.strand, sGraph.get_graph())
+    exon_seek_obj = ExonSeek(target, sGraph)
     upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
 
     # lack of successor/predecessor nodes
@@ -264,14 +266,14 @@ def main(options, args_output='tmp/debug.json'):
 
             # default case
             if options['psi'] > .9999:
-                tmp = get_flanking_biconnected(line, gene_dict['target'],
-                                               splice_graph,
-                                               genome)  # note this function ignores edge weights
+                tmp = get_flanking_biconnected_exons(line, gene_dict['target'],
+                                                     splice_graph,
+                                                     genome)  # note this function ignores edge weights
             # user specified a sufficient psi value to call constitutive exons
             else:
-                tmp = get_flanking_exons(line, gene_dict['target'],
-                                         splice_graph,
-                                         genome)
+                tmp = get_sufficient_psi_exons(line, gene_dict['target'],
+                                               splice_graph,
+                                               genome)
             output.append(tmp)
         except AssertionError:
             t, v, trace = sys.exc_info()

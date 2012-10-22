@@ -4,19 +4,21 @@ import logging
 
 class ExonSeek(object):
     '''
-    This class handles the finding of exons use a psi value cutoff.
+    This class handles the finding exons with a psi value threshold.
     '''
 
-    def __init__(self, target, strand, graph):
-        biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(graph))
+    def __init__(self, target, splice_graph):
         self.target = target
-        self.graph = graph
-        self.strand = strand
+        self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
+        self.strand = splice_graph.strand  # convenience variable
+        self.splice_graph = splice_graph
+        biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(self.graph))
         self.upstream, self.downstream, self.total_components = None, None, None
         self.psi_upstream, self.psi_target, self.psi_downstream = None, None, None
 
         self.num_of_biconnected = len(biconnected_comp)
-        if len(self.graph.predecessors(self.target)) or len(self.graph.successors(self.target)):
+        if len(self.graph.predecessors(self.target)) == 0 or len(self.graph.successors(self.target)) == 0:
+            print 'what am i doing here'
             self.component = None  # no flanking exon case
         elif self.num_of_biconnected == 0:
             self.no_biconnected_case()
@@ -54,9 +56,9 @@ class ExonSeek(object):
         # before and after the target exon (before/after are defined by
         # chromosome position)
         my_before_subgraph = self.graph.subgraph(before_component)
-        before_paths, before_counts = algs.generate_isoforms(self.graph, my_before_subgraph)
+        before_paths, before_counts = algs.generate_isoforms(my_before_subgraph, self.splice_graph)
         my_before_subgraph = self.graph.subgraph(before_component)
-        after_paths, after_counts = algs.generate_isoforms(self.graph, my_before_subgraph)
+        after_paths, after_counts = algs.generate_isoforms(my_before_subgraph, self.splice_graph)
 
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(before_paths,
@@ -108,7 +110,7 @@ class ExonSeek(object):
     def non_constitutive_case(self):
         index = self.component.index(self.target)
         my_subgraph = self.graph.subgraph(self.component)
-        paths, counts = algs.generate_isoforms(self.graph, my_subgraph)
+        paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts,
@@ -129,7 +131,7 @@ class ExonSeek(object):
         if len(self.graph.predecessors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and predecessors')
         my_subgraph = self.graph.subgraph(self.component)
-        paths, counts = algs.generate_isoforms(self.graph, my_subgraph)
+        paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
         if self.strand == '+':
             self.upstream = self.graph.predecessors(self.target)[0]
             self.psi_upstream = 1.0  # defined by biconnected component alg as constitutive
@@ -149,7 +151,7 @@ class ExonSeek(object):
         possible_const = self.component[:-1]
         possible_const.reverse()  # reverse the order since closer exons should be looked at first
         my_subgraph = self.graph.subgraph(self.component)
-        paths, counts = algs.generate_isoforms(self.graph, my_subgraph)
+        paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts, possible_const)
