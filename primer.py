@@ -49,9 +49,9 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
         gene_dict[tx[0].seqname][gene_id].setdefault('strand', strand)  # add strand if doesn't exist
         gene_dict[tx[0].seqname][gene_id].setdefault('graph', []).append(tx_path)  # append the tx path
         gene_dict[tx[0].seqname][gene_id].setdefault('start', float('inf'))
-        gene_dict[tx[0].seqname][gene_id]['start'] = min(gene_dict[gene_id]['start'], tx_path[0][0])  # change start if this tx has lower start position
+        gene_dict[tx[0].seqname][gene_id]['start'] = min(gene_dict[tx[0].seqname][gene_id]['start'], tx_path[0][0])  # change start if this tx has lower start position
         gene_dict[tx[0].seqname][gene_id].setdefault('end', 0)
-        gene_dict[tx[0].seqname][gene_id]['end'] = max(gene_dict[gene_id]['end'], tx_path[-1][1])
+        gene_dict[tx[0].seqname][gene_id]['end'] = max(gene_dict[tx[0].seqname][gene_id]['end'], tx_path[-1][1])
         gene_dict[tx[0].seqname][gene_id].setdefault('exons', set())
         for ex in tx_path:
             gene_dict[tx[0].seqname][gene_id]['exons'].add(ex)  # hold a set of non-redundant exons
@@ -285,6 +285,7 @@ if __name__ == '__main__':
     group_one = parser.add_mutually_exclusive_group(required=True)
     group_one.add_argument('-b', dest='big_bed', action='store', help='big bed file that defines the possible exons in a gene')
     group_one.add_argument('-g', dest='gtf', action='store', help='gtf file that defines the possible exons in a gene')
+    parser.add_argument('--no-gene-id', dest='no_gene_id', action='store', help='Use this flag if your gtf does not have a valid gene_id')
     parser.add_argument('-f', required=True, dest='fasta', action='store', help='path to fasta file')
     parser.add_argument('-r', required=True, dest='rnaseq', action=ValidateRnaseq, help='path to SAM/BAM file(s) ("," delimited)')
     parser.add_argument('-t', required=True, dest='target', action='store', help='path to txt file with <strand><chr>:<start>-<end> for each target on separate lines.')

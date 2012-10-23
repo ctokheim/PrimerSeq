@@ -25,10 +25,11 @@ class SpliceGraph(object):
     of splice graphs for a single gene.
     '''
 
-    def __init__(self, annotation, chr, strand, read_threshold=5):
+    def __init__(self, annotation, chr, strand, read_threshold=5, filter_factor=2):
         self.chr = chr
         self.strand = strand
         self.READ_THRESHOLD = read_threshold
+        self.FILTER_FACTOR = filter_factor
         self.annotation = []  # set value using set_graph_as_annotation
         if annotation is not None:
             self.set_graph_as_annotation(annotation)
@@ -38,15 +39,15 @@ class SpliceGraph(object):
     def get_graph(self):
         return self.graph
 
-    def set_graph_as_annotation(self, annotation, FILTER_FACTOR=2):
+    def set_graph_as_annotation(self, annotation):
         """
         Create a nx DiGraph from list of tx in gene. FILTER_FACTOR defines a cutoff for
         using a tx of a gene. A tx must have x num of exon where x > MAX tx exon num / FILTER_FACTOR.
         """
         # filter low exon tx
         max_exons = max(map(len, annotation))  # figure out max num exons
-        self.annotation = map(lambda y: sorted(y, key=lambda z:(z[0], z[1])),  # make sure exons are sorted by position
-                              filter(lambda x: len(x) > max_exons / FILTER_FACTOR, annotation))  # filter based on max num exons criteria
+        self.annotation = map(lambda y: sorted(y, key=lambda z: (z[0], z[1])),  # make sure exons are sorted by position
+                              filter(lambda x: len(x) > max_exons / self.FILTER_FACTOR, annotation))  # filter based on max num exons criteria
 
         # create graph
         graph = nx.DiGraph()
@@ -100,16 +101,70 @@ class SpliceGraph(object):
                     pass
 
 
-def get_from_gtf(gtf, strand, chr, start, end):
+def get_from_gtf_using_gene_name(gtf, strand, chr, start, end):
     '''
     This function finds the first gene in the gtf that completely contains the target interval.
+    I should really think about checking for multiple genes instead of just returning.
     '''
     for gene_key in gtf[chr]:
-        if gtf[chr][gene_key]['strand'] == strand and gtf[chr]['start'] <= start and gtf[chr]['end'] >= end:
+        if gtf[chr][gene_key]['strand'] == strand and gtf[chr][gene_key]['start'] <= start and gtf[chr][gene_key]['end'] >= end:
             for ex in gtf[chr][gene_key]['exons']:
-                if start > ex[0] and end <= ex[0]:
+                if start >= ex[0] and end <= ex[1]:
+                    gtf[chr][gene_key]['target'] = ex  # this line needed for compatability reasons
                     return gtf[chr][gene_key]
-    assert 1==0, "Did not find an appropriate gtf annotation"
+    assert 1 == 0, "Did not find an appropriate gtf annotation"  # not the most elegant way to say I don't expect to get to this line
+
+
+def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000):
+    '''
+    This function is meant to handle tx annotations without gene ids.
+    Currently this is a function outside of the SpliceGraph class but it may be beneficial
+    to later include this as a method.
+    '''
+    # compile all tx paths that are reasonably close
+    tmp_tx = []
+    for gene_key in gtf[chr]:
+        if gtf[chr][gene_key]['strand'] == strand and gtf[chr][gene_key]['start'] <= (start + plus_or_minus) and gtf[chr][gene_key]['end'] >= (end - plus_or_minus):
+            tmp_tx += gtf[chr][gene_key]['graph']
+
+    # get the weakly connected subgraph that contains the target exon
+    sg = SpliceGraph(tmp_tx, chr, strand, filter_factor=1000)
+    G = sg.get_graph()
+    weakly_con_subgraphs = nx.weakly_connected_component_subgraphs(G)
+    assert len(weakly_con_subgraphs) > 0, 'No annotations were even near your target'
+    target_graph = None
+    for weak_subgraph in weakly_con_subgraphs:
+        for node_start, node_end in weak_subgraph.nodes():
+            if node_start <= start and node_end >= end:
+                target_graph = weak_subgraph
+                start, end = node_start, node_end
+    assert target_graph is not None, 'Target was not contained in a tx'
+
+    # filter tmp_tx to tx that contain atleast one node in subgraph
+    filtered_tmp_tx = []
+    for tx in tmp_tx:
+        for exon in tx:
+            if exon in target_graph.nodes():
+                filtered_tmp_tx.append(tx)
+                break
+    assert len(filtered_tmp_tx) > 0, 'Your target was not contained in a tx.'
+    print 'NUM TX\'s', len(filtered_tmp_tx)
+
+    ### convert info to dict ###
+    g_dict = {}
+
+    # get a unique set of all exons
+    exons = set()
+    for t in filtered_tmp_tx:
+        exons |= set(t)
+    g_dict['exons'] = sorted(exons, key=lambda x: (x[0], x[1]))
+    g_dict['start'] = g_dict['exons'][0][0]
+    g_dict['end'] = g_dict['exons'][-1][1]
+    g_dict['chr'] = chr
+    g_dict['graph'] = filtered_tmp_tx
+    g_dict['target'] = (start, end)
+
+    return g_dict
 
 
 def get_flanking_biconnected_exons(name, target, sGraph, genome):
@@ -192,7 +247,7 @@ def main(options, args_output='tmp/debug.json'):
     # iterate through each target exon
     output = []  # output from program
     for line in args_target:  # was line in handle
-        line = line.strip()
+        name, line = line.strip().split('\t')
         strand = line[0]
         tmp_start, tmp_end = get_pos(line)
         chr = get_chr(line[1:])
@@ -201,9 +256,14 @@ def main(options, args_output='tmp/debug.json'):
         # assertion is raised it only impacts a single target for primer design
         # so complete exiting of the program is not warranted.
         try:
-            # get gene annotation from bigBed or gtf file file
+            # get gene annotation from bigBed (maybe deprecate) or gtf file file
             if args_gtf:
-                gene_dict = get_from_gtf(args_gtf, strand, chr, tmp_start, tmp_end)
+                # if the gtf doesn't have a valid gene_id attribute then use
+                # the first method otherwise use the second method.
+                if options['no_gene_id']:
+                    gene_dict = get_weakly_connected_tx(args_gtf, strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
+                else:
+                    gene_dict = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
             else:
                 bed.extractBigRegion(strand, chr, tmp_start, tmp_end)
                 bed.load_bed_file()
