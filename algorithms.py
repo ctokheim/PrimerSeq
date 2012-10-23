@@ -78,6 +78,8 @@ class AllPaths(object):
         self.all_paths = list(nx.all_simple_paths(self.sub_graph, source=self.component[0], target=self.component[-1]))
         self.chr = chr
         self.strand = strand
+        self.inc_lengths, self.skip_lengths = [], []  # call set all_path_lengths method
+        self.all_path_coordinates = []  # call set_all_path_coordinates method
 
     def set_chr(self, chr):
         self.chr = chr
@@ -88,13 +90,13 @@ class AllPaths(object):
         else:
             raise ValueError('Strand should either be + or -')
 
-    def get_all_path_coordinates(self):
+    def set_all_path_coordinates(self):
         tmp = []
         for p in self.all_paths:
             tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.all_paths))
-        return tmp
+        self.all_path_lengths = tmp
 
-    def get_all_path_lengths(self):
+    def set_all_path_lengths(self):
         # get possible lengths
         inc_length, skip_length = [], []
         for path in self.all_paths:
@@ -102,7 +104,7 @@ class AllPaths(object):
                 inc_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
             else:
                 skip_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
-        return inc_length, skip_length
+        self.inc_lengths, self.skip_lengths = inc_length, skip_length
 
 
 def read_count_em(bcc_paths, sub_graph):

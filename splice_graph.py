@@ -19,57 +19,6 @@ from exon_seek import ExonSeek
 import logging
 
 
-def gene_annotation_reader(file_path, FILTER_FACTOR=2):
-    """
-    *creates two data structures from gtf:*
-
-        gene_dict is a dictionary with gene_id's as keys:
-            * gene_dict['My_favorite_gene']['graph'] = list of list of exons
-            * gene_dict['My_favorite_gene']['chr'] = gene chromosome (chrXX)
-            * gene_dict['My_favorite_gene']['strand'] = gene strand (+, -)
-            * gene_dict['My_favorite_gene']['start'] = start of gene
-            * gene_dict['My_favorite_gene']['end'] = end of gene
-            * gene_dict['My_favorite_gene']['exons'] = the set of exons (nodes)
-
-        gene_lookup is a dictionary to lookup the gene that an exon coordinate belongs to:
-            * gene_lookup['(strand)(chr):(start)-(end)'] = ['My_favorite_gene', ...]
-    """
-    # iterate through each gtf feature
-    file_input = open(file_path)
-    gene_dict, gene_lookup = {}, {}
-    for tx_id, tx in it.groupby(gtf.gtf_reader(file_input, delim='\t'), lambda x: x.attribute['transcript_id']):
-        tx = list(tx)
-        if len(tx) == 0: continue  # no 'exon' feature case
-
-        gene_id = tx[0].attribute['gene_id']
-        strand = tx[0].strand
-
-        # sort exons
-        tx_path = sorted([(exon.start, exon.end) for exon in tx],
-                         key=lambda x: (x[0], x[1]))  # needs to be sorted because gtf files might not have them in proper order
-
-        # add info to gene_dict
-        gene_dict.setdefault(gene_id, {})  # add the gene key if it doesn't exist
-        gene_dict[gene_id].setdefault('chr', tx[0].seqname)  # add chr if doesn't exist
-        gene_dict[gene_id].setdefault('strand', strand)  # add strand if doesn't exist
-        gene_dict[gene_id].setdefault('graph', []).append(tx_path)  # append the tx path
-        gene_dict[gene_id].setdefault('start', float('inf'))
-        gene_dict[gene_id]['start'] = min(gene_dict[gene_id]['start'], tx_path[0][0])  # change start if this tx has lower start position
-        gene_dict[gene_id].setdefault('end', 0)
-        gene_dict[gene_id]['end'] = max(gene_dict[gene_id]['end'], tx_path[-1][1])
-        gene_dict[gene_id].setdefault('exons', set())
-        for ex in tx_path:
-            gene_dict[gene_id]['exons'].add(ex)  # hold a set of non-redundant exons
-
-        # lookup dict for which exon is in which gene
-        for exon in tx:
-            pos_string = '%s%s:%d-%d' % (strand, exon.seqname, exon.start, exon.end)
-            gene_lookup.setdefault(pos_string, []).append(gene_id)
-
-    file_input.close()
-    return gene_dict, gene_lookup
-
-
 class SpliceGraph(object):
     '''
     The SpliceGraph class is meant to provide a common repository for creation
@@ -151,6 +100,18 @@ class SpliceGraph(object):
                     pass
 
 
+def get_from_gtf(gtf, strand, chr, start, end):
+    '''
+    This function finds the first gene in the gtf that completely contains the target interval.
+    '''
+    for gene_key in gtf[chr]:
+        if gtf[chr][gene_key]['strand'] == strand and gtf[chr]['start'] <= start and gtf[chr]['end'] >= end:
+            for ex in gtf[chr][gene_key]['exons']:
+                if start > ex[0] and end <= ex[0]:
+                    return gtf[chr][gene_key]
+    assert 1==0, "Did not find an appropriate gtf annotation"
+
+
 def get_flanking_biconnected_exons(name, target, sGraph, genome):
     graph = sGraph.get_graph()  # nx.DiGraph
     # search through each biconnected component
@@ -168,7 +129,8 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
             # get possible lengths
             all_paths = algs.AllPaths(graph, component, target,
                                       chr=sGraph.chr, strand=sGraph.strand)
-            inc_length, skip_length = all_paths.get_all_path_lengths()
+            all_paths.set_all_path_lengths()
+            all_paths.set_all_path_coordinates()
 
             # get sequence of upstream/target/downstream combo
             genome_chr = genome[sGraph.chr]  # chr object from pygr
@@ -180,7 +142,7 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
             return [sGraph.strand, name[1:],
                     sGraph.chr + ':' + '-'.join(map(str, upstream)),
                     sGraph.chr + ':' + '-'.join(map(str, downstream)),
-                    inc_length, skip_length, str(upstream_seq).upper(),
+                    all_paths, str(upstream_seq).upper(),
                     str(target_seq).upper(), str(downstream_seq).upper()]
     return [name + ' was not found in a biconnected component']
 
@@ -199,7 +161,7 @@ def get_sufficient_psi_exons(name, target, sGraph, genome):
     # get possible lengths
     all_paths = algs.AllPaths(sGraph.get_graph(), component, target,
                               chr=sGraph.chr, strand=sGraph.strand)
-    inc_length, skip_length = all_paths.get_all_path_lengths()
+    all_paths.set_all_path_lengths()
 
     # get sequence of upstream/target/downstream combo
     genome_chr = genome[sGraph.chr]  # chr object from pygr
@@ -211,7 +173,7 @@ def get_sufficient_psi_exons(name, target, sGraph, genome):
     return [sGraph.strand, name[1:], psi_target,
             sGraph.chr + ':' + '-'.join(map(str, upstream)), psi_upstream,
             sGraph.chr + ':' + '-'.join(map(str, downstream)), psi_downstream,
-            inc_length, skip_length, str(upstream_seq).upper(),
+            all_paths, str(upstream_seq).upper(),
             str(target_seq).upper(), str(downstream_seq).upper()]
 
 
@@ -220,9 +182,9 @@ def main(options, args_output='tmp/debug.json'):
     The gtf main function is the function designed to be called from other scripts. It iterates through each target
     exons and returns the necessary information for primer design.
     """
-    fasta, args_big_bed, args_target = options['fasta'], options['big_bed'], options['target']
+    fasta, args_big_bed, args_gtf, args_target = options['fasta'], options['big_bed'], options['gtf'], options['target']
     genome = SequenceFileDB(fasta)  # load fasta file from file
-    bed = Bed(args_big_bed, ext='bed')
+    if args_big_bed: bed = Bed(args_big_bed, ext='bed')
 
     # the sam object interfaces with the user specified BAM/SAM file!!!
     sam_obj = sam.Sam(options['rnaseq'])
@@ -239,10 +201,13 @@ def main(options, args_output='tmp/debug.json'):
         # assertion is raised it only impacts a single target for primer design
         # so complete exiting of the program is not warranted.
         try:
-            # get gene annotation from bigBed file
-            bed.extractBigRegion(strand, chr, tmp_start, tmp_end)
-            bed.load_bed_file()
-            gene_dict = bed.get_annotation()
+            # get gene annotation from bigBed or gtf file file
+            if args_gtf:
+                gene_dict = get_from_gtf(args_gtf, strand, chr, tmp_start, tmp_end)
+            else:
+                bed.extractBigRegion(strand, chr, tmp_start, tmp_end)
+                bed.load_bed_file()
+                gene_dict = bed.get_annotation()
 
             if options['both_flag']:
                 splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
@@ -282,9 +247,9 @@ def main(options, args_output='tmp/debug.json'):
             output.append([str(v)])  # just append assertion msg
 
     # if they specify a output file then write to it
-    if args_output:
-        with open(args_output, 'wb') as write_handle:
-            json.dump(output, write_handle, indent=4)
+    #if args_output:
+    #    with open(args_output, 'wb') as write_handle:
+    #        json.dump(output, write_handle, indent=4)
 
     return output
 

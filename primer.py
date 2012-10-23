@@ -5,6 +5,7 @@ import gtf
 import splice_graph
 import csv
 import argparse  # command line parsing
+import itertools as it
 
 # import for logging file
 import logging
@@ -12,6 +13,51 @@ import datetime
 import time
 import sys
 import traceback
+
+
+def gene_annotation_reader(file_path, FILTER_FACTOR=2):
+    """
+    *creates two data structures from gtf:*
+
+        gene_dict is a dictionary with gene_id's as keys:
+            * gene_dict['chr']['My_favorite_gene']['graph'] = list of list of exons
+            * gene_dict['chr']['My_favorite_gene']['strand'] = gene strand (+, -)
+            * gene_dict['chr']['My_favorite_gene']['chr'] = chromosome
+            * gene_dict['chr']['My_favorite_gene']['start'] = start of gene
+            * gene_dict['chr']['My_favorite_gene']['end'] = end of gene
+            * gene_dict['chr']['My_favorite_gene']['exons'] = the set of exons (nodes)
+    """
+    logging.debug('Started reading %s' % file_path)
+    # iterate through each gtf feature
+    file_input = open(file_path)
+    gene_dict = {}
+    for tx_id, tx in it.groupby(gtf.gtf_reader(file_input, delim='\t'), lambda x: x.attribute['transcript_id']):
+        tx = list(tx)
+        if len(tx) == 0: continue  # no 'exon' feature case
+
+        gene_id = tx[0].attribute['gene_id']
+        strand = tx[0].strand
+
+        # sort exons
+        tx_path = sorted([(exon.start, exon.end) for exon in tx],
+                         key=lambda x: (x[0], x[1]))  # needs to be sorted because gtf files might not have them in proper order
+
+        # add info to gene_dict
+        gene_dict.setdefault(tx[0].seqname, {})
+        gene_dict[tx[0].seqname].setdefault(gene_id, {})  # add the gene key if it doesn't exist
+        gene_dict[tx[0].seqname][gene_id].setdefault('chr', tx[0].seqname)  # add chr if doesn't exist
+        gene_dict[tx[0].seqname][gene_id].setdefault('strand', strand)  # add strand if doesn't exist
+        gene_dict[tx[0].seqname][gene_id].setdefault('graph', []).append(tx_path)  # append the tx path
+        gene_dict[tx[0].seqname][gene_id].setdefault('start', float('inf'))
+        gene_dict[tx[0].seqname][gene_id]['start'] = min(gene_dict[gene_id]['start'], tx_path[0][0])  # change start if this tx has lower start position
+        gene_dict[tx[0].seqname][gene_id].setdefault('end', 0)
+        gene_dict[tx[0].seqname][gene_id]['end'] = max(gene_dict[gene_id]['end'], tx_path[-1][1])
+        gene_dict[tx[0].seqname][gene_id].setdefault('exons', set())
+        for ex in tx_path:
+            gene_dict[tx[0].seqname][gene_id]['exons'].add(ex)  # hold a set of non-redundant exons
+    file_input.close()  # close gtf file
+    logging.debug('Finished reading %s' % file_path)
+    return gene_dict
 
 
 def call_primer3(target_string, jobs_ID):
@@ -44,6 +90,17 @@ def read_primer3(path):
     return primer3_dict
 
 
+def mkdir_tmp():
+    '''
+    Make all the necessary directories for temporary files
+    '''
+    if not os.path.exists('tmp'): os.mkdir('tmp')
+    if not os.path.exists('tmp/sam'): os.mkdir('tmp/sam')
+    if not os.path.exists('tmp/jct'): os.mkdir('tmp/jct')
+    if not os.path.exists('tmp/bed'): os.mkdir('tmp/bed')
+    if not os.path.exists('tmp/wig'): os.mkdir('tmp/wig')
+
+
 def primer3(options, primer3_options):
     """
     The primer.py main function uses the gtf module to find information about constitutive flanking exons for the target exons of interest.
@@ -54,9 +111,7 @@ def primer3(options, primer3_options):
 
     # tmp directory
     outfiles_PATH = 'tmp/'  # directory for intermediate files
-    if not os.path.exists('tmp'): os.mkdir('tmp')  # make directory to put tmp files
-    if not os.path.exists('tmp/sam'): os.mkdir('tmp/sam')
-    if not os.path.exists('tmp/jct'): os.mkdir('tmp/jct')
+    mkdir_tmp()  # make any necessary tmp directories
 
     # read in targets
     with open(options['target']) as handle:
@@ -69,7 +124,7 @@ def primer3(options, primer3_options):
     logging.debug('Finished gtf.main')
 
     # iterate over all target sequences
-    STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, INC_LIST, SKIP_LIST, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ = range(12)
+    STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, ALL_PATHS, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ = range(11)
     output_list = []
     for z in range(len(flanking_info)):
         # no flanking exon information case
@@ -128,8 +183,8 @@ def primer3(options, primer3_options):
                 # get info about product sizes
                 target_exon_len = len(flanking_info[z][TARGET_SEQ])
                 Primer3_PRIMER_PRODUCT_SIZE = int(primer3_dict['PRIMER_PAIR_0_PRODUCT_SIZE']) - target_exon_len
-                skipping_size_list = [str(int(j) + Primer3_PRIMER_PRODUCT_SIZE) for j in flanking_info[z][SKIP_LIST]]
-                inclusion_size_list = [str(int(k) + Primer3_PRIMER_PRODUCT_SIZE) for k in flanking_info[z][INC_LIST]]
+                skipping_size_list = [str(int(j) + Primer3_PRIMER_PRODUCT_SIZE) for j in flanking_info[z][ALL_PATHS].skip_lengths]
+                inclusion_size_list = [str(int(k) + Primer3_PRIMER_PRODUCT_SIZE) for k in flanking_info[z][ALL_PATHS].inc_lengths]
                 skipping_size = ';'.join(skipping_size_list)
                 inclusion_size = ';'.join(inclusion_size_list)
 
@@ -227,14 +282,16 @@ class ValidateCutoff(argparse.Action):
 if __name__ == '__main__':
     # command line arguments
     parser = argparse.ArgumentParser(description='Command line interface for designing primers')
-    parser.add_argument('-b', required=True, dest='big_bed', action='store', help='big bed file that defines the possible exons in a gene')
+    group_one = parser.add_mutually_exclusive_group(required=True)
+    group_one.add_argument('-b', dest='big_bed', action='store', help='big bed file that defines the possible exons in a gene')
+    group_one.add_argument('-g', dest='gtf', action='store', help='gtf file that defines the possible exons in a gene')
     parser.add_argument('-f', required=True, dest='fasta', action='store', help='path to fasta file')
     parser.add_argument('-r', required=True, dest='rnaseq', action=ValidateRnaseq, help='path to SAM/BAM file(s) ("," delimited)')
     parser.add_argument('-t', required=True, dest='target', action='store', help='path to txt file with <strand><chr>:<start>-<end> for each target on separate lines.')
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--annotaton', dest='annotation_flag', action='store_true', help='only use junctions supported from annotation')
-    group.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true', help='only use junctions supported from RNA-Seq')
-    group.add_argument('--both', dest='both_flag', action='store_true', help='use junctions from both RNA-Seq and annotation')
+    group_two = parser.add_mutually_exclusive_group(required=True)
+    group_two.add_argument('--annotaton', dest='annotation_flag', action='store_true', help='only use junctions supported from annotation')
+    group_two.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true', help='only use junctions supported from RNA-Seq')
+    group_two.add_argument('--both', dest='both_flag', action='store_true', help='use junctions from both RNA-Seq and annotation')
     parser.add_argument('--psi', dest='psi', action=ValidateCutoff, default=1.0, type=float, help='Define inclusion level sufficient to define constitutive exon. Valid: 0<psi<1.')
     parser.add_argument('--read-threshold', dest='read_threshold', default=5, action='store', type=int, help='Define the minimum number of read support necessary to call a junction from RNA-Seq')
     parser.add_argument('--keep-temp', dest='keep_temp', action='store_true', help='Keep temporary files in your tmp directory')
@@ -244,6 +301,10 @@ if __name__ == '__main__':
     # define job_id by the name of the target file
     tmp = options['target'].split('/\\')[-1].split('.')
     options['job_id'] = ('.'.join(tmp[:-1]) if len(tmp) > 1 else tmp[0]) + '.output'
+
+    # gtf file must be pre-loaded since there is no random access
+    if options['gtf']:
+        options['gtf'] = gene_annotation_reader(options['gtf'])
 
     # call main function
     main(options)
