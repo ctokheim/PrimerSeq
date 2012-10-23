@@ -206,12 +206,6 @@ def primer3(options, primer3_options):
 
 def main(options):
     """Reads in primer3 options, starts logging, and then calls the primer3 function to run primer3"""
-    ### setting up the logging format ###
-    if not os.path.exists('log'): os.mkdir('log')  # make directory to put log files
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(message)s',
-                        filename='log/log.primer.' + str(datetime.datetime.now()),
-                        filemode='w')
 
     ##### Getting Start Time ######
     logging.debug('Start the program with [%s]', ' '.join(sys.argv))
@@ -302,6 +296,13 @@ if __name__ == '__main__':
     # define job_id by the name of the target file
     tmp = options['target'].split('/\\')[-1].split('.')
     options['job_id'] = ('.'.join(tmp[:-1]) if len(tmp) > 1 else tmp[0]) + '.output'
+
+    # define logging file before using logging.debug
+    if not os.path.exists('log'): os.mkdir('log')  # make directory to put log files
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(message)s',
+                        filename='log/log.primer.' + str(datetime.datetime.now()),
+                        filemode='w')
 
     # gtf file must be pre-loaded since there is no random access
     if options['gtf']:
