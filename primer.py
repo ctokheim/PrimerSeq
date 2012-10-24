@@ -279,7 +279,7 @@ if __name__ == '__main__':
     group_one = parser.add_mutually_exclusive_group(required=True)
     group_one.add_argument('-b', dest='big_bed', action='store', help='big bed file that defines the possible exons in a gene')
     group_one.add_argument('-g', dest='gtf', action='store', help='gtf file that defines the possible exons in a gene')
-    parser.add_argument('--no-gene-id', dest='no_gene_id', action='store', help='Use this flag if your gtf does not have a valid gene_id')
+    parser.add_argument('--no-gene-id', dest='no_gene_id', action='store_true', help='Use this flag if your gtf does not have a valid gene_id')
     parser.add_argument('-f', required=True, dest='fasta', action='store', help='path to fasta file')
     parser.add_argument('-r', required=True, dest='rnaseq', action=ValidateRnaseq, help='path to SAM/BAM file(s) ("," delimited)')
     parser.add_argument('-t', required=True, dest='target', action='store', help='path to txt file with <strand><chr>:<start>-<end> for each target on separate lines.')
