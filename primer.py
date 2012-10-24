@@ -197,7 +197,7 @@ def primer3(options, primer3_options):
     # write output information
     with open(outfiles_PATH + jobs_ID + '.txt', 'wb') as outputfile_tab:
         # define csv header
-        header = ['Exon_name', 'Target_Exon_coordinates', 'PSI_TARGET', 'Left_primer', 'Right_primer', 'Average_Tm',
+        header = ['ID', 'Target_Exon_coordinates', 'PSI_TARGET', 'Left_primer', 'Right_primer', 'Average_Tm',
                   'Skipping_production_size', 'Inclusion_production_size', 'Upstream_coordinates', 'PSI_UPSTREAM', 'Downstream_coordinates', 'PSI_DOWNSTREAM']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
