@@ -290,6 +290,7 @@ if __name__ == '__main__':
     parser.add_argument('--psi', dest='psi', action=ValidateCutoff, default=1.0, type=float, help='Define inclusion level sufficient to define constitutive exon. Valid: 0<psi<1.')
     parser.add_argument('--read-threshold', dest='read_threshold', default=5, action='store', type=int, help='Define the minimum number of read support necessary to call a junction from RNA-Seq')
     parser.add_argument('--keep-temp', dest='keep_temp', action='store_true', help='Keep temporary files in your tmp directory')
+    parser.add_argument('--draw', dest='draw', action='store_true', help='do not use this option')
     parser.add_argument('-o', required=True, dest='output', action='store', help='Output directory')
     options = vars(parser.parse_args())  # make it a dictionary
 

@@ -1,5 +1,6 @@
 import algorithms as algs
 import logging
+import draw
 
 
 class ExonSeek(object):
@@ -7,7 +8,8 @@ class ExonSeek(object):
     This class handles the finding exons with a psi value threshold.
     '''
 
-    def __init__(self, target, splice_graph):
+    def __init__(self, target, splice_graph, draw=False):
+        self.draw = draw
         self.target = target
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
@@ -134,6 +136,7 @@ class ExonSeek(object):
             self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
                                                                                        counts,
                                                                                        self.component[index + 1:])
+        if self.draw: draw.main(paths, counts)
         self.psi_target = algs.estimate_psi(self.target, paths, counts)
 
     def first_exon_case(self):
