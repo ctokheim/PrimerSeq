@@ -48,6 +48,7 @@ def main(options):
     csv.writer(file_output, delimiter='\t').writerows(output)
     file_output.close()  # close output
 
+
 if __name__ == '__main__':
     # List optional command line argument
     parser = argparse.ArgumentParser(description='Outputs a junction/edge count file from RNA-Seq reads. Assumes you have already quality filtered.')

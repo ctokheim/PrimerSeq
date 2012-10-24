@@ -70,10 +70,11 @@ class Sam(object):
                 start, stop, count = int(start), int(stop), int(count)  # convert to int
 
                 # add counts to jct_dict
-                jct_dict.setdefault(chr, {})
-                jct_dict[chr].setdefault(start, {})
-                jct_dict[chr][start].setdefault(stop, 0)
-                jct_dict[chr][start][stop] += count
+                #jct_dict.setdefault(chr, {})
+                #jct_dict[chr].setdefault(start, {})
+                #jct_dict[chr][start].setdefault(stop, 0)
+                #jct_dict[chr][start][stop] += count
+                jct_dict[(chr, start, stop)] = count
 
         return jct_dict
 

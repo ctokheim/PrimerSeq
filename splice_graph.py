@@ -8,7 +8,7 @@ import algorithms as algs
 from pygr.seqdb import SequenceFileDB
 import matplotlib.pyplot as plt
 import gtf
-from utils import get_chr, get_start_pos, get_end_pos, get_pos
+from utils import get_chr, get_start_pos, get_end_pos, get_pos, merge_list_of_dicts
 import sam
 import sys
 from bed import Bed
@@ -67,7 +67,8 @@ class SpliceGraph(object):
                 #tmpChr = get_chr(exon_forms[u])
                 start = u[1]  # get_start_pos(exon_forms[u])
                 end = v[0]  # get_end_pos(exon_forms[v])
-                tmpWeight = weights[self.chr][start][end]
+                #tmpWeight = weights[self.chr][start][end]
+                tmpWeight = weights[(self.chr, start, end)]
                 self.graph[u][v]['weight'] = tmpWeight
             except KeyError:
                 self.graph[u][v]['weight'] = 1
@@ -95,8 +96,10 @@ class SpliceGraph(object):
                     end = sorted_nodes[j][0]    # get_end_pos(exon_forms[sorted_nodes[j]])
                     if weights[self.chr][start][end] >= self.READ_THRESHOLD:
                         self.graph.add_edge(sorted_nodes[i], sorted_nodes[j])
+                        #self.graph[sorted_nodes[i]][sorted_nodes[
+                        #    j]]['weight'] = weights[self.chr][start][end]
                         self.graph[sorted_nodes[i]][sorted_nodes[
-                            j]]['weight'] = weights[self.chr][start][end]
+                            j]]['weight'] = weights[(self.chr, start, end)]
                 except KeyError:
                     pass
 
@@ -242,7 +245,8 @@ def main(options, args_output='tmp/debug.json'):
     if args_big_bed: bed = Bed(args_big_bed, ext='bed')
 
     # the sam object interfaces with the user specified BAM/SAM file!!!
-    sam_obj = sam.Sam(options['rnaseq'])
+    print options['rnaseq']
+    sam_obj_list = [sam.Sam(data) for data in options['rnaseq']]
 
     # iterate through each target exon
     output = []  # output from program
@@ -274,7 +278,9 @@ def main(options, args_output='tmp/debug.json'):
                                            chr=chr,
                                            strand=strand,
                                            read_threshold=options['read_threshold'])
-                edge_weights = sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                                     for sam_obj in sam_obj_list]
+                edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
                 splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
                 splice_graph.add_all_possible_edge_weights(edge_weights)  # also use junctions from RNA-Seq
             elif options['annotation_flag']:
@@ -288,7 +294,9 @@ def main(options, args_output='tmp/debug.json'):
                                            strand=strand,
                                            read_threshold=options['read_threshold'])
                 splice_graph.set_graph_as_nodes_only(list(gene_dict['exons']))
-                edge_weights = sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                                     for sam_obj in sam_obj_list]
+                edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
                 splice_graph.add_all_possible_edge_weights(edge_weights)  # add all edges supported by rna seq
 
             # default case

@@ -10,6 +10,9 @@ class ExonSeek(object):
     def __init__(self, target, splice_graph):
         self.target = target
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
+        if self.target not in self.graph.nodes():
+            raise ValueError('The target was not found in the graph (likely a bug in the code)')
+
         self.strand = splice_graph.strand  # convenience variable
         self.splice_graph = splice_graph
         biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(self.graph))
@@ -47,6 +50,7 @@ class ExonSeek(object):
                 return exon, psi
 
     def two_biconnected_case(self):
+        print 'two case'
         if self.component[0][-1] == self.target:
             before_component, after_component = self.component
         else:
@@ -89,7 +93,12 @@ class ExonSeek(object):
         # target exon, upstream exon, and downstream exon) are constitutive
         self.upstream = self.graph.predecessors(self.target)[0] if self.strand == '+' else self.graph.successors(self.target)[0]
         self.downstream = self.graph.successors(self.target)[0] if self.strand == '+' else self.graph.predecessors(self.target)[0]
+
+        # defining two attributes as the same thing seems silly but in a
+        # different case with two biconnected components the two components
+        # need to be merged into a single self.total_components
         self.total_components = [self.upstream, self.target, self.downstream]
+        self.component = self.total_components
 
     def one_biconnected_case(self):
         if self.target == self.component[0]:
