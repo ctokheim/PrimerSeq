@@ -115,7 +115,7 @@ def primer3(options, primer3_options):
 
     # read in targets
     with open(options['target']) as handle:
-        target_list = map(lambda x: x.strip(), handle.readlines())
+        target_list = map(lambda x: x.strip().split('\t'), handle.readlines())
         options['target'] = target_list
 
     # find flanking exons
@@ -134,7 +134,7 @@ def primer3(options, primer3_options):
             output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
-            tar = flanking_info[z][1]  # target interval (used for print statements)
+            tar = target_list[z][0] # flanking_info[z][1]  # target interval (used for print statements)
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
             PRIMER_EXPLAIN_FLAG = '1'

@@ -151,7 +151,6 @@ def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000)
                 filtered_tmp_tx.append(tx)
                 break
     assert len(filtered_tmp_tx) > 0, 'Your target was not contained in a tx.'
-    print 'NUM TX\'s', len(filtered_tmp_tx)
 
     ### convert info to dict ###
     g_dict = {}
@@ -245,13 +244,12 @@ def main(options, args_output='tmp/debug.json'):
     if args_big_bed: bed = Bed(args_big_bed, ext='bed')
 
     # the sam object interfaces with the user specified BAM/SAM file!!!
-    print options['rnaseq']
     sam_obj_list = [sam.Sam(data) for data in options['rnaseq']]
 
     # iterate through each target exon
     output = []  # output from program
     for line in args_target:  # was line in handle
-        name, line = line.strip().split('\t')
+        name, line = line  # .strip().split('\t')
         strand = line[0]
         tmp_start, tmp_end = get_pos(line)
         chr = get_chr(line[1:])
