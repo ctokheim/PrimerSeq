@@ -99,6 +99,8 @@ def mkdir_tmp():
     if not os.path.exists('tmp/jct'): os.mkdir('tmp/jct')
     if not os.path.exists('tmp/bed'): os.mkdir('tmp/bed')
     if not os.path.exists('tmp/wig'): os.mkdir('tmp/wig')
+    if not os.path.exists('tmp/isoforms'): os.mkdir('tmp/isoforms')
+
 
 
 def primer3(options, primer3_options):

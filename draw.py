@@ -12,6 +12,7 @@ import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredText   # import anchored text
 from pylab import *
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
@@ -22,9 +23,39 @@ import sys
 import argparse
 import itertools as it
 from operator import *
-
+import json
 # custom imports
 from shapes import ExonRectangle, JunctionLine
+from matplotlib.offsetbox import AnchoredOffsetbox, TextArea, DrawingArea, HPacker
+
+
+def offset_text(ax, txt):
+    box1 = TextArea(txt, textprops=dict(color="k", size='10'))
+
+    box = HPacker(children=[box1],
+                  align="center",
+                  pad=2, sep=5)
+
+    anchored_box = AnchoredOffsetbox(loc=1,
+                                     child=box, pad=0.,
+                                     frameon=True,
+                                     prop=dict(size=5),
+                                     bbox_to_anchor=(-.05, .65),
+                                     bbox_transform=ax.transAxes,
+                                     borderpad=0.1,
+                                     )
+    ax.add_artist(anchored_box)
+
+
+def draw_text(ax, txt):
+    """
+    Add text in right corner that identifies the data
+    """
+
+    at = AnchoredText(txt,
+                      loc=1, prop=dict(size=13), frameon=True,)
+    at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
+    ax.add_artist(at)
 
 
 def addCommas(myNum):
@@ -53,6 +84,12 @@ def addCommas(myNum):
 
     # return comma seperated integer
     return ",".join(subStrings)
+
+
+def estimate_isoform_psi(tx_paths, counts):
+    num_edges = map(lambda x: len(x) - 1, tx_paths)
+    normalized_counts = [count/float(num_edges[i]) for i, count in enumerate(counts)]
+    return [ct/sum(normalized_counts) for ct in normalized_counts]
 
 
 def scale_intron_length(exonShapes, scale):
@@ -89,7 +126,7 @@ def editAxis(ax, include=[], notInclude=[]):
             raise ValueError('unknown spine location: %s' % loc)
 
 
-def exonDrawSubplot(ax, exons):  # exons was coords
+def exonDrawSubplot(ax, exons, pct):  # exons was coords
     # move/remove axis
     includedAxes = ["bottom"]
     notIncludedAxes = ["left", "right", "top"]
@@ -134,24 +171,31 @@ def exonDrawSubplot(ax, exons):  # exons was coords
 
     # exonLines could be emptry
     for tmp_line in exon_lines:
-        ax.plot([tmp_line[0][0], tmp_line[1][0]], [tmp_line[0][1], tmp_line[1][1]], linewidth=1)
+        ax.plot([tmp_line[0][0], tmp_line[1][0]], [tmp_line[0][1], tmp_line[1][1]], linewidth=1, color='black')
 
-    # set axis properties
-    firstExonStart = exonRectangles[0].start
-    lastExonEnd = exonRectangles[-1].stop
-
-    # find min/max
-    minLabel = exons[0].split(":")[1].split("-")[0]
-    maxLabel = exons[-1].split(":")[1].split("-")[1]
-
-    ax.set_xlim(firstExonStart, lastExonEnd)
-    ax.set_xticks([firstExonStart, lastExonEnd])  # edited
-    ax.xaxis.set_ticklabels(["%s" % (addCommas(minLabel)), "%s" % (addCommas(maxLabel))])  # prevents scientific notation and provide scale effect for axis
-
-    ax.set_ylim(-2, 2.25)
+    ax.set_ylim(-1.0, 1.0)
     plt.gca().axes.get_yaxis().set_visible(False)
+    offset_text(ax, '%.1f' %(100*pct) + '%')
 
     return ax
+
+
+def retrieve_top(tx_paths, counts, n=5):
+    # sort the potential paths by normalized counts
+    tmp = zip(counts, tx_paths)
+    tmp.sort(key=lambda x: -float(x[0])/(len(x[1]) - 1))
+    top_counts, top_tx_paths = zip(*tmp)
+    percent_estimate = estimate_isoform_psi(top_tx_paths, top_counts)
+    if len(top_tx_paths) >= n:
+        counts = top_counts[:n]
+        tx_paths = top_tx_paths[:n]
+        percent_estimate = percent_estimate[:n]
+        num_of_txs = n
+    else:
+        counts = top_counts
+        tx_paths = top_tx_paths
+        num_of_txs = len(top_tx_paths)
+    return tx_paths, counts, num_of_txs, percent_estimate
 
 
 def main(tx_paths, counts):
@@ -161,98 +205,42 @@ def main(tx_paths, counts):
     matplotlib.rcParams['ytick.labelsize'] = 13
     #matplotlib.rc("lines", linewidth=optionDict["thick"])
 
-    # sort the potential paths by normalized counts
-    tmp = zip(counts, tx_paths)
-    tmp.sort(key=lambda x: -float(x[0])/(len(x[1]) - 1))
-    top_counts, top_tx_paths = zip(*tmp)
-    if len(top_tx_paths) >= 5:
-        counts = top_counts[:5]
-        tx_paths = top_tx_paths[:5]
-        num_of_txs = 5
-    else:
-        counts = top_counts
-        tx_paths = top_tx_paths
-        num_of_txs = len(top_tx_paths)
+    tx_paths, counts, num_of_txs, percent_estimate = retrieve_top(tx_paths, counts)
 
-    fig, axes = plt.subplots(num_of_txs, 1, sharex=True, sharey=True, figsize=(6, 2 * num_of_txs))
+    fig, axes = plt.subplots(num_of_txs, 1, sharex=True, sharey=True, figsize=(6, .75 * num_of_txs))
 
     # loop through and make all subplots in a figure
     for i, ax in enumerate(axes.flat):
         # draw exon structure + junctions
-        # exonDrawAxis = exonDrawSubplot(ax, tx_paths[i])
-        ### start ###
-        exons = tx_paths[i]
-    
-        # move/remove axis
-        includedAxes = ["bottom"]
-        notIncludedAxes = ["left", "right", "top"]
-        editAxis(ax, include=includedAxes, notInclude=notIncludedAxes)  # funtion to remove/modify axis
+        exonDrawAxis = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
 
-        # turn off ticks where there is no line
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
-
-        # get ExonRectangle objects
-        exonRectangles = []
-        for myIndex, (tmpStart, tmpStop) in enumerate(exons):
-            tmpRect = ExonRectangle(start=tmpStart, stop=tmpStop, mid=0, height=1)
-            exonRectangles.append(tmpRect)  # holds the exons to be drawn
-        exonRectangles.sort(key=lambda x: (x.start, x.stop))
-
-        # scale intron length
-        # exonRectangles = scale_intron_length(exonRectangles, plotParameters.scale)
-
-        # plot exons
-        patches = []
-        exonCount = 0
-        for tmpExon in exonRectangles:
-            art = mpatches.Rectangle(np.array([tmpExon.exon_start, tmpExon.bottom_left.y]), tmpExon.exon_stop - tmpExon.exon_start, tmpExon.height)
-            art.set_clip_on(False)
-            patches.append(art)
-            exonCount += 1
-
-        collection = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=1)
-
-        # make color scheme size match the number of exons
-        color_scheme = [[0, 0, 0]] * len(exons)
-
-        # plot exons
-        collection.set_facecolor(color_scheme)
-        ax.add_collection(collection)
-
-        # add lines when applicable
-        my_junction_line = JunctionLine(exonRectangles)
-        my_junction_line.createExonLines()
-        exon_lines = my_junction_line.get_exon_lines()
-
-        # exonLines could be emptry
-        for tmp_line in exon_lines:
-            ax.plot([tmp_line[0][0], tmp_line[1][0]], [tmp_line[0][1], tmp_line[1][1]], linewidth=1)
-
-        # set axis properties
-        firstExonStart = exonRectangles[0].start
-        lastExonEnd = exonRectangles[-1].stop
-
-        # find min/max
-        minLabel = exons[0][0]
-        maxLabel = exons[-1][1]
-
-        ax.set_xlim(firstExonStart, lastExonEnd)
-        ax.set_xticks([firstExonStart, lastExonEnd])  # edited
-        ax.xaxis.set_ticklabels(["%s" % (addCommas(minLabel)), "%s" % (addCommas(maxLabel))])  # prevents scientific notation and provide scale effect for axis
-
-        ax.set_ylim(-2, 2.25)
-        plt.gca().axes.get_yaxis().set_visible(False)
-        ### END ###
-
+        if i == (len(axes.flat) - 1):
+            first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]
+            print first_label, last_label
+            exonDrawAxis.set_xlim(first_label, last_label)
+            exonDrawAxis.set_xticks([first_label, last_label])  # edited
+            exonDrawAxis.xaxis.set_ticklabels(["%s" % (addCommas(first_label)), "%s" % (addCommas(last_label))])  # prevents scientific notation and provide scale effect for axis
+            exonDrawAxis.get_xticklabels()[0].set_horizontalalignment('left')
+            exonDrawAxis.get_xticklabels()[1].set_horizontalalignment('right')
+            exonDrawAxis.get_xaxis().set_visible(False)  # set axis invisible
+        else:
+            exonDrawAxis.get_xaxis().set_visible(False)  # set axis invisible
         editAxis(ax, include=["left"], notInclude=["bottom", "top", "right"])  # removes x-axis spline
-        #exonDrawAxis.get_xaxis().set_visible(False)  # set axis invisible
+        exonDrawAxis.get_yaxis().set_visible(False)  # set axis invisible
         #exonDrawAxis.set_title(exonCoordinates[exonIndex][0] + " " + gene) # add title
 
-    fig.subplots_adjust(hspace=.05, wspace=.05)  # change subplot spacing
+    fig.subplots_adjust(hspace=.00, wspace=.00)  # change subplot spacing
     # plt.show()
-    plt.savefig('example.png')
+    plt.savefig(args.output)
 
 
 if __name__ == '__main__':
-    pass  # at this point no command line call
+    parser = argparse.ArgumentParser(description='This script displays multiple isoforms and their relative abundance')
+    parser.add_argument('-j', action='store', dest='json', help='input json file')
+    parser.add_argument('-o', action='store', dest='output', required=True, help='output file')
+    args = parser.parse_args()
+
+    with open(args.json) as handle:
+        my_json = json.load(handle)
+
+    main(my_json['path'], my_json['counts'])
