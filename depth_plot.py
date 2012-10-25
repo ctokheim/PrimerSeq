@@ -74,24 +74,46 @@ def addCommas(myNum):
     return ",".join(subStrings)
 
 
+def scale_depth(depth_dictionary, start, stop, step):
+    list_of_ranges = []
+    all_pos = sorted(it.chain(start, stop))
+    for i in range(len(all_pos)-1):
+        if not i % 2:
+            list_of_ranges.append(range(all_pos[i], all_pos[i+1]))
+        else:
+            list_of_ranges.append(range(all_pos[i], all_pos[i+1], step))
+
+    scaled_dict = {}
+    pos_counter = start[0]
+    for pos in it.chain.from_iterable(list_of_ranges):
+        scaled_dict[pos_counter] = depth_dictionary.get(pos, 0)
+        pos_counter += 1
+
+    return scaled_dict, start[0], pos_counter
+
+
 ## Plot generating functions ##
 def generate_plot(ax, bw, chr, start, stop):
-    print 'im here'
     #depth_counts, max_count = sam.get_depth(bam, chr, start, stop)
     wig_obj = wig.Wig(bw, ext='wig')
-    wig_obj.extractBigRegion(chr, start, stop)
+    tmp_start, tmp_stop = (start[0], stop[-1]) if type(start) == type(tuple()) else (start, stop)
+    wig_obj.extractBigRegion(chr, tmp_start, tmp_stop)
     wig_obj.load_wig_file()
     depth_dict = wig_obj.get_annotation()
-    print len(depth_dict)
+    if options['step'] != 1: depth_dict, tmp_start, tmp_stop = scale_depth(depth_dict, start, stop, options['step'])
     max_count = max(depth_dict.itervalues())
     depth_counts = list(it.chain.from_iterable([key] * depth_dict[key] for key in depth_dict))
-    ax.hist(depth_counts, range(start, stop + 1), facecolor='k')
-    return max_count
+    ax.hist(depth_counts, range(tmp_start, tmp_stop + 1), facecolor='k')
+    return max_count, tmp_start, tmp_stop
 
 
 def read_depth_plot(options):
-    chr = utils.get_chr(options['position'])
-    start, stop = utils.get_pos(options['position'])
+    if type(options['position']) == type(list()):
+        chr = utils.get_chr(options['position'][0])
+        start, stop = zip(*map(lambda x: utils.get_pos(x), options['position']))
+    else:
+        chr = utils.get_chr(options['position'])
+        start, stop = utils.get_pos(options['position'])
     bigwigs = options['bigwig'].split(',')
     num_subplots = len(bigwigs)  # num of bam files equals number of subplots
     fig, axes = plt.subplots(num_subplots, 1, sharex=True, sharey=True, figsize=(6, options['size'] * num_subplots))
@@ -113,7 +135,7 @@ def read_depth_plot(options):
         ax.grid()
 
         # plot/label
-        max_count = generate_plot(ax, bigwigs[i], chr, start, stop)
+        max_count, real_start, real_stop = generate_plot(ax, bigwigs[i], chr, start, stop)
         #draw_text(ax, names[i])
 
         # format options
@@ -132,11 +154,11 @@ def read_depth_plot(options):
         ax.set_yticks([0, int( .375 * max_count ), int( .75 * max_count ), int( 1.125 * max_count ), int(1.5 * max_count)])
 
         # set x-axis options
-        ax.set_xlim(start, stop)     # set x limits
+        ax.set_xlim(real_start, real_stop)     # set x limits
         #my_length = stop - start
         #after_start, before_stop = int(my_length * 1/3) + start, start + int(2/3 * my_length)
-        ax.set_xticks([start, stop])   # explicitly set ticks
-        ax.xaxis.set_ticklabels(map(addCommas, [start, stop]))   # make nice looking text for labels
+        ax.set_xticks([real_start, real_stop])   # explicitly set ticks
+        ax.xaxis.set_ticklabels(map(addCommas, [real_start, real_stop]))   # make nice looking text for labels
         ax.get_xticklabels()[0].set_horizontalalignment('left')
         ax.get_xticklabels()[1].set_horizontalalignment('right')
 
@@ -158,7 +180,11 @@ if __name__ == '__main__':
     parser.add_argument('-p', dest='position', action='store', required=True, help='Zero based position chr:start-stop')
     parser.add_argument('-g', dest='gene', action='store', required=True, help='the name')
     parser.add_argument('-s', dest='size', action='store', default=2.)
+    parser.add_argument('--step', dest='step', action='store', type=int, default=1)
     parser.add_argument('-o', dest='output', action='store', required=True, help='path to output figure')
     options = vars(parser.parse_args())
+
+    if len(options['position']) > 1:
+        options['position'] = options['position'].split(',')
 
     read_depth_plot(options)
