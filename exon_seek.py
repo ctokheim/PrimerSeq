@@ -8,7 +8,8 @@ class ExonSeek(object):
     This class handles the finding exons with a psi value threshold.
     '''
 
-    def __init__(self, target, splice_graph):
+    def __init__(self, target, splice_graph, ID):
+        self.id = ID  # id is to prevent overwriting files in self.save_path_info
         self.target = target
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
@@ -22,7 +23,6 @@ class ExonSeek(object):
 
         self.num_of_biconnected = len(biconnected_comp)
         if len(self.graph.predecessors(self.target)) == 0 or len(self.graph.successors(self.target)) == 0:
-            print 'what am i doing here'
             self.component = None  # no flanking exon case
         elif self.num_of_biconnected == 0:
             self.no_biconnected_case()
@@ -41,6 +41,13 @@ class ExonSeek(object):
         '''
         return self.upstream, self.downstream, self.component, self.psi_target, self.psi_upstream, self.psi_downstream
 
+    def save_path_info(self, p, cts):
+        '''
+        Save information about isoforms and their read counts into a json file.
+        '''
+        with open('tmp/isoforms/' + self.id + '.json', 'w') as handle:
+            json.dump({'path': p, 'counts': list(cts)}, handle, indent=4)  # output path information to tmp file
+
     def find_closest_exon_above_cutoff(self, paths, counts, possible_exons, CUT_OFF=.95):
         """
         Progressively step away from the target exon to find a sufficient constitutive exon
@@ -51,7 +58,6 @@ class ExonSeek(object):
                 return exon, psi
 
     def two_biconnected_case(self):
-        print 'two case'
         if self.component[0][-1] == self.target:
             before_component, after_component = self.component
         else:
@@ -135,9 +141,7 @@ class ExonSeek(object):
             self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
                                                                                        counts,
                                                                                        self.component[index + 1:])
-
-        with open('tmp/isoforms/test.json', 'w') as handle:
-            json.dump({'path': paths, 'counts': list(counts)}, handle, indent=4)  # output path information to tmp file
+        self.save_path_info(paths, counts)
         self.psi_target = algs.estimate_psi(self.target, paths, counts)
 
     def first_exon_case(self):

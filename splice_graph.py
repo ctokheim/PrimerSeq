@@ -204,10 +204,10 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
     return [name + ' was not found in a biconnected component']
 
 
-def get_sufficient_psi_exons(name, target, sGraph, genome):
+def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
     # find appropriate flanking "constitutive" exon for primers
     # upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
-    exon_seek_obj = ExonSeek(target, sGraph)
+    exon_seek_obj = ExonSeek(target, sGraph, ID)
     upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
 
     # lack of successor/predecessor nodes
@@ -306,7 +306,8 @@ def main(options, args_output='tmp/debug.json'):
             else:
                 tmp = get_sufficient_psi_exons(line, gene_dict['target'],
                                                splice_graph,
-                                               genome)
+                                               genome,
+                                               name)
             output.append(tmp)
         except AssertionError:
             t, v, trace = sys.exc_info()
