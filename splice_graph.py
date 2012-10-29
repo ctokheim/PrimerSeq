@@ -5,11 +5,9 @@ import itertools as it
 import argparse
 import json
 import algorithms as algs
-from pygr.seqdb import SequenceFileDB
 import matplotlib.pyplot as plt
 import gtf
 from utils import get_chr, get_start_pos, get_end_pos, get_pos, merge_list_of_dicts
-import sam
 import sys
 from bed import Bed
 from wig import Wig
@@ -239,12 +237,11 @@ def main(options, args_output='tmp/debug.json'):
     The gtf main function is the function designed to be called from other scripts. It iterates through each target
     exons and returns the necessary information for primer design.
     """
-    fasta, args_big_bed, args_gtf, args_target = options['fasta'], options['big_bed'], options['gtf'], options['target']
-    genome = SequenceFileDB(fasta)  # load fasta file from file
+    genome, args_big_bed, args_gtf, args_target = options['fasta'], options['big_bed'], options['gtf'], options['target']
     if args_big_bed: bed = Bed(args_big_bed, ext='bed')
 
     # the sam object interfaces with the user specified BAM/SAM file!!!
-    sam_obj_list = [sam.Sam(data) for data in options['rnaseq']]
+    sam_obj_list = options['rnaseq']
 
     # iterate through each target exon
     output = []  # output from program

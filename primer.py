@@ -6,6 +6,8 @@ import splice_graph
 import csv
 import argparse  # command line parsing
 import itertools as it
+from pygr.seqdb import SequenceFileDB
+import sam
 
 # import for logging file
 import logging
@@ -298,7 +300,6 @@ if __name__ == '__main__':
     # define job_id by the name of the target file
     tmp = options['target'].split('/\\')[-1].split('.')
     options['job_id'] = ('.'.join(tmp[:-1]) if len(tmp) > 1 else tmp[0]) + '.output'
-    options['rnaseq'] = options['rnaseq'].split(',')
 
     # define logging file before using logging.debug
     if not os.path.exists('log'): os.mkdir('log')  # make directory to put log files
@@ -307,9 +308,20 @@ if __name__ == '__main__':
                         filename='log/log.primer.' + str(datetime.datetime.now()),
                         filemode='w')
 
+    ### Start loading the user's files ###
     # gtf file must be pre-loaded since there is no random access
     if options['gtf']:
+        print 'Loading GTF . . .'
+        print 'May take ~1 min.'
         options['gtf'] = gene_annotation_reader(options['gtf'])
+
+    print 'Loading fasta . . .'
+    options['fasta'] = SequenceFileDB(options['fasta'])  # get fasta object using pygr right away
+
+    # the sam object interfaces with the user specified BAM/SAM file!!!
+    print 'Loading Bam Files . . .'
+    options['rnaseq'] = [sam.Sam(data) for data in options['rnaseq'].split(',')]
+    ### END loading files ###
 
     # call main function
     main(options)

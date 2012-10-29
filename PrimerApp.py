@@ -5,10 +5,12 @@
 import wx
 import os
 import re
+import sys
 from pygr.seqdb import SequenceFileDB
 import sam
 import primer
 import wx.lib.agw.pyprogress as PP
+import traceback
 
 # begin wxGlade: extracode
 # end wxGlade
@@ -133,13 +135,22 @@ class PrimerFrame(wx.Frame):
             filename = dlg.GetPath()  # get the new filenames from the dialog
             dlg.Destroy()  # best to do this sooner
 
-            # set the fasta attribute
-            style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_CAN_ABORT
-            dlg = PP.PyProgress(None, -1, "FASTA",
-                                "Loading FASTA . . . first time use of your FASTA will take ~1 min.",
-                                style=style)
-            self.fasta = SequenceFileDB(filename)
-            self.fasta_choice_label.SetLabel(filename.split('/')[-1])  # set label to just the filename and not the whole path
+            try:
+                # set the fasta attribute
+                load_progress = wx.ProgressDialog('FASTA', 'Loading FASTA . . . this may take ~1 min.',
+                                                  maximum=100, parent=self, style=wx.PD_CAN_ABORT
+                                                  | wx.PD_APP_MODAL
+                                                  | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+                self.fasta = SequenceFileDB(filename.encode('ascii', 'replace'))
+                self.fasta_choice_label.SetLabel(filename.split('/')[-1])  # set label to just the filename and not the whole path
+                load_progress.Update(100, 'Done.')
+            except:
+                load_progress.Destroy()
+                t, v, trace = sys.exc_info()
+                print('ERROR! For more information read the following lines')
+                print('Type: ' + str(t))
+                print('Value: ' + str(v))
+                print('Traceback:\n' + traceback.format_exc())
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
@@ -199,7 +210,7 @@ class PrimerFrame(wx.Frame):
         strandList, chrList, startList, endList = [], [], [], []  # stores all coordinate info
 
         # handle the coordinates in self.coordinates_text_input
-        coordinates_string = self.coordinates_text_input.GetValue()  # a string
+        coordinates_string = self.coordinates_text_field.GetValue()  # a string
         coordinates = filter(lambda x: x != '', re.split('\s*,*\s*', coordinates_string))  # ['(strand)(chr):(start)-(end)', ...]
         print coordinates
         event.Skip()
