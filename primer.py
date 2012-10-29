@@ -29,7 +29,7 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
             * gene_dict['chr']['My_favorite_gene']['end'] = end of gene
             * gene_dict['chr']['My_favorite_gene']['exons'] = the set of exons (nodes)
     """
-    logging.debug('Started reading %s' % file_path)
+    # logging.debug('Started reading %s' % file_path)
     # iterate through each gtf feature
     file_input = open(file_path)
     gene_dict = {}
@@ -58,7 +58,7 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
         for ex in tx_path:
             gene_dict[tx[0].seqname][gene_id]['exons'].add(ex)  # hold a set of non-redundant exons
     file_input.close()  # close gtf file
-    logging.debug('Finished reading %s' % file_path)
+    # logging.debug('Finished reading %s' % file_path)
     return gene_dict
 
 
@@ -118,9 +118,9 @@ def primer3(options, primer3_options):
     mkdir_tmp()  # make any necessary tmp directories
 
     # read in targets
-    with open(options['target']) as handle:
-        target_list = map(lambda x: x.strip().split('\t'), handle.readlines())
-        options['target'] = target_list
+    # with open(options['target']) as handle:
+    #    target_list = map(lambda x: x.strip().split('\t'), handle.readlines())
+    #    options['target'] = target_list
 
     # find flanking exons
     logging.debug('Calling splice_graph.main to find flanking exons')
@@ -138,7 +138,7 @@ def primer3(options, primer3_options):
             output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
-            tar = target_list[z][0] # flanking_info[z][1]  # target interval (used for print statements)
+            tar = options['target'][z][1] # flanking_info[z][1]  # target interval (used for print statements)
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
             PRIMER_EXPLAIN_FLAG = '1'
