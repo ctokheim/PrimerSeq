@@ -165,25 +165,22 @@ class PrimerFrame(wx.Frame):
 
             # set the gtf attribute
             print filename
-            #load_progress = wx.ProgressDialog('GTF', 'Setting up GTF file list',
-            #                                  maximum=100, parent=self, style=wx.PD_CAN_ABORT
-            #                                  | wx.PD_APP_MODAL
-            #                                  | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-            style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_CAN_ABORT
-            dlg = PP.PyProgress(None, -1, "GTF",
-                                "Loading the gtf will take 1-2 min.",
-                                style=style)
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            load_progress = wx.ProgressDialog('GTF', 'Setting up GTF file list',
+                                              maximum=100, parent=self, style=wx.PD_CAN_ABORT
+                                              | wx.PD_APP_MODAL
+                                              | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+            load_progress.Update(0)
             self.gtf = primer.gene_annotation_reader(filename)
-            dlg.Destroy()
-            wx.SafeYield()
-            wx.GetApp().GetTopWindow().Raise()
+            load_progress.Update(100)
+            self.gtf_choice_label.SetLabel(filename_without_path)
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
 
     def choose_bam_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         dlg = wx.FileDialog(self, message='Choose your bam files', defaultDir=os.getcwd(),
-                            wildcard='BAM files (*.bam)|*.bam', style=wx.FD_MULTIPLE)  # open file dialog
+                            wildcard='BAM files (*.bam)|*.bam|SAM files (*.sam)|*.sam', style=wx.FD_MULTIPLE)  # open file dialog
         # if they press ok
         if dlg.ShowModal() == wx.ID_OK:
             filenames = dlg.GetPaths()  # get the new filenames from the dialog
@@ -212,7 +209,25 @@ class PrimerFrame(wx.Frame):
         # handle the coordinates in self.coordinates_text_input
         coordinates_string = self.coordinates_text_field.GetValue()  # a string
         coordinates = filter(lambda x: x != '', re.split('\s*,*\s*', coordinates_string))  # ['(strand)(chr):(start)-(end)', ...]
-        print coordinates
+
+        # options for primer.py
+        options = {}
+        options['target'] = zip(range(len(coordinates)), coordinates)
+        options['gtf'] = self.gtf
+        options['fasta'] = self.fasta
+        options['rnaseq'] = self.bam
+        options['psi'] = .95
+        options['annotation_flag'], options['rnaseq_flag'], options['both_flag'] = True, False, False
+        options['ouput'] = 'example.txt'
+        options['read_threshold'] = 5
+        options['kee_temp'] = False
+        options['big_bed'] = None
+        options['no_gene_id'] = False
+        options['job_id'] = 'jobs_id'
+
+        # design primers by calling the primer.main function
+        primer.main(options)
+
         event.Skip()
 
 # end of class PrimerFrame
