@@ -1,3 +1,9 @@
+'''
+File: sam.py
+Author: Collin Tokheim
+Description: Python wrapper around ExtractSamRegion.jar and Convert2SortedBam.jar
+'''
+
 import subprocess
 import jct_counts
 import os
@@ -74,7 +80,7 @@ class Sam(object):
                 #jct_dict[chr].setdefault(start, {})
                 #jct_dict[chr][start].setdefault(stop, 0)
                 #jct_dict[chr][start][stop] += count
-                jct_dict[(chr, start, stop)] = count
+                jct_dict[(chr, start, stop)] = count  # this simplifies the key comparted to a multi-level dict
 
         return jct_dict
 

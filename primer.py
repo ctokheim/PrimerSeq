@@ -1,3 +1,10 @@
+'''
+File: primer.py
+Author: Collin Tokheim
+Description: primer.py can design primers from the command line.
+Note that PrimerApp.py (the GUI) just uses the primer module to design the
+primers.
+'''
 import subprocess
 import os
 import shutil

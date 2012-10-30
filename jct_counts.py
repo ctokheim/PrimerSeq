@@ -1,3 +1,11 @@
+'''
+File: jct_counts.py
+Author: Collin Tokheim
+Description: This file reads a sam file and outputs junction read
+counts to file. Since this is a python script, it is only advisable
+to use this on a sam file that only contains reads in your region of
+interest.
+'''
 import csv
 import argparse
 import sys
@@ -5,6 +13,9 @@ import re
 
 
 def main(options):
+    '''
+    Ouptuts jct read counts from a SAM file into the specified output file.
+    '''
     # define input as either a file or stdin
     if options['sam'] == 'stdin':
         file_input = sys.stdin
