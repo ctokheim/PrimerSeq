@@ -57,24 +57,26 @@ public class ExtractSamRegion {
         	System.exit(1);
         }
         
-        
-        final SAMFileWriter outputSam = new SAMFileWriterFactory().makeSAMOrBAMWriter(bam.getFileHeader(),
-                true, outputSamFile); // output
-        
-        // iterate over reads in the specified region
-        int totalReads = 0;
-        SAMRecordIterator regionIterator = bam.queryOverlapping(args[2], start, end);
-        SAMRecord tmp;
-        while(regionIterator.hasNext()){
-        	tmp = regionIterator.next();
-        	outputSam.addAlignment(tmp);
-        	totalReads++;
+        try{ 
+	        final SAMFileWriter outputSam = new SAMFileWriterFactory().makeSAMOrBAMWriter(bam.getFileHeader(),
+	                true, outputSamFile); // output
+	        
+	        // iterate over reads in the specified region
+	        int totalReads = 0;
+	        SAMRecordIterator regionIterator = bam.queryOverlapping(args[2], start, end);
+	        SAMRecord tmp;
+	        while(regionIterator.hasNext()){
+	        	tmp = regionIterator.next();
+	        	outputSam.addAlignment(tmp);
+	        	totalReads++;
+	        }
+	
+	        System.out.println("A total of " + Integer.toString(totalReads) + " reads were found overlapping " + args[2] + ":" + args[3] + "-" + args[4]);
+	        outputSam.close();  // close files
+        }catch (java.nio.BufferUnderflowException e){
+        	System.out.println("A total of 0 reads were found overlapping " + args[2] + ":" + args[3] + "-" + args[4]);
         }
-
-        System.out.println("A total of " + Integer.toString(totalReads) + " were found overlapping " + args[2] + ":" + args[3] + "-" + args[4]);
         
-        // close files
-        outputSam.close();
         bam.close();
 
 	}

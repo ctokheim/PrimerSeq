@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 import sys
 import logging
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def get_biconnected(G):

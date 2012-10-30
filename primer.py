@@ -307,6 +307,8 @@ if __name__ == '__main__':
     # define job_id by the name of the target file
     tmp = options['target'].split('/\\')[-1].split('.')
     options['job_id'] = ('.'.join(tmp[:-1]) if len(tmp) > 1 else tmp[0]) + '.output'
+    with open(options['target']) as handle:
+        options['target'] = map(lambda x: x.strip().split('\t'), handle.readlines())
 
     # define logging file before using logging.debug
     if not os.path.exists('log'): os.mkdir('log')  # make directory to put log files
