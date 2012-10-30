@@ -111,7 +111,6 @@ def mkdir_tmp():
     if not os.path.exists('tmp/isoforms'): os.mkdir('tmp/isoforms')
 
 
-
 def primer3(options, primer3_options):
     """
     The primer.py main function uses the gtf module to find information about constitutive flanking exons for the target exons of interest.
@@ -146,6 +145,7 @@ def primer3(options, primer3_options):
         # has flanking exon information case
         else:
             tar = options['target'][z][1] # flanking_info[z][1]  # target interval (used for print statements)
+            tar_id = options['target'][z][0]
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
             PRIMER_EXPLAIN_FLAG = '1'
@@ -200,7 +200,7 @@ def primer3(options, primer3_options):
                 inclusion_size = ';'.join(inclusion_size_list)
 
                 # append results to output_list
-                tmp = [tar, flanking_info[z][EXON_TARGET], flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
+                tmp = [tar_id, flanking_info[z][EXON_TARGET], flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
                        flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET], flanking_info[z][PSI_DOWNSTREAM]]
                 output_list.append(tmp)

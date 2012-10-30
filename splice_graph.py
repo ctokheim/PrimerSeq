@@ -283,6 +283,10 @@ def main(options, args_output='tmp/debug.json'):
                                            chr=chr,
                                            strand=strand,
                                            read_threshold=options['read_threshold'])
+                edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                                     for sam_obj in sam_obj_list]
+                edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
+                splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
             elif options['rnaseq_flag']:
                 splice_graph = SpliceGraph(annotation=None,  # set to None to not use annotation
                                            chr=chr,

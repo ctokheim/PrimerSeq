@@ -249,7 +249,7 @@ class PrimerFrame(wx.Frame):
             # set the gtf attribute
             print filename
             filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
-            load_progress = wx.ProgressDialog('GTF', 'Setting up GTF file list',
+            load_progress = wx.ProgressDialog('GTF', 'Loading GTF . . . will take ~1 min',
                                               maximum=100, parent=self, style=wx.PD_CAN_ABORT
                                               | wx.PD_APP_MODAL
                                               | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
@@ -302,8 +302,7 @@ class PrimerFrame(wx.Frame):
 
         # options for primer.py
         options = {}
-        options['target'] = zip(range(len(coordinates)), coordinates)
-        print zip(range(len(coordinates)), coordinates)
+        options['target'] = zip(range(1, len(coordinates) + 1), coordinates)
         options['gtf'] = self.gtf
         options['fasta'] = self.fasta
         options['rnaseq'] = self.bam
@@ -317,14 +316,11 @@ class PrimerFrame(wx.Frame):
         options['big_bed'] = None
         options['no_gene_id'] = False if str(self.gene_id_combo_box.GetValue()) == 'Valid' else True
         options['job_id'] = 'jobs_id'
-        print options['keep_temp'], options['no_gene_id'], options['psi'], options['annotation_flag'], options['both_flag']
 
         # design primers by calling the primer.main function
         primer.main(options)
 
         event.Skip()
-
-
 
 
 # end of class PrimerFrame
