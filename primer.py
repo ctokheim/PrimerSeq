@@ -321,6 +321,7 @@ if __name__ == '__main__':
     # the sam object interfaces with the user specified BAM/SAM file!!!
     print 'Loading Bam Files . . .'
     options['rnaseq'] = [sam.Sam(data) for data in options['rnaseq'].split(',')]
+    print 'Done loading all files.'
     ### END loading files ###
 
     # call main function
