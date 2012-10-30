@@ -1,3 +1,9 @@
+'''
+File: exon_seek.py
+Author: Collin Tokheim
+Description: exon_seek.py holds the ExonSeek class which searches
+for appropriate flanking "constitutive" exons to place primers on.
+'''
 import algorithms as algs
 import logging
 import json
@@ -6,11 +12,18 @@ import json
 class ExonSeek(object):
     '''
     This class handles the finding exons with a psi value threshold.
+    That is, it finds flanking exons to place primers where the exon
+    inclusion level is above a user-defined value.
     '''
 
     def __init__(self, target, splice_graph, ID):
+        '''
+        As the purpose of ExonSeek is to flanking constitutive exons, it is necessary
+        to know what needs to be "flanked", the target, and have a splice graph representation
+        of gene structure (splice_graph). The ID variable is meant to prevent overwriting of files.
+        '''
         self.id = ID  # id is to prevent overwriting files in self.save_path_info
-        self.target = target
+        self.target = target  # (start, end)
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
             raise ValueError('The target was not found in the graph (likely a bug in the code)')
@@ -18,8 +31,8 @@ class ExonSeek(object):
         self.strand = splice_graph.strand  # convenience variable
         self.splice_graph = splice_graph
         biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(self.graph))
-        self.upstream, self.downstream, self.total_components = None, None, None
-        self.psi_upstream, self.psi_target, self.psi_downstream = None, None, None
+        self.upstream, self.downstream, self.total_components = None, None, None  # these will be defined after calling methods
+        self.psi_upstream, self.psi_target, self.psi_downstream = None, None, None  # these will be defined after calling methods
 
         self.num_of_biconnected = len(biconnected_comp)
         if len(self.graph.predecessors(self.target)) == 0 or len(self.graph.successors(self.target)) == 0:
@@ -45,7 +58,7 @@ class ExonSeek(object):
         '''
         Save information about isoforms and their read counts into a json file.
         '''
-        with open('tmp/isoforms/' + self.id + '.json', 'w') as handle:
+        with open('tmp/isoforms/' + str(self.id) + '.json', 'w') as handle:
             json.dump({'path': p, 'counts': list(cts)}, handle, indent=4)  # output path information to tmp file
 
     def find_closest_exon_above_cutoff(self, paths, counts, possible_exons, CUT_OFF=.95):
@@ -58,6 +71,11 @@ class ExonSeek(object):
                 return exon, psi
 
     def two_biconnected_case(self):
+        '''
+        This is a case where the target exon is constitutive but has two
+        flanking biconnected components. Meaning estimating psi for both
+        the upstream and downstream exon is necessary
+        '''
         if self.component[0][-1] == self.target:
             before_component, after_component = self.component
         else:
@@ -89,6 +107,11 @@ class ExonSeek(object):
         self.psi_target = 1.0
 
     def no_biconnected_case(self):
+        '''
+        Case where the target, upstream, and downstream exons are all constitutive.
+        Thus just return the immediate upstream and downstream exon along with original
+        target.
+        '''
         # add information to log file
         logging.debug('It appears %s has two imediate flanking constitutive exons' % str(self.target))
         if len(self.graph.successors(self.target)) > 1:
@@ -108,6 +131,9 @@ class ExonSeek(object):
         self.component = self.total_components
 
     def one_biconnected_case(self):
+        '''
+        Target exon could be constitutive or alternatively spliced.
+        '''
         if self.target == self.component[0]:
             # constitutive exon of biconnected component, exons with > start pos are
             # not constitutive. However, the immediate preceding exon will be
@@ -124,6 +150,11 @@ class ExonSeek(object):
         self.total_components = self.component
 
     def non_constitutive_case(self):
+        '''
+        In this case, I also estimate the psi for the target exon since
+        it is alternatively spliced. Both upstream and downstream exons are
+        checked for the closest sufficiently included exon.
+        '''
         index = self.component.index(self.target)
         my_subgraph = self.graph.subgraph(self.component)
         paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
@@ -145,6 +176,9 @@ class ExonSeek(object):
         self.psi_target = algs.estimate_psi(self.target, paths, counts)
 
     def first_exon_case(self):
+        '''
+        Case where the target and one flanking exon is constitutive.
+        '''
         if len(self.graph.predecessors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and predecessors')
         my_subgraph = self.graph.subgraph(self.component)
@@ -162,6 +196,9 @@ class ExonSeek(object):
         self.psi_target = 1.0
 
     def last_exon_case(self):
+        '''
+        Case where the target and one flanking exon are constitutive.
+        '''
         if len(self.graph.successors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and successors')
 

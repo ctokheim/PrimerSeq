@@ -1,3 +1,10 @@
+'''
+File: primer.py
+Author: Collin Tokheim
+Description: primer.py can design primers from the command line.
+Note that PrimerApp.py (the GUI) just uses the primer module to design the
+primers.
+'''
 import subprocess
 import os
 import shutil
@@ -29,7 +36,7 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
             * gene_dict['chr']['My_favorite_gene']['end'] = end of gene
             * gene_dict['chr']['My_favorite_gene']['exons'] = the set of exons (nodes)
     """
-    logging.debug('Started reading %s' % file_path)
+    # logging.debug('Started reading %s' % file_path)
     # iterate through each gtf feature
     file_input = open(file_path)
     gene_dict = {}
@@ -58,7 +65,7 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
         for ex in tx_path:
             gene_dict[tx[0].seqname][gene_id]['exons'].add(ex)  # hold a set of non-redundant exons
     file_input.close()  # close gtf file
-    logging.debug('Finished reading %s' % file_path)
+    # logging.debug('Finished reading %s' % file_path)
     return gene_dict
 
 
@@ -104,7 +111,6 @@ def mkdir_tmp():
     if not os.path.exists('tmp/isoforms'): os.mkdir('tmp/isoforms')
 
 
-
 def primer3(options, primer3_options):
     """
     The primer.py main function uses the gtf module to find information about constitutive flanking exons for the target exons of interest.
@@ -118,9 +124,9 @@ def primer3(options, primer3_options):
     mkdir_tmp()  # make any necessary tmp directories
 
     # read in targets
-    with open(options['target']) as handle:
-        target_list = map(lambda x: x.strip().split('\t'), handle.readlines())
-        options['target'] = target_list
+    # with open(options['target']) as handle:
+    #    target_list = map(lambda x: x.strip().split('\t'), handle.readlines())
+    #    options['target'] = target_list
 
     # find flanking exons
     logging.debug('Calling splice_graph.main to find flanking exons')
@@ -138,7 +144,8 @@ def primer3(options, primer3_options):
             output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
-            tar = target_list[z][0] # flanking_info[z][1]  # target interval (used for print statements)
+            tar = options['target'][z][1] # flanking_info[z][1]  # target interval (used for print statements)
+            tar_id = options['target'][z][0]
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
             PRIMER_EXPLAIN_FLAG = '1'
@@ -193,7 +200,7 @@ def primer3(options, primer3_options):
                 inclusion_size = ';'.join(inclusion_size_list)
 
                 # append results to output_list
-                tmp = [tar, flanking_info[z][EXON_TARGET], flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
+                tmp = [tar_id, flanking_info[z][EXON_TARGET], flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
                        flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET], flanking_info[z][PSI_DOWNSTREAM]]
                 output_list.append(tmp)
