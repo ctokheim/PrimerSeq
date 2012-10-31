@@ -23,10 +23,11 @@ class SpliceGraph(object):
     of splice graphs for a single gene.
     '''
 
-    def __init__(self, annotation, chr, strand, read_threshold=5, filter_factor=2):
+    def __init__(self, annotation, chr, strand, read_threshold=5, filter_factor=2, min_count=1):
         self.chr = chr
         self.strand = strand
         self.READ_THRESHOLD = read_threshold
+        self.MIN_COUNT = min_count
         self.FILTER_FACTOR = filter_factor
         self.annotation = []  # set value using set_graph_as_annotation
         if annotation is not None:
@@ -69,7 +70,8 @@ class SpliceGraph(object):
                 tmpWeight = weights[(self.chr, start, end)]
                 self.graph[u][v]['weight'] = tmpWeight
             except KeyError:
-                self.graph[u][v]['weight'] = 1
+                self.graph[u][v]['weight'] = 1  # set dummy value
+            self.graph[u][v]['weight'] = max(self.graph[u][v]['weight'], self.MIN_COUNT)  # set read count to at least a user-defined value
 
     def set_graph_as_nodes_only(self, exons):
         """
@@ -272,7 +274,8 @@ def main(options, args_output='tmp/debug.json'):
                 splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
                                            chr=chr,
                                            strand=strand,
-                                           read_threshold=options['read_threshold'])
+                                           read_threshold=options['read_threshold'],
+                                           min_count=options['min_jct_count'])
                 edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
                                      for sam_obj in sam_obj_list]
                 edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
@@ -282,7 +285,8 @@ def main(options, args_output='tmp/debug.json'):
                 splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use annotation
                                            chr=chr,
                                            strand=strand,
-                                           read_threshold=options['read_threshold'])
+                                           read_threshold=options['read_threshold'],
+                                           min_count=options['min_jct_count'])
                 edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
                                      for sam_obj in sam_obj_list]
                 edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary

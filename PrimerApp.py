@@ -69,6 +69,8 @@ class PrimerFrame(wx.Frame):
         self.read_threshold_text_field = wx.TextCtrl(self.primer_notebook_pane_2, -1, "5")
         self.anchor_length_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Anchor Length:")
         self.anchor_length_text_field = wx.TextCtrl(self.primer_notebook_pane_2, -1, "8")
+        self.min_jct_count_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Min. Jct Count:")
+        self.min_jct_count_text_field = wx.TextCtrl(self.primer_notebook_pane_2, -1, "1")
         self.sizer_11_staticbox = wx.StaticBox(self.primer_notebook_pane_2, -1, "Advanced")
 
         self.__set_properties()
@@ -118,6 +120,7 @@ class PrimerFrame(wx.Frame):
         self.temp_combo_box.SetSelection(-1)
         self.read_threshold_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.anchor_length_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.min_jct_count_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         # end wxGlade
 
     def __do_layout(self):
@@ -126,7 +129,7 @@ class PrimerFrame(wx.Frame):
         sizer_10 = wx.BoxSizer(wx.VERTICAL)
         self.sizer_11_staticbox.Lower()
         sizer_11 = wx.StaticBoxSizer(self.sizer_11_staticbox, wx.HORIZONTAL)
-        grid_sizer_4 = wx.GridSizer(3, 2, 0, 0)
+        grid_sizer_4 = wx.GridSizer(4, 2, 0, 0)
         grid_sizer_3 = wx.GridSizer(3, 3, 0, 0)
         sizer_2 = wx.BoxSizer(wx.VERTICAL)
         sizer_3 = wx.BoxSizer(wx.VERTICAL)
@@ -184,6 +187,8 @@ class PrimerFrame(wx.Frame):
         grid_sizer_4.Add(self.read_threshold_text_field, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_4.Add(self.anchor_length_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_4.Add(self.anchor_length_text_field, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 2)
+        grid_sizer_4.Add(self.min_jct_count_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        grid_sizer_4.Add(self.min_jct_count_text_field, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         sizer_11.Add(grid_sizer_4, 1, wx.EXPAND, 0)
         sizer_10.Add(sizer_11, 1, wx.EXPAND, 0)
         self.primer_notebook_pane_2.SetSizer(sizer_10)
@@ -315,6 +320,7 @@ class PrimerFrame(wx.Frame):
         options['keep_temp'] = False if str(self.temp_combo_box.GetValue()) == 'No' else True
         options['big_bed'] = None
         options['no_gene_id'] = False if str(self.gene_id_combo_box.GetValue()) == 'Valid' else True
+        options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
         options['job_id'] = 'jobs_id'
 
         # design primers by calling the primer.main function
