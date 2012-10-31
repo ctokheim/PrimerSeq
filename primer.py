@@ -15,6 +15,7 @@ import argparse  # command line parsing
 import itertools as it
 from pygr.seqdb import SequenceFileDB
 import sam
+import utils
 
 # import for logging file
 import logging
@@ -111,6 +112,34 @@ def mkdir_tmp():
     if not os.path.exists('tmp/isoforms'): os.mkdir('tmp/isoforms')
 
 
+def primer_coordinates(p3_output, strand, tar, up, down):
+    '''
+    This function parses the .Primer3 file to find the primer coordinates on
+    the genome.
+    '''
+    # get position information
+    (left_primer_offset, left_primer_length), (right_primer_offset, right_primer_length) = map(int, p3_output['PRIMER_LEFT_0'].split(',')), map(int, p3_output['PRIMER_RIGHT_0'].split(','))
+    target_start, target_end = utils.get_pos(tar)
+    upstream_start, upstream_end = utils.get_pos(up)
+    downstream_start, downstream_end = utils.get_pos(down)
+    my_chr = utils.get_chr(tar)
+
+    # get position of primers
+    if strand == '+':
+        tmp = upstream_start + left_primer_offset
+        first = (tmp, tmp + left_primer_length)
+        tmp = right_primer_offset - (upstream_end - upstream_start) - (target_end - target_start) + downstream_start
+        second = (tmp, tmp + right_primer_length)
+    else:
+        tmp = upstream_end - left_primer_offset - left_primer_length
+        second = (tmp, tmp + left_primer_length)
+        tmp = right_primer_offset - (upstream_end - upstream_start) - (target_end - target_start)
+        tmp = downstream_end - tmp - right_primer_length
+        first = (tmp, tmp + right_primer_length)
+
+    return utils.construct_coordinate(my_chr, first[0], first[1]) + ';' + utils.construct_coordinate(my_chr, second[0], second[1])
+
+
 def primer3(options, primer3_options):
     """
     The primer.py main function uses the gtf module to find information about constitutive flanking exons for the target exons of interest.
@@ -194,13 +223,17 @@ def primer3(options, primer3_options):
                 # get info about product sizes
                 target_exon_len = len(flanking_info[z][TARGET_SEQ])
                 Primer3_PRIMER_PRODUCT_SIZE = int(primer3_dict['PRIMER_PAIR_0_PRODUCT_SIZE']) - target_exon_len
+                primer3_coords = primer_coordinates(primer3_dict, flanking_info[z][STRAND],
+                                                    flanking_info[z][EXON_TARGET],
+                                                    flanking_info[z][UPSTREAM_TARGET],
+                                                    flanking_info[z][DOWNSTREAM_TARGET])
                 skipping_size_list = [str(int(j) + Primer3_PRIMER_PRODUCT_SIZE) for j in flanking_info[z][ALL_PATHS].skip_lengths]
                 inclusion_size_list = [str(int(k) + Primer3_PRIMER_PRODUCT_SIZE) for k in flanking_info[z][ALL_PATHS].inc_lengths]
                 skipping_size = ';'.join(skipping_size_list)
                 inclusion_size = ';'.join(inclusion_size_list)
 
                 # append results to output_list
-                tmp = [tar_id, flanking_info[z][EXON_TARGET], flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
+                tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
                        flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET], flanking_info[z][PSI_DOWNSTREAM]]
                 output_list.append(tmp)
@@ -208,8 +241,8 @@ def primer3(options, primer3_options):
     # write output information
     with open(outfiles_PATH + jobs_ID + '.txt', 'wb') as outputfile_tab:
         # define csv header
-        header = ['ID', 'Target_Exon_coordinates', 'PSI_TARGET', 'Left_primer', 'Right_primer', 'Average_Tm',
-                  'Skipping_production_size', 'Inclusion_production_size', 'Upstream_coordinates', 'PSI_UPSTREAM', 'Downstream_coordinates', 'PSI_DOWNSTREAM']
+        header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'left primer', 'right primer', 'average TM',
+                  'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
     shutil.copy(outfiles_PATH + jobs_ID + '.txt', options['output'])  # copy file to output destination

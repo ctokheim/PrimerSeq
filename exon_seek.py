@@ -26,7 +26,7 @@ class ExonSeek(object):
         self.target = target  # (start, end)
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
-            raise ValueError('The target was not found in the graph (likely a bug in the code)')
+            assert 1==0, 'The target was not found in the graph (likely a bug in the code)'
 
         self.strand = splice_graph.strand  # convenience variable
         self.splice_graph = splice_graph

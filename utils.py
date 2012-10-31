@@ -26,6 +26,9 @@ def get_chr(coordinate):
     return coordinate.split(":")[0]
 
 
+def construct_coordinate(chr, start, end):
+    return '%s:%s-%s' % (chr, str(start), str(end))
+
 def merge_list_of_dicts(list_of_dicts):
     '''
     This function mereges multiple dicts contained read counts from SAM/BAM file

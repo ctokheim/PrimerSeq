@@ -24,6 +24,8 @@ import argparse
 import itertools as it
 from operator import *
 import json
+import csv
+import utils
 # custom imports
 from shapes import ExonRectangle, JunctionLine
 from matplotlib.offsetbox import AnchoredOffsetbox, TextArea, DrawingArea, HPacker
@@ -174,7 +176,10 @@ def exonDrawSubplot(ax, exons, pct):  # exons was coords
 
     ax.set_ylim(-1.0, 1.0)
     plt.gca().axes.get_yaxis().set_visible(False)
-    offset_text(ax, '%.1f' %(100*pct) + '%')
+    if isinstance(pct, (float, int)):
+        offset_text(ax, '%.1f' % (100 * pct) + '%')
+    else:
+        offset_text(ax, pct)
 
     return ax, new_start, new_stop
 
@@ -197,7 +202,14 @@ def retrieve_top(tx_paths, counts, n=5):
     return tx_paths, counts, num_of_txs, percent_estimate
 
 
-def main(tx_paths, counts):
+def read_primer_file(primer_file, ID):
+    with open(primer_file) as handle:
+        for line in csv.reader(handle, delimiter='\t'):
+            if line[0] == ID:
+                return map(utils.get_pos, line[2].split(';'))
+
+
+def main(tx_paths, counts, primer_coord):
     # configurations
     matplotlib.rcParams['font.size'] = 16  # edit font size of title
     matplotlib.rcParams['xtick.labelsize'] = 13
@@ -206,16 +218,24 @@ def main(tx_paths, counts):
 
     tx_paths, counts, num_of_txs, percent_estimate = retrieve_top(tx_paths, counts)
 
-    fig, axes = plt.subplots(num_of_txs, 1, sharex=True, sharey=True, figsize=(6, .75 * num_of_txs))
+    # add primer to drawing
+    num_of_drawings = num_of_txs + 1
+
+    fig, axes = plt.subplots(num_of_drawings, 1, sharex=True, sharey=True, figsize=(6, .75 * num_of_drawings))
 
     # loop through and make all subplots in a figure
     for i, ax in enumerate(axes.flat):
         # draw exon structure + junctions
-        exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
+        # exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
+
+        if i == 0:
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, 'primer')
+        else:
+            i -= 1
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
 
         if i == (len(axes.flat) - 1):
             first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]
-            print first_label, last_label
             exonDrawAxis.set_xlim(new_start, new_stop)
             exonDrawAxis.set_xticks([new_start, new_stop])  # edited
             exonDrawAxis.xaxis.set_ticklabels(["%s" % (addCommas(first_label)), "%s" % (addCommas(last_label))])  # prevents scientific notation and provide scale effect for axis
@@ -236,6 +256,8 @@ def main(tx_paths, counts):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='This script displays multiple isoforms and their relative abundance')
     parser.add_argument('-j', action='store', dest='json', help='input json file')
+    parser.add_argument('-p', '--primer-file', action='store', dest='primer_file', required=True, help='Path to output file from primer.py')
+    parser.add_argument('-i', action='store', dest='id', required=True, help='ID to use from PRIMER_FILE')
     parser.add_argument('-s', action='store', dest='scale', type=int, default=1)
     parser.add_argument('-o', action='store', dest='output', required=True, help='output file')
     args = parser.parse_args()
@@ -243,4 +265,4 @@ if __name__ == '__main__':
     with open(args.json) as handle:
         my_json = json.load(handle)
 
-    main(my_json['path'], my_json['counts'])
+    main(my_json['path'], my_json['counts'], read_primer_file(args.primer_file, args.id))
