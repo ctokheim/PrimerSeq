@@ -323,9 +323,15 @@ class PrimerFrame(wx.Frame):
         options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
         options['job_id'] = 'jobs_id'
 
+        load_progress = wx.ProgressDialog('Run', 'Designing primers . . .',
+                                          maximum=100, parent=self, style=wx.PD_CAN_ABORT
+                                          | wx.PD_APP_MODAL
+                                          | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+
         # design primers by calling the primer.main function
         primer.main(options)
 
+        load_progress.Update(100, 'Done.')
         event.Skip()
 
 
