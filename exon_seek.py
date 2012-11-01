@@ -130,6 +130,10 @@ class ExonSeek(object):
         self.total_components = [self.upstream, self.target, self.downstream]
         self.component = self.total_components
 
+        # since the upstream, target, and downstream exon are constitutive then
+        # they all have inclusion of 1.0
+        self.psi_target, self.psi_upstream, self.psi_downstream = 1.0, 1.0, 1.0
+
     def one_biconnected_case(self):
         '''
         Target exon could be constitutive or alternatively spliced.
