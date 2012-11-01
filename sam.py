@@ -7,6 +7,7 @@ Description: Python wrapper around ExtractSamRegion.jar and Convert2SortedBam.ja
 import subprocess
 import jct_counts
 import os
+import ConfigParser
 
 # for logging purposes
 import logging
@@ -15,9 +16,12 @@ import sys
 import time
 
 # define directories
-TMP_DIR = 'tmp/sam/'  # directory to dump intermediate sam files
+cfg = ConfigParser.ConfigParser()
+cfg.read('PrimerSeq.cfg')
+cfg_options = dict(cfg.items('directory'))
+TMP_DIR = cfg_options['tmp'] + '/sam/'  # directory to dump intermediate sam files
 BIN_DIR = 'bin/'  # directory of jar files
-JCT_DIR = 'tmp/jct/'  # directory for .jct files
+JCT_DIR = cfg_options['tmp'] + '/jct/'  # directory for .jct files
 
 
 class Sam(object):

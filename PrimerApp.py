@@ -299,10 +299,10 @@ class PrimerFrame(wx.Frame):
         coordinates = map(str, filter(lambda x: x != '', re.split('\s*,*\s*', coordinates_string)))  # ['(strand)(chr):(start)-(end)', ...]
 
         # define logging file before using logging.debug
-        if not os.path.exists('log'): os.mkdir('log')  # make directory to put log files
+        if not os.path.exists(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s %(message)s',
-                            filename='log/log.primer.' + str(datetime.datetime.now()),
+                            filename=primer.config_options['log'] + '/log.primer.' + str(datetime.datetime.now()),
                             filemode='w')
 
         # options for primer.py

@@ -16,6 +16,7 @@ import itertools as it
 from pygr.seqdb import SequenceFileDB
 import sam
 import utils
+import ConfigParser
 
 # import for logging file
 import logging
@@ -24,6 +25,10 @@ import time
 import sys
 import traceback
 
+# create a global variable that holds the config options
+my_config = ConfigParser.ConfigParser()
+my_config.read('PrimerSeq.cfg')
+config_options = dict(my_config.items('directory'))
 
 def gene_annotation_reader(file_path, FILTER_FACTOR=2):
     """
@@ -76,12 +81,12 @@ def call_primer3(target_string, jobs_ID):
     exits with a non-zero exit status.
     """
     logging.debug('Calling primer3 for %s . . .' % target_string)
-    os.chdir('tmp')  # make sure primer3 files occur in tmp dir
-    cmd = '../primer3/src/primer3_core < ' + jobs_ID + '.conf' + ' > ' + jobs_ID + '.Primer3'
+    os.chdir(config_options['tmp'])  # make sure primer3 files occur in tmp dir
+    cmd = config_options['primer3'] + '/src/primer3_core < ' + jobs_ID + '.conf' + ' > ' + jobs_ID + '.Primer3'
     logging.debug(cmd)  # record command in log file
     subprocess.check_call(cmd, shell=True)
     logging.debug('Finished call of primer3 for %s' % target_string)
-    os.chdir('..')  # go back to top level
+    os.chdir(config_options['primerseq'])  # go back to top level
 
 
 def read_primer3(path):
@@ -104,12 +109,12 @@ def mkdir_tmp():
     '''
     Make all the necessary directories for temporary files
     '''
-    if not os.path.exists('tmp'): os.mkdir('tmp')
-    if not os.path.exists('tmp/sam'): os.mkdir('tmp/sam')
-    if not os.path.exists('tmp/jct'): os.mkdir('tmp/jct')
-    if not os.path.exists('tmp/bed'): os.mkdir('tmp/bed')
-    if not os.path.exists('tmp/wig'): os.mkdir('tmp/wig')
-    if not os.path.exists('tmp/isoforms'): os.mkdir('tmp/isoforms')
+    if not os.path.exists(config_options['tmp']): os.mkdir(config_options['tmp'])
+    if not os.path.exists(config_options['tmp'] + '/sam'): os.mkdir(config_options['tmp'] + '/sam')
+    if not os.path.exists(config_options['tmp'] + '/jct'): os.mkdir(config_options['tmp'] + '/jct')
+    if not os.path.exists(config_options['tmp'] + '/bed'): os.mkdir(config_options['tmp'] + '/bed')
+    if not os.path.exists(config_options['tmp'] + '/wig'): os.mkdir(config_options['tmp'] + '/wig')
+    if not os.path.exists(config_options['tmp'] + '/isoforms'): os.mkdir(config_options['tmp'] + '/isoforms')
 
 
 def primer_coordinates(p3_output, strand, tar, up, down):
@@ -149,7 +154,6 @@ def primer3(options, primer3_options):
     jobs_ID = options['job_id']
 
     # tmp directory
-    outfiles_PATH = 'tmp/'  # directory for intermediate files
     mkdir_tmp()  # make any necessary tmp directories
 
     # read in targets
@@ -178,7 +182,7 @@ def primer3(options, primer3_options):
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
             PRIMER_EXPLAIN_FLAG = '1'
-            PRIMER_THERMODYNAMIC_PARAMETERS_PATH = '../primer3/src/primer3_config/'
+            PRIMER_THERMODYNAMIC_PARAMETERS_PATH = config_options['primer3'] + '/src/primer3_config/'
             SEQUENCE_ID = tar  # use the 'chr:start-stop' format for the sequence ID in primer3
             #SEQUENCE_TEMPLATE = flanking_info[z][UPSTREAM_Seq] + flanking_info[z][TARGET_SEQ].lower() + flanking_info[z][DOWNSTREAM_SEQ]
             #SEQUENCE_TARGET = str(len(flanking_info[z][UPSTREAM_Seq]) + 1) + ',' + str(len(flanking_info[z][TARGET_SEQ]))
@@ -187,7 +191,7 @@ def primer3(options, primer3_options):
             #############################################################
 
             ####################### Write jobs_ID.conf##################
-            with open(outfiles_PATH + jobs_ID + '.conf', 'w') as outfile:
+            with open(config_options['tmp'] + '/' + jobs_ID + '.conf', 'w') as outfile:
                 # hard coded options
                 outfile.write('SEQUENCE_ID=' + SEQUENCE_ID + '\n')
                 outfile.write('SEQUENCE_TEMPLATE=' + SEQUENCE_TEMPLATE + '\n')
@@ -201,16 +205,16 @@ def primer3(options, primer3_options):
                 for o in primer3_options:
                     outfile.write(o)
                 outfile.write('=' + '\n')  # primer3 likes a '=' at the end of sequence params
-                logging.debug('Wrote the input file (%s) for primer3' % (outfiles_PATH + jobs_ID + '.conf'))
+                logging.debug('Wrote the input file (%s) for primer3' % (config_options['tmp'] + '/' + jobs_ID + '.conf'))
 
             ###################### Primer3 #####################################
-            if os.path.exists(outfiles_PATH + jobs_ID + '.Primer3'):
-                os.remove(outfiles_PATH + jobs_ID + '.Primer3')  # delete old files
+            if os.path.exists(config_options['tmp'] + jobs_ID + '.Primer3'):
+                os.remove(config_options['tmp'] + jobs_ID + '.Primer3')  # delete old files
 
             call_primer3(tar, jobs_ID)  # command line call to Primer3!
 
             #################### Parse '.Primer3' ################################
-            primer3_dict = read_primer3(outfiles_PATH + jobs_ID + '.Primer3')
+            primer3_dict = read_primer3(config_options['tmp'] + '/' + jobs_ID + '.Primer3')
 
             # checks if no output
             if(primer3_dict.keys().count('PRIMER_LEFT_0_SEQUENCE') == 0):
@@ -239,13 +243,13 @@ def primer3(options, primer3_options):
                 output_list.append(tmp)
 
     # write output information
-    with open(outfiles_PATH + jobs_ID + '.txt', 'wb') as outputfile_tab:
+    with open(config_options['tmp'] + '/' + jobs_ID + '.txt', 'wb') as outputfile_tab:
         # define csv header
         header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'left primer', 'right primer', 'average TM',
                   'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
-    shutil.copy(outfiles_PATH + jobs_ID + '.txt', options['output'])  # copy file to output destination
+    shutil.copy(config_options['tmp'] + '/' + jobs_ID + '.txt', options['output'])  # copy file to output destination
 
 
 def main(options):
@@ -345,10 +349,10 @@ if __name__ == '__main__':
         options['target'] = map(lambda x: x.strip().split('\t'), handle.readlines())
 
     # define logging file before using logging.debug
-    if not os.path.exists('log'): os.mkdir('log')  # make directory to put log files
+    if not os.path.exists(config_options['log']): os.mkdir(config_options['log'])  # make directory to put log files
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(message)s',
-                        filename='log/log.primer.' + str(datetime.datetime.now()),
+                        filename=config_options['log'] + '/log.primer.' + str(datetime.datetime.now()),
                         filemode='w')
 
     ### Start loading the user's files ###

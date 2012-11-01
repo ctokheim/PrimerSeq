@@ -3,6 +3,7 @@ import sys
 import subprocess
 import traceback
 import os
+import ConfigParser
 
 
 class BaseBedWig(object):
@@ -13,7 +14,10 @@ class BaseBedWig(object):
     """
     def __init__(self, bbfile, ext='bed'):
         # expected file paths
-        self.TMP_DIR = 'tmp'
+        cfg = ConfigParser.ConfigParser()
+        cfg.read('PrimerSeq.cfg')
+        cfg_options = dict(cfg.items('directory'))
+        self.TMP_DIR = cfg_options['tmp']
         self.BIN_DIR = 'bin'
         self.ext = ext  # the file extension (either "bed" or "wig")
         if not os.path.exists(self.TMP_DIR + '/' + self.ext):
