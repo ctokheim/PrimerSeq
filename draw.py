@@ -234,7 +234,7 @@ def main(tx_paths, counts, primer_coord):
             i -= 1
             exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
 
-        if i == (len(axes.flat) - 1):
+        if i == (num_of_txs - 1):
             first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]
             exonDrawAxis.set_xlim(new_start, new_stop)
             exonDrawAxis.set_xticks([new_start, new_stop])  # edited
