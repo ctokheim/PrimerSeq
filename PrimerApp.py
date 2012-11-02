@@ -307,7 +307,7 @@ class PrimerFrame(wx.Frame):
         if not os.path.exists(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s %(message)s',
-                            filename=primer.config_options['log'] + '/log.primer.' + str(datetime.datetime.now()),
+                            filename=primer.config_options['log'] + '/log.primer.' + str(datetime.datetime.now()).replace(':', '.'),
                             filemode='w')
 
         # options for primer.py

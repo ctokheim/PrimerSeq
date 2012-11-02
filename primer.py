@@ -17,6 +17,7 @@ from pygr.seqdb import SequenceFileDB
 import sam
 import utils
 import ConfigParser
+import platform
 
 # import for logging file
 import logging
@@ -83,6 +84,8 @@ def call_primer3(target_string, jobs_ID):
     logging.debug('Calling primer3 for %s . . .' % target_string)
     os.chdir(config_options['tmp'])  # make sure primer3 files occur in tmp dir
     cmd = config_options['primer3'] + '/src/primer3_core < ' + jobs_ID + '.conf' + ' > ' + jobs_ID + '.Primer3'
+    if platform.system() == 'Windows':
+        cmd = cmd.replace('/', '\\')
     logging.debug(cmd)  # record command in log file
     subprocess.check_call(cmd, shell=True)
     logging.debug('Finished call of primer3 for %s' % target_string)

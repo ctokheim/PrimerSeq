@@ -116,6 +116,7 @@ class Sam(object):
             tmp_sam_path = '%s%s_%d_%d.sam' % (TMP_DIR, chr, start, end)  # path to tmp sam file with region specific reads
             cmd = 'java -jar -Xmx1024m %sExtractSamRegion.jar %s %s %s %d %d' % (
                 BIN_DIR, self.path, tmp_sam_path, chr, start, end)
+            print cmd
             subprocess.check_call(cmd, shell=True)
             logging.debug('Finished getting sam reads. Parsing jcts . . .')
             junctionDict = self.__get_sam_jct(tmp_sam_path)
