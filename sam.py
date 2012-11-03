@@ -56,7 +56,7 @@ class Sam(object):
             logging.debug('Converting %s to a sorted BAM file . . .' % myPath)
             beginTime = time.time()
             sorted_bam_path = myPath[:-4] + '.sorted.bam'
-            cmd = 'java -jar -Xmx1024m %sConvert2SortedBam.jar %s %s' % (BIN_DIR, myPath, sorted_bam_path)
+            cmd = 'java -jar -Xmx1024m "%sConvert2SortedBam.jar" "%s" "%s"' % (BIN_DIR, myPath, sorted_bam_path)
             subprocess.check_call(cmd, shell=True)
             endTime = time.time()
             runTime = endTime - beginTime
@@ -114,9 +114,8 @@ class Sam(object):
             start += 1  # extraction is done in 1-based coordinates
             logging.debug('Extracting reads for %s:%d-%d' % (chr, start, end))
             tmp_sam_path = '%s%s_%d_%d.sam' % (TMP_DIR, chr, start, end)  # path to tmp sam file with region specific reads
-            cmd = 'java -jar -Xmx1024m %sExtractSamRegion.jar %s %s %s %d %d' % (
+            cmd = 'java -jar -Xmx1024m "%sExtractSamRegion.jar" "%s" "%s" %s %d %d' % (
                 BIN_DIR, self.path, tmp_sam_path, chr, start, end)
-            print cmd
             subprocess.check_call(cmd, shell=True)
             logging.debug('Finished getting sam reads. Parsing jcts . . .')
             junctionDict = self.__get_sam_jct(tmp_sam_path)

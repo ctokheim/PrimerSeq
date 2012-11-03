@@ -14,12 +14,30 @@ import sys
 from pygr.seqdb import SequenceFileDB
 import sam
 import primer
+import threading
+from multiprocessing import Process
+
+# logging imports
 import traceback
 import logging
 import datetime
 
 # begin wxGlade: extracode
 # end wxGlade
+
+
+class ThreadWithOutput(threading.Thread):
+    def __init__(self, target, args, name=''):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.tar = target
+        self.args = args
+
+    def get_output(self):
+        return self.output
+
+    def run(self):
+        self.output = self.tar(*self.args)
 
 
 class PrimerFrame(wx.Frame):
@@ -264,7 +282,11 @@ class PrimerFrame(wx.Frame):
                                               | wx.PD_APP_MODAL
                                               | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
             load_progress.Update(0)
-            self.gtf = primer.gene_annotation_reader(filename)
+            gtf_thread = ThreadWithOutput(target=primer.gene_annotation_reader, args=(filename,))
+            gtf_thread.start()
+            gtf_thread.join()
+            self.gtf = gtf_thread.get_output()
+            # self.gtf = primer.gene_annotation_reader(filename)
             load_progress.Update(100)
             self.gtf_choice_label.SetLabel(filename_without_path)
         else:
@@ -335,7 +357,10 @@ class PrimerFrame(wx.Frame):
         load_progress.Update(0, 'Designing primers . . .')
 
         # design primers by calling the primer.main function
-        primer.main(options)
+        # primer.main(options)  # old
+        p = Process(target=primer.main, args=(options,))
+        p.start()
+        p.join()
 
         load_progress.Update(100, 'Done.')
         event.Skip()
