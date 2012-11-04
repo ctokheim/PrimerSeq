@@ -16,7 +16,7 @@ from pygr.seqdb import SequenceFileDB
 import sam
 import primer
 import threading
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 
 # logging imports
 import traceback
@@ -28,16 +28,74 @@ import datetime
 
 
 class DialogThread(threading.Thread):
-    def __init__(self, target, args, attr):
+    def __init__(self, target, args, attr, label, label_text):
         threading.Thread.__init__(self)
+        self.label = label
+        self.label_text = label_text
         self.tar = target
         self.args = args
         self.attr = attr
         self.start()
 
     def run(self):
-        output = self.tar(*self.args)
-        wx.CallAfter(Publisher().sendMessage, "update", (self.attr, output))
+        manager = Manager()
+        self.output = manager.list([None])
+        self.work_process = self.tar(self.output, *self.args)
+        self.work_process.join()
+        wx.CallAfter(Publisher().sendMessage, "update", ((self.attr, self.output[0]), (self.label, self.label_text)))
+
+    def terminate(self):
+        self.work_process.terminate()
+
+
+class DialogProcess(Process):
+    def __init__(self, output, target, args):
+        Process.__init__(self)
+        self.output = output
+        self.tar = target
+        self.args = args
+        self.start()
+
+    def run(self):
+        self.output[0] = self.tar(*self.args)
+        # wx.CallAfter(Publisher().sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
+
+    def terminate(self):
+        print 'terminate'
+        Process.terminate(self)
+        self.join()
+
+
+class CustomProgressDialog(wx.Dialog):
+    def __init__(self, parent, id, title, text=''):
+        wx.Dialog.__init__(self, parent, id, title, size=(200,150), style=wx.RESIZE_BORDER)
+
+        self.parent = parent
+        self.text = wx.StaticText(self, -1, text)
+        self.gauge = wx.Gauge(self, -1)
+        self.closebutton = wx.Button(self, wx.ID_CLOSE)
+        self.closebutton.Bind(wx.EVT_BUTTON, self.OnClose)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.text, 0, wx.EXPAND)
+        sizer.Add(self.gauge, 0, wx.ALIGN_CENTER)
+        sizer.Add(self.closebutton, 0, wx.ALIGN_CENTER)
+
+        self.SetSizer(sizer)
+        self.Show()
+
+    def Update(self, val, update_text=''):
+        print val, update_text
+        if val == 100:
+            self.Destroy()
+        else:
+            self.gauge.SetValue(val)
+            if update_text: self.text.SetLabel(update_text)
+
+    def OnClose(self, event):
+        self.parent.current_process.terminate()
+        self.Destroy()
+        #can add stuff here to do in parent.
 
 
 class PrimerFrame(wx.Frame):
@@ -226,12 +284,19 @@ class PrimerFrame(wx.Frame):
         # end wxGlade
 
     def update_after_dialog(self, msg):
+        '''
+        Updates attributes and gui components from a started Process
+        or thread. This is called by PubSub.
+        '''
         if isinstance(msg.data[0], int):
             perc, text = msg.data
             self.load_progress.Update(perc, text)
-        elif isinstance(msg.data[0], str):
-            attr, val = msg.data
-            setattr(self, attr, val)
+        else:
+            for obj, value in msg.data:
+                if isinstance(value, str):
+                    getattr(self, obj).SetLabel(value)
+                else:
+                    setattr(self, obj, value)
             self.load_progress.Update(100)
 
     def process_bam(self, fnames, fnames_without_path):
@@ -265,13 +330,18 @@ class PrimerFrame(wx.Frame):
 
             try:
                 # set the fasta attribute
-                self.load_progress = wx.ProgressDialog('FASTA', 'Loading FASTA . . . this may take ~1 min.',
-                                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                                                       | wx.PD_APP_MODAL
-                                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+                self.load_progress = CustomProgressDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
+                self.load_progress.Update(0)
+                self.current_process = DialogThread(target=DialogProcess,
+                                                    args=(SequenceFileDB, (str(filename),)),
+                                                    attr='fasta', label='fasta_choice_label', label_text=str(filename.split('/')[-1]))
+                # self.load_progress = wx.ProgressDialog('FASTA', 'Loading FASTA . . . this may take ~1 min.',
+                #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
+                #                                       | wx.PD_APP_MODAL
+                #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
                 # self.fasta = SequenceFileDB(filename.encode('ascii', 'replace'))
-                self.fasta_choice_label.SetLabel(filename.split('/')[-1])  # set label to just the filename and not the whole path
-                fasta_thread = DialogThread(target=lambda x: SequenceFileDB(x), args=(filename.encode('ascii', 'replace'),), attr='fasta')
+                # self.fasta_choice_label.SetLabel(filename.split('/')[-1])  # set label to just the filename and not the whole path
+                # fasta_thread = DialogThread(target=lambda x: SequenceFileDB(x), args=(filename.encode('ascii', 'replace'),), attr='fasta')
             except:
                 self.load_progress.Destroy()
                 t, v, trace = sys.exc_info()
@@ -293,13 +363,14 @@ class PrimerFrame(wx.Frame):
 
             # set the gtf attribute
             filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
-            self.load_progress = wx.ProgressDialog('GTF', 'Loading GTF . . . will take ~1 min',
-                                                   maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                                                   | wx.PD_APP_MODAL
-                                                   | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+            #self.load_progress = wx.ProgressDialog('GTF', 'Loading GTF . . . will take ~1 min',
+            #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
+            #                                       | wx.PD_APP_MODAL
+            #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+            self.load_progress = CustomProgressDialog(self, -1, 'GTF', 'Loading GTF . . . will take ~1 min.')
             self.load_progress.Update(0)
-            self.gtf_choice_label.SetLabel(filename_without_path)
-            gtf_thread = DialogThread(target=primer.gene_annotation_reader, args=(filename,), attr='gtf')
+            self.current_process = DialogThread(target=DialogProcess, args=(primer.gene_annotation_reader, (str(filename),)),
+                                                attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
             # self.gtf = primer.gene_annotation_reader(filename)
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
@@ -316,12 +387,17 @@ class PrimerFrame(wx.Frame):
             self.bam = []  # clear bam attribute
 
             # set the bam attribute
-            self.load_progress = wx.ProgressDialog('BAM', 'Setting up BAM file list',
-                                                   maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                                                   | wx.PD_APP_MODAL
-                                                   | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-            self.bam_choice_label.SetLabel(', '.join(filenames_without_path))
-            bam_thread = DialogThread(target=self.process_bam, args=(filenames, filenames_without_path), attr='bam')
+            self.load_progress = CustomProgressDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
+            self.load_progress.Update(0)
+            self.current_process = DialogThread(target=DialogProcess,
+                                                args=(self.process_bam, (map(str, filenames), filenames_without_path)),
+                                                attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
+            # self.load_progress = wx.ProgressDialog('BAM', 'Setting up BAM file list',
+            #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
+            #                                       | wx.PD_APP_MODAL
+            #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+            # self.bam_choice_label.SetLabel(', '.join(filenames_without_path))
+            # bam_thread = DialogThread(target=self.process_bam, args=(filenames, filenames_without_path), attr='bam')
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
