@@ -8,7 +8,9 @@ import dbhash
 
 # useful imports
 import wx
-from wx.lib.pubsub import Publisher
+# from wx.lib.pubsub import Publisher
+from wx.lib.pubsub import setuparg1
+from wx.lib.pubsub import pub
 import os
 import re
 import sys
@@ -42,7 +44,7 @@ class DialogThread(threading.Thread):
         self.output = manager.list([None])
         self.work_process = self.tar(self.output, *self.args)
         self.work_process.join()
-        wx.CallAfter(Publisher().sendMessage, "update", ((self.attr, self.output[0]), (self.label, self.label_text)))
+        wx.CallAfter(pub.sendMessage, "update", ((self.attr, self.output[0]), (self.label, self.label_text)))
 
     def terminate(self):
         self.work_process.terminate()
@@ -165,7 +167,8 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.run_button_event, self.run_button)
         # end wxGlade
 
-        Publisher().subscribe(self.update_after_dialog, "update")
+        # Publisher().subscribe(self.update_after_dialog, "update")
+        pub.subscribe(self.update_after_dialog, "update")
 
     def __set_properties(self):
         # begin wxGlade: PrimerFrame.__set_properties
@@ -302,7 +305,7 @@ class PrimerFrame(wx.Frame):
     def process_bam(self, fnames, fnames_without_path):
         tmp_bam = []  # a list of sam.Sam obj to be returned
         for i, f in enumerate(fnames):
-            wx.CallAfter(Publisher().sendMessage, "update", (int(float(i) / len(fnames) * 100), 'Reading %s . . .' % fnames_without_path[i]))
+            wx.CallAfter(pub.sendMessage, "update", (int(float(i) / len(fnames) * 100), 'Reading %s . . .' % fnames_without_path[i]))
             tmp_bam.append(sam.Sam(f))
         return tmp_bam
 
