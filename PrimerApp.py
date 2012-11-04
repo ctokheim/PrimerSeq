@@ -8,6 +8,7 @@ import dbhash
 
 # useful imports
 import wx
+from wx.lib.pubsub import Publisher
 import os
 import re
 import sys
@@ -26,18 +27,17 @@ import datetime
 # end wxGlade
 
 
-class ThreadWithOutput(threading.Thread):
-    def __init__(self, target, args, name=''):
+class DialogThread(threading.Thread):
+    def __init__(self, target, args, attr):
         threading.Thread.__init__(self)
-        self.name = name
         self.tar = target
         self.args = args
-
-    def get_output(self):
-        return self.output
+        self.attr = attr
+        self.start()
 
     def run(self):
-        self.output = self.tar(*self.args)
+        output = self.tar(*self.args)
+        wx.CallAfter(Publisher().sendMessage, "update", (self.attr, output))
 
 
 class PrimerFrame(wx.Frame):
@@ -106,6 +106,8 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.choose_output_button_event, self.choose_output_button)
         self.Bind(wx.EVT_BUTTON, self.run_button_event, self.run_button)
         # end wxGlade
+
+        Publisher().subscribe(self.update_after_dialog, "update")
 
     def __set_properties(self):
         # begin wxGlade: PrimerFrame.__set_properties
@@ -223,6 +225,21 @@ class PrimerFrame(wx.Frame):
         self.Layout()
         # end wxGlade
 
+    def update_after_dialog(self, msg):
+        if isinstance(msg.data[0], int):
+            perc, text = msg.data
+            self.load_progress.Update(perc, text)
+        elif isinstance(msg.data[0], str):
+            attr, val = msg.data
+            setattr(self, attr, val)
+            self.load_progress.Update(100)
+
+    def process_bam(self, fnames, fnames_without_path):
+        tmp_bam = []  # a list of sam.Sam obj to be returned
+        for i, f in enumerate(fnames):
+            wx.CallAfter(Publisher().sendMessage, "update", (int(float(i) / len(fnames) * 100), 'Reading %s . . .' % fnames_without_path[i]))
+            tmp_bam.append(sam.Sam(f))
+        return tmp_bam
 
     def quit_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         print "Event handler `quit_event' not implemented!"
@@ -248,15 +265,15 @@ class PrimerFrame(wx.Frame):
 
             try:
                 # set the fasta attribute
-                load_progress = wx.ProgressDialog('FASTA', 'Loading FASTA . . . this may take ~1 min.',
-                                                  maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                                                  | wx.PD_APP_MODAL
-                                                  | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-                self.fasta = SequenceFileDB(filename.encode('ascii', 'replace'))
+                self.load_progress = wx.ProgressDialog('FASTA', 'Loading FASTA . . . this may take ~1 min.',
+                                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
+                                                       | wx.PD_APP_MODAL
+                                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+                # self.fasta = SequenceFileDB(filename.encode('ascii', 'replace'))
                 self.fasta_choice_label.SetLabel(filename.split('/')[-1])  # set label to just the filename and not the whole path
-                load_progress.Update(100, 'Done.')
+                fasta_thread = DialogThread(target=lambda x: SequenceFileDB(x), args=(filename.encode('ascii', 'replace'),), attr='fasta')
             except:
-                load_progress.Destroy()
+                self.load_progress.Destroy()
                 t, v, trace = sys.exc_info()
                 print('ERROR! For more information read the following lines')
                 print('Type: ' + str(t))
@@ -275,20 +292,15 @@ class PrimerFrame(wx.Frame):
             dlg.Destroy()  # best to do this sooner
 
             # set the gtf attribute
-            print filename
             filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
-            load_progress = wx.ProgressDialog('GTF', 'Loading GTF . . . will take ~1 min',
-                                              maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                                              | wx.PD_APP_MODAL
-                                              | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-            load_progress.Update(0)
-            gtf_thread = ThreadWithOutput(target=primer.gene_annotation_reader, args=(filename,))
-            gtf_thread.start()
-            gtf_thread.join()
-            self.gtf = gtf_thread.get_output()
-            # self.gtf = primer.gene_annotation_reader(filename)
-            load_progress.Update(100)
+            self.load_progress = wx.ProgressDialog('GTF', 'Loading GTF . . . will take ~1 min',
+                                                   maximum=100, parent=self, style=wx.PD_CAN_ABORT
+                                                   | wx.PD_APP_MODAL
+                                                   | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+            self.load_progress.Update(0)
             self.gtf_choice_label.SetLabel(filename_without_path)
+            gtf_thread = DialogThread(target=primer.gene_annotation_reader, args=(filename,), attr='gtf')
+            # self.gtf = primer.gene_annotation_reader(filename)
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
@@ -304,16 +316,12 @@ class PrimerFrame(wx.Frame):
             self.bam = []  # clear bam attribute
 
             # set the bam attribute
-            load_progress = wx.ProgressDialog('BAM', 'Setting up BAM file list',
-                                              maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                                              | wx.PD_APP_MODAL
-                                              | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-            for i, filename in enumerate(filenames):
-                load_progress.Update(int(float(i) / len(filenames) * 100), 'Reading %s . . .' % filenames_without_path[i])  # Display txt to user
-                my_sam = sam.Sam(filename)
-                self.bam.append(my_sam)  # [sam.Sam, sam.Sam, ...]
-            load_progress.Update(100, 'Done.')
+            self.load_progress = wx.ProgressDialog('BAM', 'Setting up BAM file list',
+                                                   maximum=100, parent=self, style=wx.PD_CAN_ABORT
+                                                   | wx.PD_APP_MODAL
+                                                   | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
             self.bam_choice_label.SetLabel(', '.join(filenames_without_path))
+            bam_thread = DialogThread(target=self.process_bam, args=(filenames, filenames_without_path), attr='bam')
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
