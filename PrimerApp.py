@@ -50,6 +50,21 @@ class DialogThread(threading.Thread):
         self.work_process.terminate()
 
 
+class RunThread(threading.Thread):
+    def __init__(self, target, args, attr, label, label_text):
+        threading.Thread.__init__(self)
+        self.label = label
+        self.label_text = label_text
+        self.tar = target
+        self.args = args
+        self.attr = attr
+        self.start()
+
+    def run(self):
+        output = self.tar(*self.args)
+        wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
+
+
 class DialogProcess(Process):
     def __init__(self, output, target, args):
         Process.__init__(self)
@@ -100,6 +115,30 @@ class CustomProgressDialog(wx.Dialog):
         #can add stuff here to do in parent.
 
 
+class CustomDialog(wx.Dialog):
+    def __init__(self, parent, id, title, text=''):
+        wx.Dialog.__init__(self, parent, id, title, size=(300,100), style=wx.RESIZE_BORDER)
+
+        self.parent = parent
+        self.text = wx.StaticText(self, -1, text)
+        self.empty_text = wx.StaticText(self, -1, '')
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.empty_text, 0, wx.ALIGN_CENTER)
+        sizer.Add(self.text, 0, wx.ALIGN_CENTER)
+        sizer.Add(self.empty_text, 0, wx.ALIGN_CENTER)
+
+        self.SetSizer(sizer)
+        self.Show()
+
+    def Update(self, val, update_text=''):
+        print val, update_text
+        if val == 100:
+            self.Destroy()
+        else:
+            pass
+
+
 class PrimerFrame(wx.Frame):
     def __init__(self, *args, **kwds):
         # begin wxGlade: PrimerFrame.__init__
@@ -129,7 +168,7 @@ class PrimerFrame(wx.Frame):
         self.panel_3 = wx.Panel(self.primer_notebook_pane_1, -1)
         self.bam_choice_label = wx.StaticText(self.panel_3, -1, "None")
         self.sizer_4_staticbox = wx.StaticBox(self.primer_notebook_pane_1, -1, "Load Files")
-        self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Coordinates:")
+        self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "0-based Coordinates ([+|-]chr:start-end):")
         self.coordinates_text_field = wx.TextCtrl(self.primer_notebook_pane_1, -1, "", style=wx.TE_MULTILINE)
         self.output_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Output:")
         self.choose_output_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
@@ -301,6 +340,19 @@ class PrimerFrame(wx.Frame):
                 else:
                     setattr(self, obj, value)
             self.load_progress.Update(100)
+            self.enable_load_buttons()
+
+    def disable_load_buttons(self):
+        self.choose_bam_button.Disable()
+        self.choose_fasta_button.Disable()
+        self.choose_gtf_button.Disable()
+        self.run_button.Disable()
+
+    def enable_load_buttons(self):
+        self.choose_bam_button.Enable()
+        self.choose_fasta_button.Enable()
+        self.choose_gtf_button.Enable()
+        self.run_button.Enable()
 
     def process_bam(self, fnames, fnames_without_path):
         tmp_bam = []  # a list of sam.Sam obj to be returned
@@ -329,15 +381,21 @@ class PrimerFrame(wx.Frame):
         # if they press ok
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()
             dlg.Destroy()  # best to do this sooner
 
             try:
                 # set the fasta attribute
-                self.load_progress = CustomProgressDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
+                # self.load_progress = CustomProgressDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
+                self.load_progress = CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
                 self.load_progress.Update(0)
-                self.current_process = DialogThread(target=DialogProcess,
-                                                    args=(SequenceFileDB, (str(filename),)),
-                                                    attr='fasta', label='fasta_choice_label', label_text=str(filename.split('/')[-1]))
+                self.disable_load_buttons()  # disable loading other files while another is running
+                # self.current_process = DialogThread(target=DialogProcess,
+                #                                    args=(SequenceFileDB, (str(filename),)),
+                #                                    attr='fasta', label='fasta_choice_label', label_text=str(filename.split('/')[-1]))
+                self.current_process = RunThread(target=SequenceFileDB,
+                                                 args=(str(filename),),
+                                                 attr='fasta', label='fasta_choice_label', label_text=str(filename_without_path))
                 # self.load_progress = wx.ProgressDialog('FASTA', 'Loading FASTA . . . this may take ~1 min.',
                 #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
                 #                                       | wx.PD_APP_MODAL
@@ -370,10 +428,14 @@ class PrimerFrame(wx.Frame):
             #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
             #                                       | wx.PD_APP_MODAL
             #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-            self.load_progress = CustomProgressDialog(self, -1, 'GTF', 'Loading GTF . . . will take ~1 min.')
+            # self.load_progress = CustomProgressDialog(self, -1, 'GTF', 'Loading GTF . . . will take ~1 min.')
+            self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . . will take ~1 min.')
             self.load_progress.Update(0)
-            self.current_process = DialogThread(target=DialogProcess, args=(primer.gene_annotation_reader, (str(filename),)),
-                                                attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
+            self.disable_load_buttons()
+            # self.current_process = DialogThread(target=DialogProcess, args=(primer.gene_annotation_reader, (str(filename),)),
+            #                                    attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
+            self.current_process = RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
+                                             attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
             # self.gtf = primer.gene_annotation_reader(filename)
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
@@ -390,11 +452,15 @@ class PrimerFrame(wx.Frame):
             self.bam = []  # clear bam attribute
 
             # set the bam attribute
-            self.load_progress = CustomProgressDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
+            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . . will take several min.')
             self.load_progress.Update(0)
-            self.current_process = DialogThread(target=DialogProcess,
-                                                args=(self.process_bam, (map(str, filenames), filenames_without_path)),
-                                                attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
+            self.disable_load_buttons()
+            # self.current_process = DialogThread(target=DialogProcess,
+            #                                    args=(self.process_bam, (map(str, filenames), filenames_without_path)),
+            #                                    attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
+            self.current_process = RunThread(target=self.process_bam,
+                                             args=(map(str, filenames), filenames_without_path),
+                                             attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
             # self.load_progress = wx.ProgressDialog('BAM', 'Setting up BAM file list',
             #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
             #                                       | wx.PD_APP_MODAL
