@@ -51,7 +51,7 @@ class DialogThread(threading.Thread):
 
 
 class RunThread(threading.Thread):
-    def __init__(self, target, args, attr, label, label_text):
+    def __init__(self, target, args, attr='', label='', label_text=''):
         threading.Thread.__init__(self)
         self.label = label
         self.label_text = label_text
@@ -61,8 +61,13 @@ class RunThread(threading.Thread):
         self.start()
 
     def run(self):
-        output = self.tar(*self.args)
-        wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
+        output = self.tar(*self.args)  # threaded call
+
+        # Only for loading files. Not for when running PrimerSeq.
+        if self.attr and self.label and self.label_text:
+            wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
+        else:
+            wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
 
 
 class DialogProcess(Process):
@@ -117,7 +122,7 @@ class CustomProgressDialog(wx.Dialog):
 
 class CustomDialog(wx.Dialog):
     def __init__(self, parent, id, title, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(300,100), style=wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, parent, id, title, size=(300,100))
 
         self.parent = parent
         self.text = wx.StaticText(self, -1, text)
@@ -330,7 +335,10 @@ class PrimerFrame(wx.Frame):
         Updates attributes and gui components from a started Process
         or thread. This is called by PubSub.
         '''
-        if isinstance(msg.data[0], int):
+        if msg.data[0] is None:
+            self.load_progress.Update(100)
+            self.enable_load_buttons()
+        elif isinstance(msg.data[0], int):
             perc, text = msg.data
             self.load_progress.Update(perc, text)
         else:
@@ -387,7 +395,7 @@ class PrimerFrame(wx.Frame):
             try:
                 # set the fasta attribute
                 # self.load_progress = CustomProgressDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
-                self.load_progress = CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
+                self.load_progress = CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . .\n\nThis will take several minutes')
                 self.load_progress.Update(0)
                 self.disable_load_buttons()  # disable loading other files while another is running
                 # self.current_process = DialogThread(target=DialogProcess,
@@ -429,7 +437,7 @@ class PrimerFrame(wx.Frame):
             #                                       | wx.PD_APP_MODAL
             #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
             # self.load_progress = CustomProgressDialog(self, -1, 'GTF', 'Loading GTF . . . will take ~1 min.')
-            self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . . will take ~1 min.')
+            self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
             self.load_progress.Update(0)
             self.disable_load_buttons()
             # self.current_process = DialogThread(target=DialogProcess, args=(primer.gene_annotation_reader, (str(filename),)),
@@ -452,7 +460,7 @@ class PrimerFrame(wx.Frame):
             self.bam = []  # clear bam attribute
 
             # set the bam attribute
-            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . . will take several min.')
+            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes if you do not provide a sorted BAM file')
             self.load_progress.Update(0)
             self.disable_load_buttons()
             # self.current_process = DialogThread(target=DialogProcess,
@@ -503,19 +511,22 @@ class PrimerFrame(wx.Frame):
         options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
         options['job_id'] = 'jobs_id'
 
-        load_progress = wx.ProgressDialog('Run', 'Designing primers . . .',
-                                          maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                                          | wx.PD_APP_MODAL
-                                          | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-        load_progress.Update(0, 'Designing primers . . .')
+        # load_progress = wx.ProgressDialog('Run', 'Designing primers . . .',
+        #                                  maximum=100, parent=self, style=wx.PD_CAN_ABORT
+        #                                  | wx.PD_APP_MODAL
+        #                                  | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
+        self.load_progress  = CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
+        self.load_progress.Update(0)
+        self.disable_load_buttons()
+        self.current_process = RunThread(target=primer.main, args=(options,))
 
         # design primers by calling the primer.main function
         # primer.main(options)  # old
-        p = Process(target=primer.main, args=(options,))
-        p.start()
-        p.join()
+        # p = Process(target=primer.main, args=(options,))
+        # p.start()
+        # p.join()
 
-        load_progress.Update(100, 'Done.')
+        # load_progress.Update(100, 'Done.')
         event.Skip()
 
 
