@@ -126,7 +126,7 @@ def editAxis(ax, include=[], notInclude=[]):
             raise ValueError('unknown spine location: %s' % loc)
 
 
-def exonDrawSubplot(ax, exons, pct):  # exons was coords
+def exonDrawSubplot(ax, exons, pct, options):  # exons was coords
     # move/remove axis
     includedAxes = ["bottom"]
     notIncludedAxes = ["left", "right", "top"]
@@ -144,7 +144,7 @@ def exonDrawSubplot(ax, exons, pct):  # exons was coords
     exonRectangles.sort(key=lambda x: (x.start, x.stop))
 
     # scale intron length
-    exonRectangles = scale_intron_length(exonRectangles, args.scale)
+    exonRectangles = scale_intron_length(exonRectangles, options['scale'])
     new_start, new_stop = exonRectangles[0].start, exonRectangles[-1].stop
 
     # plot exons
@@ -209,7 +209,7 @@ def read_primer_file(primer_file, ID):
                 return map(utils.get_pos, line[2].split(';'))
 
 
-def main(tx_paths, counts, primer_coord):
+def main(tx_paths, counts, primer_coord, options):
     # configurations
     matplotlib.rcParams['font.size'] = 16  # edit font size of title
     matplotlib.rcParams['xtick.labelsize'] = 13
@@ -229,10 +229,10 @@ def main(tx_paths, counts, primer_coord):
         # exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
 
         if i == 0:
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, 'primer')
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, 'primer', options)
         else:
             i -= 1
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i], options)
 
         if i == (num_of_txs - 1):
             first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]
@@ -250,7 +250,7 @@ def main(tx_paths, counts, primer_coord):
 
     fig.subplots_adjust(hspace=.00, wspace=.00)  # change subplot spacing
     # plt.show()
-    plt.savefig(args.output)
+    plt.savefig(options['output'])
 
 
 if __name__ == '__main__':
@@ -260,9 +260,9 @@ if __name__ == '__main__':
     parser.add_argument('-i', action='store', dest='id', required=True, help='ID to use from PRIMER_FILE')
     parser.add_argument('-s', action='store', dest='scale', type=int, default=1)
     parser.add_argument('-o', action='store', dest='output', required=True, help='output file')
-    args = parser.parse_args()
+    options = vars(parser.parse_args())
 
-    with open(args.json) as handle:
+    with open(options['json']) as handle:
         my_json = json.load(handle)
 
-    main(my_json['path'], my_json['counts'], read_primer_file(args.primer_file, args.id))
+    main(my_json['path'], my_json['counts'], read_primer_file(options['primer_file'], options['id']), options)

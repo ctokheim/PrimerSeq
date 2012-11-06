@@ -18,7 +18,11 @@ from pygr.seqdb import SequenceFileDB
 import sam
 import primer
 import threading
-from multiprocessing import Process, Manager
+import csv
+import utils
+import depth_plot
+import draw
+import json
 
 # logging imports
 import traceback
@@ -66,11 +70,118 @@ class CustomDialog(wx.Dialog):
         self.Show()
 
     def Update(self, val, update_text=''):
-        print val, update_text
         if val == 100:
             self.Destroy()
         else:
             pass
+
+
+class PlotDialog(wx.Dialog):
+    def __init__(self, parent, id, title, output_file, text=''):
+        wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
+
+        self.output_file = output_file
+
+        self.parent = parent
+        self.text = wx.StaticText(self, -1, text)
+
+        self.bigwig_label = wx.StaticText(self, -1, "BigWig(s):")
+        self.choose_bigwig_button = wx.Button(self, -1, "Choose . . .")
+        self.panel_3 = wx.Panel(self, -1)
+        self.bigwig_choice_label = wx.StaticText(self, -1, "None")
+        bigwig_sizer = wx.GridSizer(1, 3, 0, 0)
+        bigwig_sizer.Add(self.bigwig_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        bigwig_sizer.Add(self.choose_bigwig_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        bigwig_sizer.Add(self.bigwig_choice_label, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+
+        # read in valid primer output
+        with open(self.output_file) as handle:
+            self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
+                                  csv.reader(handle, delimiter='\t'))
+            select_results = [', '.join(r[:2]) for r in self.results]
+
+        # target selection widgets
+        target_sizer = wx.GridSizer(1, 2, 0, 0)
+        self.target_label = wx.StaticText(self, -1, "Select Target:")
+        self.target_combo_box = wx.ComboBox(self, -1, choices=select_results, style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
+        self.target_combo_box.SetMinSize((145, 27))
+        target_sizer.Add(self.target_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        target_sizer.Add(self.target_combo_box, 0, wx.ALIGN_LEFT, 0)
+
+        self.plot_button = wx.Button(self, -1, "Plot")
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(bigwig_sizer, 0, wx.EXPAND, 10)
+        sizer.Add(target_sizer, 0, wx.EXPAND)
+        sizer.Add(self.plot_button, 0, wx.ALIGN_CENTER)
+        sizer.SetMinSize((300, 100))
+
+        self.Bind(wx.EVT_BUTTON, self.choose_bigwig_event, self.choose_bigwig_button)
+        self.Bind(wx.EVT_BUTTON, self.plot_button_event, self.plot_button)
+        self.SetSizer(sizer)
+        self.Show()
+
+    def choose_bigwig_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your BigWig files', defaultDir=os.getcwd(),
+                            wildcard='BigWig files (*.bw)|*.bw|BigWig files (*.bigWig)|*.bigWig', style=wx.FD_MULTIPLE)  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filenames = dlg.GetPaths()  # get the new filenames from the dialog
+            filenames_without_path = dlg.GetFilenames()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.bigwig = filenames
+            self.bigwig_choice_label.SetLabel(', '.join(filenames_without_path))
+        else:
+            dlg.Destroy()
+
+    def plot_button_event(self, event):
+        target_id = str(self.target_combo_box.GetValue().split(',')[0])
+
+        # get the line from the file that matches the user selection
+        for row in self.results:
+            if row[0] == target_id:
+                row_of_interest = row
+
+        # find where the plot should span
+        tmp_upstream_start, tmp_upstream_end = utils.get_pos(row_of_interest[9])
+        tmp_downstream_start, tmp_downstream_end = utils.get_pos(row_of_interest[11])
+        start = min(tmp_upstream_start, tmp_downstream_start)
+        end = max(tmp_upstream_end, tmp_downstream_end)
+        chr = utils.get_chr(row[9])
+        plot_domain = utils.construct_coordinate(chr, start, end)
+
+        # draw isoforms
+        self.draw_isoforms(json=primer.config_options['tmp'] + '/isoforms/' + target_id + '.json',
+                           output=primer.config_options['tmp'] + '/' + 'draw/' + target_id + '.png',
+                           scale=1,
+                           primer_file=self.output_file,
+                           id=target_id)
+
+        # create read depth plot
+        self.depth_plot(bigwig=','.join(self.bigwig),
+                        position=plot_domain,
+                        gene='Not Used',
+                        size=2.,
+                        step=1,
+                        output=primer.config_options['tmp'] + '/depth_plot/' + target_id + '.png')
+
+    def draw_isoforms(self, **kwdargs):
+        '''
+        Draw isoforms by using draw.py
+        '''
+        # load json file that has information isoforms and their counts
+        with open(kwdargs['json']) as handle:
+            my_json = json.load(handle)
+
+        coord = draw.read_primer_file(self.output_file, kwdargs['id'])
+        draw.main(my_json['path'], my_json['counts'], coord, kwdargs)
+
+    def depth_plot(self, **kwdargs):
+        '''
+        Create a read depth plot by using depth_plot.py
+        '''
+        depth_plot.read_depth_plot(kwdargs)
 
 
 class PrimerFrame(wx.Frame):
@@ -84,6 +195,13 @@ class PrimerFrame(wx.Frame):
         wxglade_tmp_menu = wx.Menu()
         wxglade_tmp_menu.Append(wx.NewId(), "Quit", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "File")
+        wxglade_tmp_menu = wx.Menu()
+        wxglade_tmp_menu.Append(wx.NewId(), "Sort GTF", "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.NewId(), "Add Genes", "", wx.ITEM_NORMAL)
+        self.primer_frame_menubar.Append(wxglade_tmp_menu, "Edit")
+        wxglade_tmp_menu = wx.Menu()
+        wxglade_tmp_menu.Append(wx.NewId(), "Plot", "", wx.ITEM_NORMAL)
+        self.primer_frame_menubar.Append(wxglade_tmp_menu, "View")
         self.SetMenuBar(self.primer_frame_menubar)
         # Menu Bar end
         self.primer_frame_statusbar = self.CreateStatusBar(1, 0)
@@ -102,7 +220,7 @@ class PrimerFrame(wx.Frame):
         self.panel_3 = wx.Panel(self.primer_notebook_pane_1, -1)
         self.bam_choice_label = wx.StaticText(self.panel_3, -1, "None")
         self.sizer_4_staticbox = wx.StaticBox(self.primer_notebook_pane_1, -1, "Load Files")
-        self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "0-based Coordinates ([+|-]chr:start-end):")
+        self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Coordinates:")
         self.coordinates_text_field = wx.TextCtrl(self.primer_notebook_pane_1, -1, "", style=wx.TE_MULTILINE)
         self.output_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Output:")
         self.choose_output_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
@@ -133,6 +251,7 @@ class PrimerFrame(wx.Frame):
         self.__do_layout()
 
         self.Bind(wx.EVT_MENU, self.quit_event, id=-1)
+        self.Bind(wx.EVT_MENU, self.plot_event, id=-1)
         self.Bind(wx.EVT_BUTTON, self.choose_fasta_button_event, self.choose_fasta_button)
         self.Bind(wx.EVT_BUTTON, self.choose_gtf_button_event, self.choose_gtf_button)
         self.Bind(wx.EVT_BUTTON, self.choose_bam_button_event, self.choose_bam_button)
@@ -308,8 +427,8 @@ class PrimerFrame(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_OK:
             self.output = dlg.GetPath()  # get the new filenames from the dialog
+            self.output_choice_label.SetLabel(dlg.GetFilename())
             dlg.Destroy()  # best to do this sooner
-            self.output_choice_label.SetLabel(self.output.split('/')[-1])
         event.Skip()
 
     def choose_fasta_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
@@ -456,6 +575,10 @@ class PrimerFrame(wx.Frame):
         # p.join()
 
         # load_progress.Update(100, 'Done.')
+        event.Skip()
+
+    def plot_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        PlotDialog(self, -1, 'Plot Results', self.output)
         event.Skip()
 
 

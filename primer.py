@@ -117,6 +117,8 @@ def mkdir_tmp():
     if not os.path.exists(config_options['tmp'] + '/jct'): os.mkdir(config_options['tmp'] + '/jct')
     if not os.path.exists(config_options['tmp'] + '/bed'): os.mkdir(config_options['tmp'] + '/bed')
     if not os.path.exists(config_options['tmp'] + '/wig'): os.mkdir(config_options['tmp'] + '/wig')
+    if not os.path.exists(config_options['tmp'] + '/draw'): os.mkdir(config_options['tmp'] + '/draw')
+    if not os.path.exists(config_options['tmp'] + '/depth_plot'): os.mkdir(config_options['tmp'] + '/depth_plot')
     if not os.path.exists(config_options['tmp'] + '/isoforms'): os.mkdir(config_options['tmp'] + '/isoforms')
 
 
