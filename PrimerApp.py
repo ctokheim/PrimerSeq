@@ -29,27 +29,6 @@ import datetime
 # end wxGlade
 
 
-class DialogThread(threading.Thread):
-    def __init__(self, target, args, attr, label, label_text):
-        threading.Thread.__init__(self)
-        self.label = label
-        self.label_text = label_text
-        self.tar = target
-        self.args = args
-        self.attr = attr
-        self.start()
-
-    def run(self):
-        manager = Manager()
-        self.output = manager.list([None])
-        self.work_process = self.tar(self.output, *self.args)
-        self.work_process.join()
-        wx.CallAfter(pub.sendMessage, "update", ((self.attr, self.output[0]), (self.label, self.label_text)))
-
-    def terminate(self):
-        self.work_process.terminate()
-
-
 class RunThread(threading.Thread):
     def __init__(self, target, args, attr='', label='', label_text=''):
         threading.Thread.__init__(self)
@@ -68,56 +47,6 @@ class RunThread(threading.Thread):
             wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
         else:
             wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
-
-
-class DialogProcess(Process):
-    def __init__(self, output, target, args):
-        Process.__init__(self)
-        self.output = output
-        self.tar = target
-        self.args = args
-        self.start()
-
-    def run(self):
-        self.output[0] = self.tar(*self.args)
-        # wx.CallAfter(Publisher().sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
-
-    def terminate(self):
-        print 'terminate'
-        Process.terminate(self)
-        self.join()
-
-
-class CustomProgressDialog(wx.Dialog):
-    def __init__(self, parent, id, title, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(200,150), style=wx.RESIZE_BORDER)
-
-        self.parent = parent
-        self.text = wx.StaticText(self, -1, text)
-        self.gauge = wx.Gauge(self, -1)
-        self.closebutton = wx.Button(self, wx.ID_CLOSE)
-        self.closebutton.Bind(wx.EVT_BUTTON, self.OnClose)
-
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.text, 0, wx.EXPAND)
-        sizer.Add(self.gauge, 0, wx.ALIGN_CENTER)
-        sizer.Add(self.closebutton, 0, wx.ALIGN_CENTER)
-
-        self.SetSizer(sizer)
-        self.Show()
-
-    def Update(self, val, update_text=''):
-        print val, update_text
-        if val == 100:
-            self.Destroy()
-        else:
-            self.gauge.SetValue(val)
-            if update_text: self.text.SetLabel(update_text)
-
-    def OnClose(self, event):
-        self.parent.current_process.terminate()
-        self.Destroy()
-        #can add stuff here to do in parent.
 
 
 class CustomDialog(wx.Dialog):
