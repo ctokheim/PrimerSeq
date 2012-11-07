@@ -165,7 +165,7 @@ class ExonSeek(object):
         index = self.component.index(self.target)
         my_subgraph = self.graph.subgraph(self.component)
         paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
-        if self.strand == '+':
+        if self.strand == '-':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts,
                                                                                    self.component[index + 1:])
