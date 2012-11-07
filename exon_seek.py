@@ -162,6 +162,7 @@ class ExonSeek(object):
         it is alternatively spliced. Both upstream and downstream exons are
         checked for the closest sufficiently included exon.
         '''
+        print 'non-constitutive case'
         index = self.component.index(self.target)
         my_subgraph = self.graph.subgraph(self.component)
         paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
@@ -186,6 +187,7 @@ class ExonSeek(object):
         '''
         Case where the target and one flanking exon is constitutive.
         '''
+        print 'first exon case'
         if len(self.graph.predecessors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and predecessors')
         my_subgraph = self.graph.subgraph(self.component)
@@ -204,11 +206,11 @@ class ExonSeek(object):
             self.save_path_info([p + [self.downstream] for p in paths], counts)  # add const. downstream exon to all paths
         self.psi_target = 1.0
 
-
     def last_exon_case(self):
         '''
         Case where the target and one flanking exon are constitutive.
         '''
+        print 'last exon case'
         if len(self.graph.successors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and successors')
 
