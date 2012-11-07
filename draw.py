@@ -6,22 +6,22 @@ Created on Feb 8, 2012
 # external dependencies
 import numpy as np
 import matplotlib
-from matplotlib import rc
+# from matplotlib import rc
 from matplotlib.collections import PatchCollection
-import matplotlib.path as mpath
+# import matplotlib.path as mpath
 import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
+# import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredText   # import anchored text
-from pylab import *
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
-import math
+# from pylab import *
+# import matplotlib.gridspec as gridspec
+# from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
+# import math
 from collections import Counter, namedtuple
-import traceback
-import sys
+# import traceback
+# import sys
 import argparse
-import itertools as it
+# import itertools as it
 from operator import *
 import json
 import csv

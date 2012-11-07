@@ -11,6 +11,8 @@ import wx
 # from wx.lib.pubsub import Publisher
 from wx.lib.pubsub import setuparg1
 from wx.lib.pubsub import pub
+import draw
+import depth_plot
 import os
 import re
 import sys
@@ -20,8 +22,6 @@ import primer
 import threading
 import csv
 import utils
-import depth_plot
-import draw
 import json
 
 # logging imports
@@ -32,6 +32,16 @@ import datetime
 # begin wxGlade: extracode
 # end wxGlade
 
+class PlotThread(threading.Thread):
+    def __init__(self, target, args):
+        threading.Thread.__init__(self)
+        self.tar = target
+        self.args = args
+        self.start()
+
+    def run(self):
+        output = self.tar(*self.args)  # threaded call
+        wx.CallAfter(pub.sendMessage, "plot_update", ())
 
 class RunThread(threading.Thread):
     def __init__(self, target, args, attr='', label='', label_text=''):
@@ -97,7 +107,7 @@ class PlotDialog(wx.Dialog):
         # read in valid primer output
         with open(self.output_file) as handle:
             self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
-                                  csv.reader(handle, delimiter='\t'))
+                                  csv.reader(handle, delimiter='\t'))[1:]
             select_results = [', '.join(r[:2]) for r in self.results]
 
         # target selection widgets
@@ -120,6 +130,8 @@ class PlotDialog(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.plot_button_event, self.plot_button)
         self.SetSizer(sizer)
         self.Show()
+
+        pub.subscribe(self.plot_update, "plot_update")
 
     def choose_bigwig_event(self, event):
         dlg = wx.FileDialog(self, message='Choose your BigWig files', defaultDir=os.getcwd(),
@@ -151,37 +163,72 @@ class PlotDialog(wx.Dialog):
         chr = utils.get_chr(row[9])
         plot_domain = utils.construct_coordinate(chr, start, end)
 
+        self.plot_button.SetLabel('Ploting . . .')
+        self.plot_button.Disable()
+
         # draw isoforms
-        self.draw_isoforms(json=primer.config_options['tmp'] + '/isoforms/' + target_id + '.json',
-                           output=primer.config_options['tmp'] + '/' + 'draw/' + target_id + '.png',
-                           scale=1,
-                           primer_file=self.output_file,
-                           id=target_id)
+        plot_thread = PlotThread(target=self.generate_plots, args=(target_id, plot_domain, self.bigwig, self.output_file))
 
-        # create read depth plot
-        self.depth_plot(bigwig=','.join(self.bigwig),
-                        position=plot_domain,
-                        gene='Not Used',
-                        size=2.,
-                        step=1,
-                        output=primer.config_options['tmp'] + '/depth_plot/' + target_id + '.png')
+    def generate_plots(self, tgt_id, plt_domain, bigwig, out_file):
+        # generate isoform drawing
+        opts = {'json': primer.config_options['tmp'] + '/isoforms/' + tgt_id + '.json',
+                'output': primer.config_options['tmp'] + '/' + 'draw/' + tgt_id + '.png',
+                'scale': 1,
+                'primer_file': out_file,
+                'id': tgt_id}
+        self.draw_isoforms(opts)
 
-    def draw_isoforms(self, **kwdargs):
+        # generate read depth plot
+        opts = {'bigwig': ','.join(bigwig),
+                'position': plt_domain,
+                'gene': 'Not Used',
+                'size': 2.,
+                'step': 1,
+                'output': primer.config_options['tmp'] + '/depth_plot/' + tgt_id + '.png'}
+        self.depth_plot(opts)
+
+    def draw_isoforms(self, opts):
         '''
         Draw isoforms by using draw.py
         '''
         # load json file that has information isoforms and their counts
-        with open(kwdargs['json']) as handle:
+        with open(opts['json']) as handle:
             my_json = json.load(handle)
 
-        coord = draw.read_primer_file(self.output_file, kwdargs['id'])
-        draw.main(my_json['path'], my_json['counts'], coord, kwdargs)
+        coord = draw.read_primer_file(self.output_file, opts['id'])
+        draw.main(my_json['path'], my_json['counts'], coord, opts)
 
-    def depth_plot(self, **kwdargs):
+    def depth_plot(self, opts):
         '''
         Create a read depth plot by using depth_plot.py
         '''
-        depth_plot.read_depth_plot(kwdargs)
+        depth_plot.read_depth_plot(opts)
+
+    def plot_update(self, msg):
+        self.plot_button.SetLabel('Plot')
+        self.plot_button.Enable()
+        DisplayPlotDialog(self, -1, 'Primer Result Plot', [])
+
+
+class DisplayPlotDialog(wx.Dialog):
+    def __init__(self, parent, id, title, img_files):
+        wx.Dialog.__init__(self, parent, id, title, size=(600,600))
+
+        self.parent = parent
+
+        # load imgs
+        draw_png = wx.Image('tmp/draw/1.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        self.draw_bitmap = wx.StaticBitmap(self, -1, draw_png, (10, 5), (draw_png.GetWidth(), draw_png.GetHeight()))
+        depth_png = wx.Image('tmp/depth_plot/1.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        self.depth_bitmap = wx.StaticBitmap(self, -1, depth_png, (10, 5), (depth_png.GetWidth(), depth_png.GetHeight()))
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.depth_bitmap, 0, wx.ALIGN_CENTER)
+        sizer.Add(self.draw_bitmap, 0, wx.ALIGN_CENTER)
+
+        self.SetSizer(sizer)
+        self.Show()
+
 
 
 class PrimerFrame(wx.Frame):

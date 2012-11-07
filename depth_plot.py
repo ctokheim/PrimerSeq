@@ -1,6 +1,6 @@
 # graphing imports
-import matplotlib
-matplotlib.use('Agg')  # prevent figure pop-ups
+# import matplotlib
+# matplotlib.use('Agg')  # prevent figure pop-ups
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredText   # import anchored text
@@ -8,7 +8,7 @@ import itertools as it
 import argparse
 
 # important packages
-import numpy as np
+# import numpy as np
 
 # own imports
 import wig
@@ -121,10 +121,10 @@ def read_depth_plot(options):
 
     # iterate over subplots (bigwig files)
     if num_subplots == 1:
-        axes.set_title('Read Depth Plot on %s' % chr)
+        # axes.set_title('Read Depth Plot on %s' % chr)
         iterable = [axes]
     else:
-        axes.flat[0].set_title('Read Depth Plot on %s' % chr)
+        # axes.flat[0].set_title('Read Depth Plot on %s' % chr)
         iterable = axes.flat
     for i, ax in enumerate(iterable):
         #ax.locator_params(nbins=2)
