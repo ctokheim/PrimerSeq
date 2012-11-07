@@ -14,10 +14,12 @@ from wx.lib.pubsub import pub
 import draw
 import depth_plot
 import os
+import subprocess
 import re
 import sys
 from pygr.seqdb import SequenceFileDB
 import sam
+import gtf
 import primer
 import threading
 import csv
@@ -42,6 +44,19 @@ class PlotThread(threading.Thread):
     def run(self):
         output = self.tar(*self.args)  # threaded call
         wx.CallAfter(pub.sendMessage, "plot_update", ())
+
+class UpdateThread(threading.Thread):
+    def __init__(self, target, args, update=''):
+        threading.Thread.__init__(self)
+        self.update = update
+        self.tar = target
+        self.args = args
+        self.start()
+
+    def run(self):
+        output = self.tar(*self.args)  # threaded call
+        wx.CallAfter(pub.sendMessage, self.update, ())
+
 
 class RunThread(threading.Thread):
     def __init__(self, target, args, attr='', label='', label_text=''):
@@ -118,20 +133,29 @@ class PlotDialog(wx.Dialog):
         target_sizer.Add(self.target_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         target_sizer.Add(self.target_combo_box, 0, wx.ALIGN_LEFT, 0)
 
-        self.plot_button = wx.Button(self, -1, "Plot")
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.plot_button = wx.Button(self, -1, 'Plot')
+        self.cancel_button = wx.Button(self, -1, 'Cancel')
+        button_sizer.Add(self.plot_button, 0, wx.ALIGN_RIGHT)
+        button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(bigwig_sizer, 0, wx.EXPAND, 10)
         sizer.Add(target_sizer, 0, wx.EXPAND)
-        sizer.Add(self.plot_button, 0, wx.ALIGN_CENTER)
+        sizer.Add(button_sizer, 0, wx.ALIGN_CENTER)
         sizer.SetMinSize((300, 100))
 
         self.Bind(wx.EVT_BUTTON, self.choose_bigwig_event, self.choose_bigwig_button)
         self.Bind(wx.EVT_BUTTON, self.plot_button_event, self.plot_button)
+        self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
         self.SetSizer(sizer)
         self.Show()
 
         pub.subscribe(self.plot_update, "plot_update")
+
+    def cancel_button_event(self, event):
+        self.Destroy()
+        event.Skip()
 
     def choose_bigwig_event(self, event):
         dlg = wx.FileDialog(self, message='Choose your BigWig files', defaultDir=os.getcwd(),
@@ -148,11 +172,12 @@ class PlotDialog(wx.Dialog):
             dlg.Destroy()
 
     def plot_button_event(self, event):
-        target_id = str(self.target_combo_box.GetValue().split(',')[0])
+        self.target_id = str(self.target_combo_box.GetValue().split(',')[0])
+        self.target_of_interest = str(self.target_combo_box.GetValue().split(', ')[1])
 
         # get the line from the file that matches the user selection
         for row in self.results:
-            if row[0] == target_id:
+            if row[0] == self.target_id:
                 row_of_interest = row
 
         # find where the plot should span
@@ -167,7 +192,7 @@ class PlotDialog(wx.Dialog):
         self.plot_button.Disable()
 
         # draw isoforms
-        plot_thread = PlotThread(target=self.generate_plots, args=(target_id, plot_domain, self.bigwig, self.output_file))
+        plot_thread = PlotThread(target=self.generate_plots, args=(self.target_id, plot_domain, self.bigwig, self.output_file))
 
     def generate_plots(self, tgt_id, plt_domain, bigwig, out_file):
         # generate isoform drawing
@@ -207,28 +232,123 @@ class PlotDialog(wx.Dialog):
     def plot_update(self, msg):
         self.plot_button.SetLabel('Plot')
         self.plot_button.Enable()
-        DisplayPlotDialog(self, -1, 'Primer Result Plot', [])
+        DisplayPlotDialog(self, -1, 'Primer Results for ' + self.target_of_interest,
+                          ['tmp/depth_plot/' + self.target_id + '.png',
+                           'tmp/draw/' + self.target_id + '.png'])
+
+class SortGtfDialog(wx.Dialog):
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
+
+        self.parent = parent
+
+        self.gtf_label = wx.StaticText(self, -1, "GTF:")
+        self.choose_gtf_button = wx.Button(self, -1, "Choose . . .")
+        self.panel_3 = wx.Panel(self, -1)
+        self.gtf_choice_label = wx.StaticText(self, -1, "None")
+        gtf_sizer = wx.GridSizer(1, 3, 0, 0)
+        gtf_sizer.Add(self.gtf_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        gtf_sizer.Add(self.choose_gtf_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        gtf_sizer.Add(self.gtf_choice_label, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.output_gtf_label = wx.StaticText(self, -1, "Sorted GTF:")
+        self.choose_output_gtf_button = wx.Button(self, -1, "Choose . . .")
+        self.panel_3 = wx.Panel(self, -1)
+        self.output_gtf_choice_label = wx.StaticText(self, -1, "None")
+        output_gtf_sizer = wx.GridSizer(1, 3, 0, 0)
+        output_gtf_sizer.Add(self.output_gtf_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        output_gtf_sizer.Add(self.choose_output_gtf_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        output_gtf_sizer.Add(self.output_gtf_choice_label, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.sort_button = wx.Button(self, -1, 'Sort')
+        self.cancel_button = wx.Button(self, -1, 'Cancel')
+        button_sizer.Add(self.sort_button, 0, wx.ALIGN_RIGHT)
+        button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(gtf_sizer, 0, wx.EXPAND, 10)
+        sizer.Add(output_gtf_sizer, 0, wx.EXPAND)
+        sizer.Add(button_sizer, 0, wx.ALIGN_CENTER)
+        sizer.SetMinSize((300, 100))
+
+        self.Bind(wx.EVT_BUTTON, self.choose_gtf_event, self.choose_gtf_button)
+        self.Bind(wx.EVT_BUTTON, self.choose_output_gtf_event, self.choose_output_gtf_button)
+        self.Bind(wx.EVT_BUTTON, self.sort_button_event, self.sort_button)
+        self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
+        self.SetSizer(sizer)
+        self.Show()
+
+        pub.subscribe(self.sort_update, "sort_update")
+
+    def cancel_button_event(self, event):
+        self.Destroy()
+        event.Skip()
+
+    def choose_output_gtf_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
+                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.output_gtf = filename
+            self.output_gtf_choice_label.SetLabel(filename_without_path)
+        else:
+            dlg.Destroy()
+
+    def choose_gtf_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
+                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.gtf = filename
+            self.gtf_choice_label.SetLabel(filename_without_path)
+        else:
+            dlg.Destroy()
+
+    def sort_gtf(self, infile, outfile):
+        gtf.sort_gtf(infile, outfile)
+
+    def sort_button_event(self, event):
+        self.sort_button.SetLabel('Sorting . . .')
+        self.sort_button.Disable()
+
+        # draw isoforms
+        sort_thread = UpdateThread(target=self.sort_gtf,
+                                   args=(self.gtf, self.output_gtf),
+                                   update='sort_update')
+
+
+    def sort_update(self, msg):
+        self.sort_button.SetLabel('Sort')
+        self.sort_button.Enable()
 
 
 class DisplayPlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, img_files):
-        wx.Dialog.__init__(self, parent, id, title, size=(600,600))
+        # call super constructor
+        wx.Dialog.__init__(self, parent, id, title, style=wx.DEFAULT_DIALOG_STYLE ^ wx.RESIZE_BORDER)
+
+        # containers for imgs
+        depth_png = wx.Image(img_files[0], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        draw_png = wx.Image(img_files[1], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        self.draw_bitmap = wx.StaticBitmap(self, -1, draw_png, (10, 5), (draw_png.GetWidth(), draw_png.GetHeight()))
+        self.depth_bitmap = wx.StaticBitmap(self, -1, depth_png, (10, 5), (depth_png.GetWidth(), depth_png.GetHeight()))
 
         self.parent = parent
-
-        # load imgs
-        draw_png = wx.Image('tmp/draw/1.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-        self.draw_bitmap = wx.StaticBitmap(self, -1, draw_png, (10, 5), (draw_png.GetWidth(), draw_png.GetHeight()))
-        depth_png = wx.Image('tmp/depth_plot/1.png', wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-        self.depth_bitmap = wx.StaticBitmap(self, -1, depth_png, (10, 5), (depth_png.GetWidth(), depth_png.GetHeight()))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.depth_bitmap, 0, wx.ALIGN_CENTER)
         sizer.Add(self.draw_bitmap, 0, wx.ALIGN_CENTER)
 
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
         self.Show()
-
 
 
 class PrimerFrame(wx.Frame):
@@ -240,14 +360,20 @@ class PrimerFrame(wx.Frame):
         # Menu Bar
         self.primer_frame_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(wx.NewId(), "Quit", "", wx.ITEM_NORMAL)
+        quit_id = wx.NewId()
+        wxglade_tmp_menu.Append(quit_id, "Quit", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "File")
         wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(wx.NewId(), "Sort GTF", "", wx.ITEM_NORMAL)
-        wxglade_tmp_menu.Append(wx.NewId(), "Add Genes", "", wx.ITEM_NORMAL)
+        sort_id = wx.NewId()
+        wxglade_tmp_menu.Append(sort_id, "Sort GTF", "", wx.ITEM_NORMAL)
+        add_genes_id = wx.NewId()
+        wxglade_tmp_menu.Append(add_genes_id, "Add Genes", "", wx.ITEM_NORMAL)
+        primer3_id = wx.NewId()
+        wxglade_tmp_menu.Append(primer3_id, "Primer3", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "Edit")
         wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(wx.NewId(), "Plot", "", wx.ITEM_NORMAL)
+        plot_id = wx.NewId()
+        wxglade_tmp_menu.Append(plot_id, "Plot", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "View")
         self.SetMenuBar(self.primer_frame_menubar)
         # Menu Bar end
@@ -297,8 +423,11 @@ class PrimerFrame(wx.Frame):
         self.__set_properties()
         self.__do_layout()
 
-        self.Bind(wx.EVT_MENU, self.quit_event, id=-1)
-        self.Bind(wx.EVT_MENU, self.plot_event, id=-1)
+        self.Bind(wx.EVT_MENU, self.quit_event, id=quit_id)  # used to specify id as -1
+        self.Bind(wx.EVT_MENU, self.plot_event, id=plot_id)
+        self.Bind(wx.EVT_MENU, self.add_genes_event, id=add_genes_id)
+        self.Bind(wx.EVT_MENU, self.sort_gtf_event, id=sort_id)
+        self.Bind(wx.EVT_MENU, self.primer3_event, id=primer3_id)
         self.Bind(wx.EVT_BUTTON, self.choose_fasta_button_event, self.choose_fasta_button)
         self.Bind(wx.EVT_BUTTON, self.choose_gtf_button_event, self.choose_gtf_button)
         self.Bind(wx.EVT_BUTTON, self.choose_bam_button_event, self.choose_bam_button)
@@ -425,6 +554,25 @@ class PrimerFrame(wx.Frame):
         self.Layout()
         # end wxGlade
 
+    def add_genes_event(self, event):
+        dlg = wx.MessageDialog(self, 'Sorry, this feature is not implemented yet.', style=wx.OK)
+        dlg.ShowModal()
+
+    def sort_gtf_event(self, event):
+        SortGtfDialog(self, -1, 'Sort GTF')
+
+    def primer3_event(self, event):
+        '''
+        Try to open primer3.cfg in every platform so the user can edit it.
+        '''
+        filepath = 'primer3.cfg'
+        if sys.platform.startswith('darwin'):
+            subprocess.call(('open', filepath))
+        elif os.name == 'nt':
+            os.startfile(filepath)
+        elif os.name == 'posix':
+            subprocess.call(('xdg-open', filepath))
+
     def update_after_dialog(self, msg):
         '''
         Updates attributes and gui components from a started Process
@@ -465,7 +613,7 @@ class PrimerFrame(wx.Frame):
         return tmp_bam
 
     def quit_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
-        print "Event handler `quit_event' not implemented!"
+        self.Destroy()
         event.Skip()
 
     def choose_output_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
@@ -625,7 +773,11 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def plot_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
-        PlotDialog(self, -1, 'Plot Results', self.output)
+        try:
+            PlotDialog(self, -1, 'Plot Results', self.output)
+        except AttributeError:
+            dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
+            dlg.ShowModal()
         event.Skip()
 
 
