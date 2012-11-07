@@ -778,7 +778,6 @@ class PrimerFrame(wx.Frame):
         except AttributeError:
             dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
             dlg.ShowModal()
-        event.Skip()
 
 
 # end of class PrimerFrame
