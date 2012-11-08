@@ -496,6 +496,11 @@ class PrimerFrame(wx.Frame):
         primer3_manual_id = wx.NewId()
         wxglade_tmp_menu.Append(primer3_manual_id, "Primer3 Doc.", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "View")
+        wxglade_tmp_menu = wx.Menu()
+        about_id = wx.NewId()
+        wxglade_tmp_menu.Append(about_id, "&About", "", wx.ITEM_NORMAL)
+        self.primer_frame_menubar.Append(wxglade_tmp_menu, "Help")
+        wxglade_tmp_menu = wx.Menu()
         self.SetMenuBar(self.primer_frame_menubar)
         # Menu Bar end
         self.primer_frame_statusbar = self.CreateStatusBar(1, 0)
@@ -549,6 +554,7 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.add_genes_event, id=add_genes_id)
         self.Bind(wx.EVT_MENU, self.sort_gtf_event, id=sort_id)
         self.Bind(wx.EVT_MENU, self.primer3_event, id=primer3_id)
+        self.Bind(wx.EVT_MENU, self.about_event, id=about_id)
         self.Bind(wx.EVT_MENU, self.primer3_manual_event, id=primer3_manual_id)
         self.Bind(wx.EVT_BUTTON, self.choose_fasta_button_event, self.choose_fasta_button)
         self.Bind(wx.EVT_BUTTON, self.choose_gtf_button_event, self.choose_gtf_button)
@@ -900,6 +906,44 @@ class PrimerFrame(wx.Frame):
         except AttributeError:
             dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
             dlg.ShowModal()
+
+
+    def about_event(self, event):
+
+        description = """PrimerSeq aims to design primers on flanking constitutive exons around your target position of interest.
+The advantage of PrimerSeq is it handles the ambiguity of where to place primers by incorporating RNA-Seq data.
+Essentially, the RNA-Seq data allows primers to be placed based on your particular cell line or experimental condition
+rather than using annotations that incorporate transcripts that are not expressed for your data."""
+
+        licence = """PrimerSeq is free software; you can redistribute
+it and/or modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the License,
+or (at your option) any later version.
+
+PrimerSeq is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details. You should have
+received a copy of the GNU General Public License along with PrimerSeq;
+if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+Suite 330, Boston, MA  02111-1307  USA"""
+
+
+        info = wx.AboutDialogInfo()
+
+        # info.SetIcon(wx.Icon('hunter.png', wx.BITMAP_TYPE_PNG))
+        info.SetName('PrimerSeq')
+        info.SetVersion('1.0')
+        info.SetDescription(description)
+        info.SetCopyright('(C) 2012 Collin Tokheim')
+        info.SetWebSite('http://primerseq.sf.net')
+        info.SetLicence(licence)
+        info.AddDeveloper('Collin Tokheim')
+        info.AddDocWriter('Collin Tokheim')
+        # info.AddArtist('The Tango crew')
+        # info.AddTranslator('Jan Bodnar')
+
+        wx.AboutBox(info)
 
 
 # end of class PrimerFrame
