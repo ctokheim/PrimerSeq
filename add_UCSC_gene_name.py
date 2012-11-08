@@ -65,7 +65,6 @@ def modify_bed(options, txToGene):
 
 
 def main(options):
-    print 'here'
     # parse kgXref text output
     with open(options['kgxref']) as handle:
         txToGene = dict(map(lambda x: [x[0], x[4].replace(' ', '_')],
@@ -91,7 +90,6 @@ def main(options):
 
 
 if __name__ == '__main__':
-    print 'here'
     parser = argparse.ArgumentParser(description='change tx names to UCSC gene name displayed in genome browser')
     parser.add_argument('-k', dest='kgxref', required=True, help='textfile of kgXref table in UCSC genome browser')
     parser.add_argument('-a', dest='annotation', required=True, help='Path to either a bed file or gtf file')
