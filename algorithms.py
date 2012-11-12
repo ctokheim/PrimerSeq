@@ -70,12 +70,26 @@ class AllPaths(object):
     '''
     Handle all possible paths in a biconnected component
     '''
-    def __init__(self, G, component, target, chr=None, strand=None):
-        self.graph = G
+    def __init__(self, sg, component, target, chr=None, strand=None):
+        self.graph = sg.get_graph()
+        self.tx_paths = sg.annotation
+        known_edges = set([(tx[i], tx[i + 1])
+                           for tx in self.tx_paths
+                           for i in range(len(tx) - 1)])
         self.component = component
-        self.sub_graph = nx.subgraph(self.graph, self.component)
         self.target = target
-        self.all_paths = list(nx.all_simple_paths(self.sub_graph, source=self.component[0], target=self.component[-1]))
+        self.sub_graph = nx.subgraph(self.graph, self.component)
+
+        # add any possible tx that uses novel edges to list of known txs
+        all_paths = list(nx.all_simple_paths(self.sub_graph, source=self.component[0], target=self.component[-1]))
+        for tx in all_paths:
+            novel = False
+            for i in range(len(tx) - 1):
+                if (tx[i], tx[i + 1]) not in known_edges:
+                    novel = True
+            if novel:
+                self.tx_paths.append(tx)
+
         self.chr = chr
         self.strand = strand
         self.inc_lengths, self.skip_lengths = [], []  # call set all_path_lengths method
@@ -90,16 +104,46 @@ class AllPaths(object):
         else:
             raise ValueError('Strand should either be + or -')
 
+    def trim_tx_paths(self):
+        self.component = sorted(self.component, key=lambda x: (x[0], x[1]))  # make sure it is sorted
+
+        # trim tx_paths to only contain paths within component_subgraph
+        tmp = set()
+        for p in self.tx_paths:
+            # make sure this tx path has the biconnected component
+            if self.component[0] in p and self.component[-1] in p:
+                tmp.add(tuple(
+                    p[p.index(self.component[0]):p.index(self.component[-1]) + 1]))  # make sure there is no redundant paths
+        self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+
+    def estimate_counts(self):
+        # assert statements about the connectivity of the graph
+        assert nx.is_weakly_connected(self.sub_graph), 'Yikes! expected weakly connected graph'
+        assert nx.is_biconnected(self.sub_graph.to_undirected()), 'Yikes! expected a biconnected component'
+
+        # assert statements about AFE/ALE testing
+        num_first_exons = len(filter(lambda x: len(self.sub_graph.predecessors(x)) == 0, self.sub_graph.nodes()))
+        assert num_first_exons <= 1, 'Yikes! AFE like event is not expected'
+        num_last_exons = len(filter(lambda x: len(self.sub_graph.successors(x)) == 0, self.sub_graph.nodes()))
+        assert num_last_exons <= 1, 'Yikes! ALE like event is not expected'
+
+        # run EM algorithm
+        logging.debug('Start read count EM algorithm . . . ')
+        self.count_info = read_count_em(self.tx_paths, self.sub_graph)
+        logging.debug('Finished calculating counts.')
+
+        return self.tx_paths, self.count_info
+
     def set_all_path_coordinates(self):
         tmp = []
-        for p in self.all_paths:
-            tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.all_paths))
+        for p in self.tx_paths:
+            tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.tx_paths))
         self.all_path_lengths = tmp
 
     def set_all_path_lengths(self):
         # get possible lengths
         inc_length, skip_length = [], []
-        for path in self.all_paths:
+        for path in self.tx_paths:
             if self.target in path:
                 inc_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
             else:

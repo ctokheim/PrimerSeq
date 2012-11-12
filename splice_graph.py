@@ -208,7 +208,7 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
     # find appropriate flanking "constitutive" exon for primers
     # upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
     exon_seek_obj = ExonSeek(target, sGraph, ID)
-    upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
+    all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
 
     # lack of successor/predecessor nodes
     if upstream is None or downstream is None:
@@ -216,9 +216,9 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
         return ["%s does not have an upstream exon, downstream exon, or possibly both" % str(component)]
 
     # get possible lengths
-    all_paths = algs.AllPaths(sGraph.get_graph(), component, target,
-                              chr=sGraph.chr, strand=sGraph.strand)
-    all_paths.set_all_path_lengths()
+    #all_paths = algs.AllPaths(sGraph.get_graph(), component, target,
+    #                          chr=sGraph.chr, strand=sGraph.strand)
+    # all_paths.set_all_path_lengths()
 
     # get sequence of upstream/target/downstream combo
     genome_chr = genome[sGraph.chr]  # chr object from pygr
