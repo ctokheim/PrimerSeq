@@ -50,7 +50,6 @@ def modify_gtf(options, txToGene):
 
 
 def modify_bed(options, txToGene):
-    print 'IM here'
     # read / modify bed file
     with open(options['annotation']) as handle:
         output, failed_lookup = [], 0

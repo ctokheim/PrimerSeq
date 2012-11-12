@@ -4,6 +4,7 @@ import sys
 import logging
 # import matplotlib.pyplot as plt
 
+oldsettings = np.seterr(all='raise')
 
 def get_biconnected(G):
     """
@@ -15,6 +16,9 @@ def get_biconnected(G):
     G_undirected = G.to_undirected()  # make sure undirected graph for biconnected components
     components = filter(lambda x: len(
         x) > 2, map(list, nx.biconnected_components(G_undirected)))  # filter out trivial dyad biconnected components
+
+    # assert len(components) > 0, 'what nothing in it' + str(components)
+    # assert components != None, 'Oddly there is a none object in the biconnected comp' + str(components)
     return components
 
 
@@ -152,6 +156,8 @@ class AllPaths(object):
 
 
 def read_count_em(bcc_paths, sub_graph):
+    oldsettings = np.seterr(all='raise')  # make sure error is raised instead of numerical warning
+
     # useful convenience dicts
     indexToEdge = {i: e for i, e in enumerate(sub_graph.edges())}
     edgeToIndex = {e: i for i, e in enumerate(sub_graph.edges())}

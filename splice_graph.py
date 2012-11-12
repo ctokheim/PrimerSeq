@@ -314,7 +314,7 @@ def main(options, args_output='tmp/debug.json'):
                                                genome,
                                                name)
             output.append(tmp)
-        except AssertionError:
+        except (AssertionError, FloatingPointError):
             t, v, trace = sys.exc_info()
             output.append([str(v)])  # just append assertion msg
 
