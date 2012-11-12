@@ -52,7 +52,7 @@ class ExonSeek(object):
         '''
         Return all of the important variables in just one method call.
         '''
-        return self.upstream, self.downstream, self.component, self.psi_target, self.psi_upstream, self.psi_downstream
+        return self.all_paths, self.upstream, self.downstream, self.component, self.psi_target, self.psi_upstream, self.psi_downstream
 
     def save_path_info(self, p, cts):
         '''
@@ -84,10 +84,16 @@ class ExonSeek(object):
         # since there is two components I need two subgraphs/paths. One for
         # before and after the target exon (before/after are defined by
         # chromosome position)
-        my_before_subgraph = self.graph.subgraph(before_component)
-        before_paths, before_counts = algs.generate_isoforms(my_before_subgraph, self.splice_graph)
-        my_before_subgraph = self.graph.subgraph(before_component)
-        after_paths, after_counts = algs.generate_isoforms(my_before_subgraph, self.splice_graph)
+        before_all_paths = algs.AllPaths(self.splice_graph, self.before_component, self.target, self.splice_graph.chr)
+        before_all_paths.trim_tx_paths()
+        before_paths, before_counts = before_all_paths.estimate_counts()
+        after_all_paths = algs.AllPaths(self.splice_graph, self.after_component, self.target, self.splice_graph.chr)
+        after_all_paths.trim_tx_paths()
+        after_paths, after_counts = after_all_paths.estimate_counts()
+        # my_before_subgraph = self.graph.subgraph(before_component)
+        # before_paths, before_counts = algs.generate_isoforms(my_before_subgraph, self.splice_graph)
+        # my_after_subgraph = self.graph.subgraph(after_component)
+        # after_paths, after_counts = algs.generate_isoforms(my_after_subgraph, self.splice_graph)
 
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(before_paths,
@@ -105,6 +111,16 @@ class ExonSeek(object):
                                                                                        list(reversed(before_component[:-1])))
         self.total_components = before_component[:-1] + after_component
         self.psi_target = 1.0
+
+        # handle the combined components
+        tmp_start_ix = self.total_components.index(self.upstream) if self.splice_graph.strand == '+' else self.total_components.index(self.downstream)
+        tmp_end_ix = self.total_components.index(self.downstream) if self.splice_graph.strand == '+' else self.total_components.index(self.upstream)
+        self.all_paths = algs.AllPaths(self.splice_graph, self.total_components[tmp_start_ix:tmp_end_ix], self.target, self.splice_graph.chr)
+        self.all_paths.trim_tx_paths()
+        self.all_paths.set_all_path_lengths()
+        self.all_paths.set_all_path_coordinates()
+        paths, counts = self.before_all_paths.estimate_counts()
+        self.save_path_info(paths, counts)
 
     def no_biconnected_case(self):
         '''
@@ -164,8 +180,16 @@ class ExonSeek(object):
         '''
         print 'non-constitutive case'
         index = self.component.index(self.target)
-        my_subgraph = self.graph.subgraph(self.component)
-        paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
+        # my_subgraph = self.graph.subgraph(self.component)
+        # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
+
+        # get tx path information
+        self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
+        self.all_paths.trim_tx_paths()
+        self.all_paths.set_all_path_lengths()
+        self.all_paths.set_all_path_coordinates()
+        paths, counts = self.all_paths.estimate_counts()
+
         if self.strand == '-':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts,
@@ -190,8 +214,16 @@ class ExonSeek(object):
         print 'first exon case'
         if len(self.graph.predecessors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and predecessors')
-        my_subgraph = self.graph.subgraph(self.component)
-        paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
+        
+        # get tx path information
+        self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
+        self.all_paths.trim_tx_paths()
+        self.all_paths.set_all_path_lengths()
+        self.all_paths.set_all_path_coordinates()
+        paths, counts = self.all_paths.estimate_counts()
+        
+        # my_subgraph = self.graph.subgraph(self.component)
+        # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
         if self.strand == '+':
             self.upstream = self.graph.predecessors(self.target)[0]
             self.psi_upstream = 1.0  # defined by biconnected component alg as constitutive
@@ -216,8 +248,16 @@ class ExonSeek(object):
 
         possible_const = self.component[:-1]
         possible_const.reverse()  # reverse the order since closer exons should be looked at first
-        my_subgraph = self.graph.subgraph(self.component)
-        paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
+        
+        # get tx path information
+        self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
+        self.all_paths.trim_tx_paths()
+        self.all_paths.set_all_path_lengths()
+        self.all_paths.set_all_path_coordinates()
+        paths, counts = self.all_paths.estimate_counts()
+        
+        # my_subgraph = self.graph.subgraph(self.component)
+        # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts, possible_const)

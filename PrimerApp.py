@@ -21,10 +21,13 @@ from pygr.seqdb import SequenceFileDB
 import sam
 import gtf
 import primer
+import add_UCSC_gene_name as gn
 import threading
 import csv
 import utils
 import json
+import webbrowser
+import subprocess
 
 # logging imports
 import traceback
@@ -313,7 +316,11 @@ class SortGtfDialog(wx.Dialog):
             dlg.Destroy()
 
     def sort_gtf(self, infile, outfile):
-        gtf.sort_gtf(infile, outfile)
+        try:
+            gtf.sort_gtf(infile, outfile)
+        except MemoryError:
+            cmd = 'java -jar -Xmx2048m "bin/SortGtf.jar" "%s" "%s"' % (infile, outfile)
+            subprocess.check_call(cmd, shell=True)
 
     def sort_button_event(self, event):
         self.sort_button.SetLabel('Sorting . . .')
@@ -329,6 +336,123 @@ class SortGtfDialog(wx.Dialog):
         self.sort_button.SetLabel('Sort')
         self.sort_button.Enable()
 
+class AddGeneIdsDialog(wx.Dialog):
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
+
+        self.parent = parent
+
+        self.gtf_label = wx.StaticText(self, -1, "GTF:")
+        self.choose_gtf_button = wx.Button(self, -1, "Choose . . .")
+        self.panel_3 = wx.Panel(self, -1)
+        self.gtf_choice_label = wx.StaticText(self, -1, "None")
+        gtf_sizer = wx.GridSizer(1, 3, 0, 0)
+        gtf_sizer.Add(self.gtf_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        gtf_sizer.Add(self.choose_gtf_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        gtf_sizer.Add(self.gtf_choice_label, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.kgxref_label = wx.StaticText(self, -1, "kgXref:")
+        self.choose_kgxref_button = wx.Button(self, -1, "Choose . . .")
+        self.panel_3 = wx.Panel(self, -1)
+        self.kgxref_choice_label = wx.StaticText(self, -1, "None")
+        kgxref_sizer = wx.GridSizer(1, 3, 0, 0)
+        kgxref_sizer.Add(self.kgxref_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        kgxref_sizer.Add(self.choose_kgxref_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        kgxref_sizer.Add(self.kgxref_choice_label, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.output_gtf_label = wx.StaticText(self, -1, "GTF W/ Genes:")
+        self.choose_output_gtf_button = wx.Button(self, -1, "Choose . . .")
+        self.panel_3 = wx.Panel(self, -1)
+        self.output_gtf_choice_label = wx.StaticText(self, -1, "None")
+        output_gtf_sizer = wx.GridSizer(1, 3, 0, 0)
+        output_gtf_sizer.Add(self.output_gtf_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        output_gtf_sizer.Add(self.choose_output_gtf_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        output_gtf_sizer.Add(self.output_gtf_choice_label, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.add_genes_button = wx.Button(self, -1, 'Change Gene IDs')
+        self.cancel_button = wx.Button(self, -1, 'Cancel')
+        button_sizer.Add(self.add_genes_button, 0, wx.ALIGN_RIGHT)
+        button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(gtf_sizer, 0, wx.EXPAND, 10)
+        sizer.Add(kgxref_sizer, 0, wx.EXPAND, 10)
+        sizer.Add(output_gtf_sizer, 0, wx.EXPAND)
+        sizer.Add(button_sizer, 0, wx.ALIGN_CENTER)
+        sizer.SetMinSize((300, 100))
+
+        self.Bind(wx.EVT_BUTTON, self.choose_gtf_event, self.choose_gtf_button)
+        self.Bind(wx.EVT_BUTTON, self.choose_kgxref_event, self.choose_kgxref_button)
+        self.Bind(wx.EVT_BUTTON, self.choose_output_gtf_event, self.choose_output_gtf_button)
+        self.Bind(wx.EVT_BUTTON, self.add_genes_button_event, self.add_genes_button)
+        self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
+        self.SetSizerAndFit(sizer)
+        # self.SetSizer(sizer)
+        self.Show()
+
+        pub.subscribe(self.add_gene_ids_update, "add_update")
+
+    def cancel_button_event(self, event):
+        self.Destroy()
+        event.Skip()
+
+    def choose_output_gtf_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
+                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.output_gtf = filename
+            self.output_gtf_choice_label.SetLabel(filename_without_path)
+        else:
+            dlg.Destroy()
+
+    def choose_gtf_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
+                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.gtf = filename
+            self.gtf_choice_label.SetLabel(filename_without_path)
+        else:
+            dlg.Destroy()
+
+    def choose_kgxref_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose kgxref txt file', defaultDir=os.getcwd(),
+                            wildcard='txt file (*.txt)|*.txt')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.kgxref = filename
+            self.kgxref_choice_label.SetLabel(filename_without_path)
+        else:
+            dlg.Destroy()
+
+    def add_genes_button_event(self, event):
+        self.add_genes_button.SetLabel('Adding . . .')
+        self.add_genes_button.Disable()
+
+        opts = {'annotation': self.gtf,
+                'kgxref': self.kgxref,
+                'output': self.output_gtf}
+
+        # draw isoforms
+        gene_thread = UpdateThread(target=gn.main,
+                                   args=(opts,),
+                                   update='add_update')
+
+    def add_gene_ids_update(self, msg):
+        self.add_genes_button.SetLabel('Change Gene IDs')
+        self.add_genes_button.Enable()
 
 class DisplayPlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, img_files):
@@ -364,17 +488,24 @@ class PrimerFrame(wx.Frame):
         wxglade_tmp_menu.Append(quit_id, "Quit", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "File")
         wxglade_tmp_menu = wx.Menu()
+        self.primer_frame_menubar.Append(wxglade_tmp_menu, "Edit")
+        primer3_id = wx.NewId()
+        wxglade_tmp_menu.Append(primer3_id, "Primer3", "", wx.ITEM_NORMAL)
         sort_id = wx.NewId()
         wxglade_tmp_menu.Append(sort_id, "Sort GTF", "", wx.ITEM_NORMAL)
         add_genes_id = wx.NewId()
         wxglade_tmp_menu.Append(add_genes_id, "Add Genes", "", wx.ITEM_NORMAL)
-        primer3_id = wx.NewId()
-        wxglade_tmp_menu.Append(primer3_id, "Primer3", "", wx.ITEM_NORMAL)
-        self.primer_frame_menubar.Append(wxglade_tmp_menu, "Edit")
         wxglade_tmp_menu = wx.Menu()
         plot_id = wx.NewId()
         wxglade_tmp_menu.Append(plot_id, "Plot", "", wx.ITEM_NORMAL)
+        primer3_manual_id = wx.NewId()
+        wxglade_tmp_menu.Append(primer3_manual_id, "Primer3 Doc.", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "View")
+        wxglade_tmp_menu = wx.Menu()
+        about_id = wx.NewId()
+        wxglade_tmp_menu.Append(about_id, "&About", "", wx.ITEM_NORMAL)
+        self.primer_frame_menubar.Append(wxglade_tmp_menu, "Help")
+        wxglade_tmp_menu = wx.Menu()
         self.SetMenuBar(self.primer_frame_menubar)
         # Menu Bar end
         self.primer_frame_statusbar = self.CreateStatusBar(1, 0)
@@ -428,6 +559,8 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.add_genes_event, id=add_genes_id)
         self.Bind(wx.EVT_MENU, self.sort_gtf_event, id=sort_id)
         self.Bind(wx.EVT_MENU, self.primer3_event, id=primer3_id)
+        self.Bind(wx.EVT_MENU, self.about_event, id=about_id)
+        self.Bind(wx.EVT_MENU, self.primer3_manual_event, id=primer3_manual_id)
         self.Bind(wx.EVT_BUTTON, self.choose_fasta_button_event, self.choose_fasta_button)
         self.Bind(wx.EVT_BUTTON, self.choose_gtf_button_event, self.choose_gtf_button)
         self.Bind(wx.EVT_BUTTON, self.choose_bam_button_event, self.choose_bam_button)
@@ -435,7 +568,7 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.run_button_event, self.run_button)
         # end wxGlade
 
-        # Publisher().subscribe(self.update_after_dialog, "update")
+        self.gtf, self.bam, self.output, self.fasta = [], [], '', None
         pub.subscribe(self.update_after_dialog, "update")
 
     def __set_properties(self):
@@ -555,8 +688,7 @@ class PrimerFrame(wx.Frame):
         # end wxGlade
 
     def add_genes_event(self, event):
-        dlg = wx.MessageDialog(self, 'Sorry, this feature is not implemented yet.', style=wx.OK)
-        dlg.ShowModal()
+        AddGeneIdsDialog(self, -1, 'Add Valid Gene IDs')
 
     def sort_gtf_event(self, event):
         SortGtfDialog(self, -1, 'Sort GTF')
@@ -565,13 +697,23 @@ class PrimerFrame(wx.Frame):
         '''
         Try to open primer3.cfg in every platform so the user can edit it.
         '''
-        filepath = 'primer3.cfg'
+        filepath = 'primer3.txt'
         if sys.platform.startswith('darwin'):
             subprocess.call(('open', filepath))
         elif os.name == 'nt':
             os.startfile(filepath)
         elif os.name == 'posix':
             subprocess.call(('xdg-open', filepath))
+
+    def primer3_manual_event(self, event):
+        '''
+        Try to open primer3_manual.htm in a webbrowser.
+        '''
+        primer3_path = primer.config_options['primer3']
+        if primer3_path == '../primer3':
+            webbrowser.open('primer3/primer3_manual.htm')
+        else:
+            webbrowser.open(primer.config_options['primer3'] + '/primer3_manual.htm')
 
     def update_after_dialog(self, msg):
         '''
@@ -675,19 +817,11 @@ class PrimerFrame(wx.Frame):
 
             # set the gtf attribute
             filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
-            #self.load_progress = wx.ProgressDialog('GTF', 'Loading GTF . . . will take ~1 min',
-            #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
-            #                                       | wx.PD_APP_MODAL
-            #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-            # self.load_progress = CustomProgressDialog(self, -1, 'GTF', 'Loading GTF . . . will take ~1 min.')
             self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
             self.load_progress.Update(0)
             self.disable_load_buttons()
-            # self.current_process = DialogThread(target=DialogProcess, args=(primer.gene_annotation_reader, (str(filename),)),
-            #                                    attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
             self.current_process = RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
                                              attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
-            # self.gtf = primer.gene_annotation_reader(filename)
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
@@ -723,6 +857,12 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def run_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        # alert the user there is missing input
+        if self.gtf == [] or self.fasta is None or self.bam == [] or self.output == '':
+            dlg = wx.MessageDialog(self, 'Please fill in all of the required fields.', style=wx.OK)
+            dlg.ShowModal()
+            return
+
         strandList, chrList, startList, endList = [], [], [], []  # stores all coordinate info
 
         # handle the coordinates in self.coordinates_text_input
@@ -754,31 +894,64 @@ class PrimerFrame(wx.Frame):
         options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
         options['job_id'] = 'jobs_id'
 
-        # load_progress = wx.ProgressDialog('Run', 'Designing primers . . .',
-        #                                  maximum=100, parent=self, style=wx.PD_CAN_ABORT
-        #                                  | wx.PD_APP_MODAL
-        #                                  | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
         self.load_progress  = CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
         self.load_progress.Update(0)
         self.disable_load_buttons()
         self.current_process = RunThread(target=primer.main, args=(options,))
 
-        # design primers by calling the primer.main function
-        # primer.main(options)  # old
-        # p = Process(target=primer.main, args=(options,))
-        # p.start()
-        # p.join()
-
-        # load_progress.Update(100, 'Done.')
         event.Skip()
 
     def plot_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         try:
-            PlotDialog(self, -1, 'Plot Results', self.output)
+            if self.output:
+                PlotDialog(self, -1, 'Plot Results', self.output)
+            else:
+                dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
+                dlg.ShowModal()
         except AttributeError:
             dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
             dlg.ShowModal()
-        event.Skip()
+
+
+    def about_event(self, event):
+
+        description = """PrimerSeq aims to design primers on flanking constitutive exons around your target position of interest.
+The advantage of PrimerSeq is it handles the ambiguity of where to place primers by incorporating RNA-Seq data.
+Essentially, the RNA-Seq data allows primers to be placed based on your particular cell line or experimental condition
+rather than using annotations that incorporate transcripts that are not expressed for your data.
+
+PrimerSeq redistributes primer3 which is licensed under GPLv2, the SAM-JDK which is licensed under Apache License V2.0, MIT, and the BigWig api which
+is licensed under LGPL v2.1. There is no source code modification to any of the previous work."""
+
+        licence = """PrimerSeq is free software; you can redistribute
+it and/or modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the License,
+or (at your option) any later version.
+
+PrimerSeq is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details. You should have
+received a copy of the GNU General Public License along with PrimerSeq;
+if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+Suite 330, Boston, MA  02111-1307  USA"""
+
+
+        info = wx.AboutDialogInfo()
+
+        # info.SetIcon(wx.Icon('hunter.png', wx.BITMAP_TYPE_PNG))
+        info.SetName('PrimerSeq')
+        info.SetVersion('1.0')
+        info.SetDescription(description)
+        info.SetCopyright('(C) 2012 Collin Tokheim')
+        info.SetWebSite('http://primerseq.sf.net')
+        info.SetLicence(licence)
+        info.AddDeveloper('Collin Tokheim')
+        info.AddDocWriter('Collin Tokheim')
+        # info.AddArtist('The Tango crew')
+        # info.AddTranslator('Jan Bodnar')
+
+        wx.AboutBox(info)
 
 
 # end of class PrimerFrame
