@@ -230,8 +230,8 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
     return [sGraph.strand, name[1:], psi_target,
             sGraph.chr + ':' + '-'.join(map(str, upstream)), psi_upstream,
             sGraph.chr + ':' + '-'.join(map(str, downstream)), psi_downstream,
-            all_paths, str(upstream_seq).upper(),
-            str(target_seq).upper(), str(downstream_seq).upper()]
+            all_paths, upstream_seq,
+            target_seq, downstream_seq]
 
 
 def main(options, args_output='tmp/debug.json'):

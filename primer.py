@@ -14,6 +14,7 @@ import csv
 import argparse  # command line parsing
 import itertools as it
 from pygr.seqdb import SequenceFileDB
+from pygr.sequence import Sequence
 import sam
 import utils
 import ConfigParser
@@ -139,12 +140,13 @@ def primer_coordinates(p3_output, strand, tar, up, down):
         tmp = upstream_start + left_primer_offset
         first = (tmp, tmp + left_primer_length)
         tmp = right_primer_offset - (upstream_end - upstream_start) - (target_end - target_start) + downstream_start
-        second = (tmp, tmp + right_primer_length)
+        # second = (tmp, tmp + right_primer_length)
+        second = (tmp - right_primer_length + 1, tmp + 1)
     else:
         tmp = upstream_end - left_primer_offset - left_primer_length
         second = (tmp, tmp + left_primer_length)
         tmp = right_primer_offset - (upstream_end - upstream_start) - (target_end - target_start)
-        tmp = downstream_end - tmp - right_primer_length
+        tmp = downstream_end - tmp - 1  # - right_primer_length
         first = (tmp, tmp + right_primer_length)
 
     return utils.construct_coordinate(my_chr, first[0], first[1]) + ';' + utils.construct_coordinate(my_chr, second[0], second[1])
@@ -182,7 +184,7 @@ def primer3(options, primer3_options):
             output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
-            tar = options['target'][z][1] # flanking_info[z][1]  # target interval (used for print statements)
+            tar = options['target'][z][1]  # flanking_info[z][1]  # target interval (used for print statements)
             tar_id = options['target'][z][0]
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
@@ -191,7 +193,7 @@ def primer3(options, primer3_options):
             SEQUENCE_ID = tar  # use the 'chr:start-stop' format for the sequence ID in primer3
             #SEQUENCE_TEMPLATE = flanking_info[z][UPSTREAM_Seq] + flanking_info[z][TARGET_SEQ].lower() + flanking_info[z][DOWNSTREAM_SEQ]
             #SEQUENCE_TARGET = str(len(flanking_info[z][UPSTREAM_Seq]) + 1) + ',' + str(len(flanking_info[z][TARGET_SEQ]))
-            SEQUENCE_TEMPLATE = flanking_info[z][UPSTREAM_Seq] + flanking_info[z][TARGET_SEQ].lower() + flanking_info[z][DOWNSTREAM_SEQ]
+            SEQUENCE_TEMPLATE = str(flanking_info[z][UPSTREAM_Seq]).upper() + str(flanking_info[z][TARGET_SEQ]).lower() + str(flanking_info[z][DOWNSTREAM_SEQ]).upper()
             SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,' + str(len(flanking_info[z][UPSTREAM_Seq])) + ',' + str(len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ])) + ',' + str(len(flanking_info[z][DOWNSTREAM_SEQ]))
             #############################################################
 
@@ -240,9 +242,11 @@ def primer3(options, primer3_options):
                 inclusion_size_list = [str(int(k) + Primer3_PRIMER_PRODUCT_SIZE) for k in flanking_info[z][ALL_PATHS].inc_lengths]
                 skipping_size = ';'.join(skipping_size_list)
                 inclusion_size = ';'.join(inclusion_size_list)
+                left_seq = Sequence(primer3_dict['PRIMER_LEFT_0_SEQUENCE'], 'left')
+                right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
 
                 # append results to output_list
-                tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], primer3_dict['PRIMER_LEFT_0_SEQUENCE'], primer3_dict['PRIMER_RIGHT_0_SEQUENCE'],
+                tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], str(-right_seq).upper(), str(-left_seq).upper(),
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
                        flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET], flanking_info[z][PSI_DOWNSTREAM]]
                 output_list.append(tmp)
@@ -250,7 +254,7 @@ def primer3(options, primer3_options):
     # write output information
     with open(config_options['tmp'] + '/' + jobs_ID + '.txt', 'wb') as outputfile_tab:
         # define csv header
-        header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'left primer', 'right primer', 'average TM',
+        header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'forward primer', 'reverse primer', 'average TM',
                   'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
