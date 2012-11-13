@@ -33,6 +33,7 @@ class ExonSeek(object):
         biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(self.graph))
         self.upstream, self.downstream, self.total_components = None, None, None  # these will be defined after calling methods
         self.psi_upstream, self.psi_target, self.psi_downstream = None, None, None  # these will be defined after calling methods
+        self.all_paths = None
 
         self.num_of_biconnected = len(biconnected_comp)
         if len(self.graph.predecessors(self.target)) == 0 or len(self.graph.successors(self.target)) == 0:
@@ -77,6 +78,7 @@ class ExonSeek(object):
         flanking biconnected components. Meaning estimating psi for both
         the upstream and downstream exon is necessary
         '''
+        print 'two biconnected case'
         if self.component[0][-1] == self.target:
             before_component, after_component = self.component
         else:
@@ -129,6 +131,7 @@ class ExonSeek(object):
         Thus just return the immediate upstream and downstream exon along with original
         target.
         '''
+        print 'no biconnected case'
         # add information to log file
         logging.debug('It appears %s has two imediate flanking constitutive exons' % str(self.target))
         if len(self.graph.successors(self.target)) > 1:
@@ -147,8 +150,15 @@ class ExonSeek(object):
         self.total_components = [self.upstream, self.target, self.downstream]
         self.component = self.total_components
 
+        # create a dummy all paths variable even though there is only one path
+        self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
+        self.all_paths.trim_tx_paths()
+        self.all_paths.set_all_path_lengths()
+        self.all_paths.set_all_path_coordinates()
+
         # only one isoform, so read counts do not really matter
-        self.save_path_info([self.total_components], [100])
+        paths, counts = self.all_paths.estimate_counts()
+        self.save_path_info(paths, counts)
 
         # since the upstream, target, and downstream exon are constitutive then
         # they all have inclusion of 1.0
@@ -156,7 +166,7 @@ class ExonSeek(object):
 
     def one_biconnected_case(self):
         '''
-        Target exon could be constitutive or alternatively spliced.
+        Target exon could be cons_titutive or alternatively spliced.
         '''
         if self.target == self.component[0]:
             # constitutive exon of biconnected component, exons with > start pos are
@@ -215,14 +225,14 @@ class ExonSeek(object):
         print 'first exon case'
         if len(self.graph.predecessors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and predecessors')
-        
+
         # get tx path information
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
-        
+
         # my_subgraph = self.graph.subgraph(self.component)
         # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
         if self.strand == '+':
@@ -249,14 +259,14 @@ class ExonSeek(object):
 
         possible_const = self.component[:-1]
         possible_const.reverse()  # reverse the order since closer exons should be looked at first
-        
+
         # get tx path information
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
-        
+
         # my_subgraph = self.graph.subgraph(self.component)
         # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
         if self.strand == '+':
