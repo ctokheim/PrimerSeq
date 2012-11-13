@@ -163,11 +163,6 @@ def primer3(options, primer3_options):
     # tmp directory
     mkdir_tmp()  # make any necessary tmp directories
 
-    # read in targets
-    # with open(options['target']) as handle:
-    #    target_list = map(lambda x: x.strip().split('\t'), handle.readlines())
-    #    options['target'] = target_list
-
     # find flanking exons
     logging.debug('Calling splice_graph.main to find flanking exons')
     flanking_info = splice_graph.main(options)
@@ -246,7 +241,7 @@ def primer3(options, primer3_options):
                 right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
 
                 # append results to output_list
-                tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], str(-right_seq).upper(), str(-left_seq).upper(),
+                tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], str(left_seq).upper(), str(right_seq).upper(),
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
                        flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET], flanking_info[z][PSI_DOWNSTREAM]]
                 output_list.append(tmp)
@@ -254,7 +249,7 @@ def primer3(options, primer3_options):
     # write output information
     with open(config_options['tmp'] + '/' + jobs_ID + '.txt', 'wb') as outputfile_tab:
         # define csv header
-        header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'forward primer', 'reverse primer', 'average TM',
+        header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'upstream primer', 'downstream primer', 'average TM',
                   'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
