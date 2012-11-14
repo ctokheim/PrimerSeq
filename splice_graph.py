@@ -266,6 +266,8 @@ def main(options, args_output='tmp/debug.json'):
                 else:
                     gene_dict = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
             else:
+                # I no longer use BigBed for gene annotations. This code is
+                # legacy and eventually will be deleted.
                 bed.extractBigRegion(strand, chr, tmp_start, tmp_end)
                 bed.load_bed_file()
                 gene_dict = bed.get_annotation()
