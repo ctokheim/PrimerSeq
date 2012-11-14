@@ -32,10 +32,12 @@ class Sam(object):
     NOTE: This class is a wrapper arround Convert2SortedBam.jar and ExtractSamRegion.jar
     thus it requires the JRE.
     """
-    def __init__(self, sam_path):
+    def __init__(self, sam_path, anchor_length=8):
         # complain about not ending with .sam/.bam
         if not sam_path.endswith('.sam') and not sam_path.endswith('.bam'):
             raise ValueError('RNA-Seq input should be in SAM or BAM format')
+
+        self.anchor_length = int(anchor_length)  # jct read anchor length (read tophat man for details)
 
         # skip if named .sorted.bam
         if sam_path.endswith('.sorted.bam'):
@@ -71,6 +73,14 @@ class Sam(object):
             logging.debug('Traceback:\n' + traceback.format_exc())
             raise
 
+    def set_anchor_length(self, anchor):
+        '''
+        Set the Anchor Length for jct reads. Anchor length is the
+        minimum number of nucleotides that a jct read should be on both
+        sides of a jct.
+        '''
+        self.anchor_length = int(anchor)
+
     def __jct_to_dict(self, file_name, jct_dict={}):
         """Reads jct counts created from jctCounts.py"""
         with open(file_name) as handle:
@@ -99,7 +109,7 @@ class Sam(object):
         options = {}
         options['sam'] = samFile
         options['output'] = jctOutputFile
-        options['anchor'] = 8
+        options['anchor'] = self.anchor_length
 
         # get reads
         jct_counts.main(options)  # note, it creates a file at jctOuputFile

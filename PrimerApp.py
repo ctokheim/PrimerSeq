@@ -747,11 +747,11 @@ class PrimerFrame(wx.Frame):
         self.choose_gtf_button.Enable()
         self.run_button.Enable()
 
-    def process_bam(self, fnames, fnames_without_path):
+    def process_bam(self, fnames, fnames_without_path, anc_len):
         tmp_bam = []  # a list of sam.Sam obj to be returned
         for i, f in enumerate(fnames):
             wx.CallAfter(pub.sendMessage, "update", (int(float(i) / len(fnames) * 100), 'Reading %s . . .' % fnames_without_path[i]))
-            tmp_bam.append(sam.Sam(f))
+            tmp_bam.append(sam.Sam(f, anc_len))
         return tmp_bam
 
     def quit_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
@@ -840,18 +840,9 @@ class PrimerFrame(wx.Frame):
             self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes if you do not provide a sorted BAM file')
             self.load_progress.Update(0)
             self.disable_load_buttons()
-            # self.current_process = DialogThread(target=DialogProcess,
-            #                                    args=(self.process_bam, (map(str, filenames), filenames_without_path)),
-            #                                    attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
             self.current_process = RunThread(target=self.process_bam,
-                                             args=(map(str, filenames), filenames_without_path),
+                                             args=(map(str, filenames), filenames_without_path, int(self.anchor_length_text_field.GetValue())),
                                              attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
-            # self.load_progress = wx.ProgressDialog('BAM', 'Setting up BAM file list',
-            #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
-            #                                       | wx.PD_APP_MODAL
-            #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-            # self.bam_choice_label.SetLabel(', '.join(filenames_without_path))
-            # bam_thread = DialogThread(target=self.process_bam, args=(filenames, filenames_without_path), attr='bam')
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
@@ -892,6 +883,7 @@ class PrimerFrame(wx.Frame):
         options['big_bed'] = None
         options['no_gene_id'] = False if str(self.gene_id_combo_box.GetValue()) == 'Valid' else True
         options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
+        options['anchor_length'] = int(self.anchor_length_text_field.GetValue())
         options['job_id'] = 'jobs_id'
 
         self.load_progress  = CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
