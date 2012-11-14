@@ -136,7 +136,7 @@ class AllPaths(object):
         self.count_info = read_count_em(self.tx_paths, self.sub_graph)
         logging.debug('Finished calculating counts.')
 
-        return self.tx_paths, self.count_info
+        return map(list, self.tx_paths), self.count_info
 
     def set_all_path_coordinates(self):
         tmp = []
