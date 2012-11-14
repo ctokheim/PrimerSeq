@@ -66,7 +66,6 @@ class ExonSeek(object):
         """
         Progressively step away from the target exon to find a sufficient constitutive exon
         """
-        if len(paths)
         for exon in possible_exons:
             psi = algs.estimate_psi(exon, paths, counts)
             if psi >= CUT_OFF:
