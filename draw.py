@@ -42,7 +42,7 @@ def offset_text(ax, txt):
                                      child=box, pad=0.,
                                      frameon=True,
                                      prop=dict(size=5),
-                                     bbox_to_anchor=(-.05, .65),
+                                     bbox_to_anchor=(-.03, .65),
                                      bbox_transform=ax.transAxes,
                                      borderpad=0.1,
                                      )
