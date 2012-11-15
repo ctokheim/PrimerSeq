@@ -186,9 +186,10 @@ def read_count_em(bcc_paths, sub_graph):
     p = np.ones(num_tx) * 1 / num_tx
 
     # start EM
+    counter, MAX_ITERS = 0, 10000  # these variables impose a max iteration restriction of 10000 on the EM algorithm
     epsilon = float('inf')
     THRESHOLD = .0001
-    while epsilon > THRESHOLD:
+    while epsilon > THRESHOLD and counter < MAX_ITERS:
         # E-step
         for i, row in enumerate(Y):
             Y[i] = row * p / row.dot(p) * read_counts[i]
@@ -199,7 +200,8 @@ def read_count_em(bcc_paths, sub_graph):
         # convergence variable
         epsilon = np.sum(np.abs(p_new - p))
 
-        p = p_new
+        p = p_new  # update probabilities
+        counter += 1  # increment the iteration counter
 
     tx_counts = total_counts * p
     return tx_counts
