@@ -9,6 +9,7 @@ class Wig(BaseBedWig):
     def load_wig_file(self):
         depth_dict = {}
         self.verbatim_content = []
+        print self.current_file
         with open(self.current_file) as handle:
             for line in csv.reader(handle, delimiter='\t'):
                 self.verbatim_content.append(line)

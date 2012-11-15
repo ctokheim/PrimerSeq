@@ -69,11 +69,13 @@ public class ExtractBigRegion {
 		Formatter output=new Formatter(args[1]);  // file to write output
 		
 		// output information according to file type
+		Boolean hasData = false;
 		if(header.isBigWig()){
 			BigWigIterator iter = reader.getBigWigIterator(args[2], start, args[2], end, contained);
 			while(iter.hasNext()){
 				WigItem wigItem = iter.next();
 				output.format("%s\t%d\t%d\t%d\n", wigItem.getChromosome(), wigItem.getStartBase(), wigItem.getEndBase(), (int) wigItem.getWigValue());
+				hasData = true;  // data flag
 			}
 		}else if(header.isBigBed()){
 			BigBedIterator iter = reader.getBigBedIterator(args[2], start, args[2], end, contained);
@@ -81,7 +83,21 @@ public class ExtractBigRegion {
 				BedFeature bedFeature = iter.next();
 				output.format("%s\t%d\t%d\t%s\n", bedFeature.getChromosome(), bedFeature.getStartBase(), bedFeature.getEndBase(),
 							  ExtractBigRegion.join(bedFeature.getRestOfFields(), "\t"));  // the join method is similar to pythons '<sep>'.join
+				hasData = true; //data flag
 			}
+		}else{
+			System.out.println("Did not recognize header. Assuming it is a BigWig file . . .\n");
+			BigWigIterator iter = reader.getBigWigIterator(args[2], start, args[2], end, contained);
+			while(iter.hasNext()){
+				WigItem wigItem = iter.next();
+				output.format("%s\t%d\t%d\t%d\n", wigItem.getChromosome(), wigItem.getStartBase(), wigItem.getEndBase(), (int) wigItem.getWigValue());
+			}
+			hasData = true;  // data flag
+		}
+		
+		// print a msg if no data retrieved 
+		if (!hasData){
+			System.out.println("The iterator did not return any results\n");
 		}
 
 		output.close();  // make sure to close file
