@@ -1,9 +1,12 @@
 '''
-File: primer.py
-Author: Collin Tokheim
-Description: primer.py can design primers from the command line.
+**Author:**  Collin Tokheim
+
+**Description:** primer.py can design primers from the command line.
 Note that PrimerApp.py (the GUI) just uses the primer module to design the
 primers.
+
+Documentation
+-------------
 '''
 import subprocess
 import os
@@ -329,7 +332,7 @@ if __name__ == '__main__':
     # command line arguments
     parser = argparse.ArgumentParser(description='Command line interface for designing primers')
     group_one = parser.add_mutually_exclusive_group(required=True)
-    group_one.add_argument('-b', dest='big_bed', action='store', help='big bed file that defines the possible exons in a gene')
+    # group_one.add_argument('-b', dest='big_bed', action='store', help='big bed file that defines the possible exons in a gene')
     group_one.add_argument('-g', dest='gtf', action='store', help='gtf file that defines the possible exons in a gene')
     parser.add_argument('--no-gene-id', dest='no_gene_id', action='store_true', help='Use this flag if your gtf does not have a valid gene_id')
     parser.add_argument('-f', required=True, dest='fasta', action='store', help='path to fasta file')
@@ -337,7 +340,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', required=True, dest='target', action='store', help='path to txt file with <strand><chr>:<start>-<end> for each target on separate lines.')
     group_two = parser.add_mutually_exclusive_group(required=True)
     group_two.add_argument('--annotaton', dest='annotation_flag', action='store_true', help='only use junctions supported from annotation')
-    group_two.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true', help='only use junctions supported from RNA-Seq')
+    # group_two.add_argument('--rnaseq', dest='rnaseq_flag', action='store_true', help='only use junctions supported from RNA-Seq')
     group_two.add_argument('--both', dest='both_flag', action='store_true', help='use junctions from both RNA-Seq and annotation')
     parser.add_argument('--psi', dest='psi', action=ValidateCutoff, default=1.0, type=float, help='Define inclusion level sufficient to define constitutive exon. Valid: 0<psi<1.')
     parser.add_argument('--read-threshold', dest='read_threshold', default=5, action='store', type=int, help='Define the minimum number of read support necessary to call a junction from RNA-Seq')

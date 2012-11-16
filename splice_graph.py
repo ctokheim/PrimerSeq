@@ -1,3 +1,36 @@
+'''
+**Author:** Collin Tokheim
+
+Splice Graph
+------------
+
+The splice_graph.py deals with gene structure as a (weighted) directed
+acyclic graph (DAG) normally known as a splice graph. Like you would expect,
+the :class:`~splice_graph.SpliceGraph` class represents gene structure
+as a splice graph.
+
+Transcripts Overlapping Target
+------------------------------
+
+:func:`~splice_graph.get_from_gtf_using_gene_name`
+returns the all transcripts from a gene if the gene overlaps the user's
+target. :func:`~splice_graph.get_weakly_connected_tx` returns all transcripts
+that are weakly connected to the user's target. This approach is used when
+gene IDs are not valid and thus can not be used.
+
+Flanking Exons
+--------------
+
+If read counts are used (psi < 1) then splice_graph uses the
+:func:`~splice_graph.get_sufficient_psi_exons` function to find
+flanking exons with at least a user defined inclusion level.
+If psi == 1 then flanking exons are only determined by the biconnected
+componenets algorithm using :func:`~splice_graph.get_flanking_biconnected_exons`.
+
+Documentation
+-------------
+'''
+
 import csv
 import re
 import networkx as nx
@@ -170,6 +203,11 @@ def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000)
 
 
 def get_flanking_biconnected_exons(name, target, sGraph, genome):
+    '''
+    Defines flanking exons as exons that cannot be skipped in
+    the graph structure. Theese exons are 100% included and do not
+    need estimation of inclusion level.
+    '''
     graph = sGraph.get_graph()  # nx.DiGraph
     # search through each biconnected component
     for component in algs.get_biconnected(graph):
@@ -205,6 +243,10 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
 
 
 def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
+    """
+    Utilizes the ExonSeek class to find flanking exons that are
+    good enough to be called "constitutive".
+    """
     # find appropriate flanking "constitutive" exon for primers
     # upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
     exon_seek_obj = ExonSeek(target, sGraph, ID)
@@ -214,11 +256,6 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
     if upstream is None or downstream is None:
         logging.debug("%s does not have an upstream exon, downstream exon, or possibly both" % str(component))
         return ["%s does not have an upstream exon, downstream exon, or possibly both" % str(component)]
-
-    # get possible lengths
-    #all_paths = algs.AllPaths(sGraph.get_graph(), component, target,
-    #                          chr=sGraph.chr, strand=sGraph.strand)
-    # all_paths.set_all_path_lengths()
 
     # get sequence of upstream/target/downstream combo
     genome_chr = genome[sGraph.chr]  # chr object from pygr
@@ -319,11 +356,6 @@ def main(options, args_output='tmp/debug.json'):
         except (AssertionError, FloatingPointError):
             t, v, trace = sys.exc_info()
             output.append([str(v)])  # just append assertion msg
-
-    # if they specify a output file then write to it
-    #if args_output:
-    #    with open(args_output, 'wb') as write_handle:
-    #        json.dump(output, write_handle, indent=4)
 
     return output
 

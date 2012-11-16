@@ -100,15 +100,24 @@ class AllPaths(object):
         self.all_path_coordinates = []  # call set_all_path_coordinates method
 
     def set_chr(self, chr):
+        '''
+        Chromosome setter
+        '''
         self.chr = chr
 
     def set_strand(self, strand):
+        '''
+        Strand setter
+        '''
         if strand == '+' or strand == '-':
             self.strand = strand
         else:
             raise ValueError('Strand should either be + or -')
 
     def trim_tx_paths(self):
+        '''
+        Remove all exons outside the biconnected component.
+        '''
         self.component = sorted(self.component, key=lambda x: (x[0], x[1]))  # make sure it is sorted
 
         # trim tx_paths to only contain paths within component_subgraph
@@ -121,6 +130,11 @@ class AllPaths(object):
         self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
 
     def estimate_counts(self):
+        '''
+        Estimates read counts by using :func:`~algorithms.read_count_em`
+        and then returns the transcript paths and read counts for those
+        paths.
+        '''
         # assert statements about the connectivity of the graph
         assert nx.is_weakly_connected(self.sub_graph), 'Yikes! expected weakly connected graph'
         assert nx.is_biconnected(self.sub_graph.to_undirected()), 'Yikes! expected a biconnected component'
@@ -139,12 +153,18 @@ class AllPaths(object):
         return map(list, self.tx_paths), self.count_info
 
     def set_all_path_coordinates(self):
+        '''
+        Computes the coordinates ofr each tx
+        '''
         tmp = []
         for p in self.tx_paths:
             tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.tx_paths))
         self.all_path_lengths = tmp
 
     def set_all_path_lengths(self):
+        '''
+        Computes the path length for each isoform
+        '''
         # get possible lengths
         inc_length, skip_length = [], []
         for path in self.tx_paths:
@@ -156,6 +176,10 @@ class AllPaths(object):
 
 
 def read_count_em(bcc_paths, sub_graph):
+    '''
+    Estimate multinomial probilities by using an EM algorithm by using
+    junction reads.
+    '''
     oldsettings = np.seterr(all='raise')  # make sure error is raised instead of numerical warning
 
     # useful convenience dicts
