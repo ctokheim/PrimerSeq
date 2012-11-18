@@ -837,7 +837,7 @@ class PrimerFrame(wx.Frame):
             self.bam = []  # clear bam attribute
 
             # set the bam attribute
-            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes if you do not provide a sorted BAM file')
+            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes')
             self.load_progress.Update(0)
             self.disable_load_buttons()
             self.current_process = RunThread(target=self.process_bam,
