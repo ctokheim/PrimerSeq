@@ -137,7 +137,7 @@ class AllPaths(object):
         '''
         # assert statements about the connectivity of the graph
         assert nx.is_weakly_connected(self.sub_graph), 'Yikes! expected weakly connected graph'
-        assert nx.is_biconnected(self.sub_graph.to_undirected()), 'Yikes! expected a biconnected component'
+        # assert nx.is_biconnected(self.sub_graph.to_undirected()), 'Yikes! expected a biconnected component'
 
         # assert statements about AFE/ALE testing
         num_first_exons = len(filter(lambda x: len(self.sub_graph.predecessors(x)) == 0, self.sub_graph.nodes()))

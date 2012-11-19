@@ -215,8 +215,7 @@ class ExonSeek(object):
                                                                                        counts,
                                                                                        self.component[index + 1:])
         self.save_path_info(paths, counts)
-        # self.psi_target = algs.estimate_psi(self.target, paths, counts)
-        self.psi_target = 1.0
+        self.psi_target = algs.estimate_psi(self.target, paths, counts)
 
     def first_exon_case(self):
         '''
