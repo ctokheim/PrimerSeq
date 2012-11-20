@@ -37,6 +37,7 @@ import datetime
 # begin wxGlade: extracode
 # end wxGlade
 
+
 class PlotThread(threading.Thread):
     def __init__(self, target, args):
         threading.Thread.__init__(self)
@@ -219,18 +220,22 @@ class PlotDialog(wx.Dialog):
         '''
         Draw isoforms by using draw.py
         '''
+        logging.debug('Drawing isoforms %s . . .' % str(opts))
         # load json file that has information isoforms and their counts
         with open(opts['json']) as handle:
             my_json = json.load(handle)
 
         coord = draw.read_primer_file(self.output_file, opts['id'])
         draw.main(my_json['path'], my_json['counts'], coord, opts)
+        logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
         '''
         Create a read depth plot by using depth_plot.py
         '''
+        logging.debug('Creating read depth plot %s . . .' % str(opts))
         depth_plot.read_depth_plot(opts)
+        logging.debug('Finished creating read depth plot.')
 
     def plot_update(self, msg):
         self.plot_button.SetLabel('Plot')
@@ -860,13 +865,6 @@ class PrimerFrame(wx.Frame):
         coordinates_string = self.coordinates_text_field.GetValue()  # a string
         coordinates = map(str, filter(lambda x: x != '', re.split('\s*,*\s*', coordinates_string)))  # ['(strand)(chr):(start)-(end)', ...]
 
-        # define logging file before using logging.debug
-        if not os.path.exists(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
-        logging.basicConfig(level=logging.DEBUG,
-                            format='%(asctime)s %(message)s',
-                            filename=primer.config_options['log'] + '/log.primer.' + str(datetime.datetime.now()).replace(':', '.'),
-                            filemode='w')
-
         # options for primer.py
         options = {}
         options['target'] = zip(range(1, len(coordinates) + 1), coordinates)
@@ -958,5 +956,13 @@ class PrimerApp(wx.App):
 # end of class PrimerApp
 
 if __name__ == "__main__":
+    # define logging file before using logging.debug
+    if not os.path.exists(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(message)s',
+                        filename=primer.config_options['log'] + '/log.PrimerApp.' + str(datetime.datetime.now()).replace(':', '.'),
+                        filemode='w')
+
+    # start GUI
     PrimerApp = PrimerApp(0)
     PrimerApp.MainLoop()
