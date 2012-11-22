@@ -75,6 +75,26 @@ class AllPaths(object):
     Handle all possible paths in a biconnected component
     '''
     def __init__(self, sg, component, target, chr=None, strand=None):
+        self.set_splice_graph(sg, component, target)
+        self.chr = chr
+        self.strand = strand
+
+    def set_chr(self, chr):
+        '''
+        Chromosome setter
+        '''
+        self.chr = chr
+
+    def set_strand(self, strand):
+        '''
+        Strand setter
+        '''
+        if strand == '+' or strand == '-':
+            self.strand = strand
+        else:
+            raise ValueError('Strand should either be + or -')
+
+    def set_splice_graph(self, sg, component, target):
         self.graph = sg.get_graph()
         self.tx_paths = sg.annotation
         known_edges = set([(tx[i], tx[i + 1])
@@ -94,25 +114,8 @@ class AllPaths(object):
             if novel:
                 self.tx_paths.append(tx)
 
-        self.chr = chr
-        self.strand = strand
         self.inc_lengths, self.skip_lengths = [], []  # call set all_path_lengths method
         self.all_path_coordinates = []  # call set_all_path_coordinates method
-
-    def set_chr(self, chr):
-        '''
-        Chromosome setter
-        '''
-        self.chr = chr
-
-    def set_strand(self, strand):
-        '''
-        Strand setter
-        '''
-        if strand == '+' or strand == '-':
-            self.strand = strand
-        else:
-            raise ValueError('Strand should either be + or -')
 
     def trim_tx_paths(self):
         '''

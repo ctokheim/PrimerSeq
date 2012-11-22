@@ -45,6 +45,7 @@ import sys
 from bed import Bed
 from wig import Wig
 from exon_seek import ExonSeek
+import copy
 
 # logging imports
 import logging
@@ -271,6 +272,28 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
             target_seq, downstream_seq]
 
 
+def calculate_target_psi(target, sg_list, component):
+    """
+    Calculate psi for the target exon for each bam file.
+    """
+    logging.debug("Calculating psi for each bam file  . . .")
+    psi_list = []
+    for sg in sg_list:
+        ap = algs.AllPaths(sg, component, target, chr=sg.chr)
+        ap.trim_tx_paths()
+        paths, counts = ap.estimate_counts()
+        tmp_inc_count, tmp_skip_count = 0., 0.
+        for i, p in enumerate(paths):
+            if target in p:
+                tmp_inc_count += counts[i] / (len(p) - 1)  # need to normaliz inc counts by number of jcts
+            else:
+                tmp_skip_count += counts[i] / (len(p) - 1)  # need to normalize skip counts by number of jcts
+        psi_list.append(tmp_inc_count / (tmp_inc_count + tmp_skip_count))
+    logging.debug("Finished calculating psi for each bam file.")
+
+    return ';'.join(map(str, psi_list))
+
+
 def main(options, args_output='tmp/debug.json'):
     """
     The gtf main function is the function designed to be called from other scripts. It iterates through each target
@@ -320,6 +343,19 @@ def main(options, args_output='tmp/debug.json'):
                 edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
                 splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
                 splice_graph.add_all_possible_edge_weights(edge_weights)  # also use junctions from RNA-Seq
+
+                # get psi value for target in each bam file
+                single_bam_splice_graphs = []
+                for eweight in edge_weights_list:
+                    tmp_sg = SpliceGraph(annotation=gene_dict['graph'],
+                                         chr=chr,
+                                         strand=strand,
+                                         read_threshold=options['read_threshold'],
+                                         min_count=options['min_jct_count'])
+                    tmp_sg.set_annotation_edge_weights(eweight)
+                    tmp_sg.add_all_possible_edge_weights(eweight)
+                    single_bam_splice_graphs.append(tmp_sg)
+
             elif options['annotation_flag']:
                 splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use annotation
                                            chr=chr,
@@ -330,6 +366,17 @@ def main(options, args_output='tmp/debug.json'):
                                      for sam_obj in sam_obj_list]
                 edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
                 splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
+
+                # get psi value for target in each bam file
+                single_bam_splice_graphs = []
+                for eweight in edge_weights_list:
+                    tmp_sg = SpliceGraph(annotation=gene_dict['graph'],
+                                         chr=chr,
+                                         strand=strand,
+                                         read_threshold=options['read_threshold'],
+                                         min_count=options['min_jct_count'])
+                    tmp_sg.set_annotation_edge_weights(eweight)
+                    single_bam_splice_graphs.append(tmp_sg)
             elif options['rnaseq_flag']:
                 splice_graph = SpliceGraph(annotation=None,  # set to None to not use annotation
                                            chr=chr,
@@ -352,6 +399,12 @@ def main(options, args_output='tmp/debug.json'):
                                                splice_graph,
                                                genome,
                                                name)
+            # edit target psi value
+            tmp_all_paths = tmp[-4]  # CAREFUL the index for the AllPaths object may change
+            print tmp_all_paths.component
+            tmp[2] = calculate_target_psi(gene_dict['target'], single_bam_splice_graphs, tmp_all_paths.component)  # CAREFUL index for psi_target may change
+
+            # append result to output list
             output.append(tmp)
         except (AssertionError, FloatingPointError):
             t, v, trace = sys.exc_info()
