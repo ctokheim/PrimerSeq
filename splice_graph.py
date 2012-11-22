@@ -401,7 +401,6 @@ def main(options, args_output='tmp/debug.json'):
                                                name)
             # edit target psi value
             tmp_all_paths = tmp[-4]  # CAREFUL the index for the AllPaths object may change
-            print tmp_all_paths.component
             tmp[2] = calculate_target_psi(gene_dict['target'], single_bam_splice_graphs, tmp_all_paths.component)  # CAREFUL index for psi_target may change
 
             # append result to output list

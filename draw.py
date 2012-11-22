@@ -6,22 +6,12 @@ Created on Feb 8, 2012
 # external dependencies
 import numpy as np
 import matplotlib
-# from matplotlib import rc
 from matplotlib.collections import PatchCollection
-# import matplotlib.path as mpath
 import matplotlib.patches as mpatches
-# import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredText   # import anchored text
-# from pylab import *
-# import matplotlib.gridspec as gridspec
-# from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
-# import math
 from collections import Counter, namedtuple
-# import traceback
-# import sys
 import argparse
-# import itertools as it
 from operator import *
 import json
 import csv
@@ -31,18 +21,18 @@ from shapes import ExonRectangle, JunctionLine
 from matplotlib.offsetbox import AnchoredOffsetbox, TextArea, DrawingArea, HPacker
 
 
-def offset_text(ax, txt):
+def offset_text(ax, txt, loc, bbox_to_anchor=(-.03, .65)):
     box1 = TextArea(txt, textprops=dict(color="k", size='10'))
 
     box = HPacker(children=[box1],
                   align="center",
                   pad=2, sep=5)
 
-    anchored_box = AnchoredOffsetbox(loc=1,
+    anchored_box = AnchoredOffsetbox(loc=loc,
                                      child=box, pad=0.,
-                                     frameon=True,
+                                     frameon=False,
                                      prop=dict(size=5),
-                                     bbox_to_anchor=(-.03, .65),
+                                     bbox_to_anchor=bbox_to_anchor,
                                      bbox_transform=ax.transAxes,
                                      borderpad=0.1,
                                      )
@@ -126,7 +116,7 @@ def editAxis(ax, include=[], notInclude=[]):
             raise ValueError('unknown spine location: %s' % loc)
 
 
-def exonDrawSubplot(ax, exons, pct, options):  # exons was coords
+def exonDrawSubplot(ax, exons, pct, options, prod_length=False):  # exons was coords
     # move/remove axis
     includedAxes = ["bottom"]
     notIncludedAxes = ["left", "right", "top"]
@@ -177,9 +167,11 @@ def exonDrawSubplot(ax, exons, pct, options):  # exons was coords
     ax.set_ylim(-1.0, 1.0)
     plt.gca().axes.get_yaxis().set_visible(False)
     if isinstance(pct, (float, int)):
-        offset_text(ax, '%.1f' % (100 * pct) + '%')
+        offset_text(ax, '%.1f' % (100 * pct) + '%\n' + '%d bp' % prod_length, 1, (-.03, .75))
     else:
-        offset_text(ax, pct)
+        offset_text(ax, pct, 1)
+    # if prod_length:
+    #    offset_text(ax, '%d bp' % prod_length, 1, (1.13, .65))
 
     return ax, new_start, new_stop
 
@@ -209,6 +201,23 @@ def read_primer_file(primer_file, ID):
                 return map(utils.get_pos, line[2].split(';'))
 
 
+def calc_product_length(path, primer_coord):
+    """
+    Calculate product length based on the primer coordinates
+    """
+    tmp_len = 0
+    flag = True
+    for start, end in path:
+        if start <= primer_coord[0][0] and end >= primer_coord[0][1]:
+            tmp_len += end - primer_coord[0][1]
+        elif start <= primer_coord[1][0] and end >= primer_coord[1][1]:
+            tmp_len += primer_coord[1][0] - start
+            flag = False
+        elif flag:
+            tmp_len += end - start
+    return tmp_len
+
+
 def main(tx_paths, counts, primer_coord, options):
     # configurations
     matplotlib.rcParams['font.size'] = 16  # edit font size of title
@@ -232,7 +241,8 @@ def main(tx_paths, counts, primer_coord, options):
             exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, 'primer', options)
         else:
             i -= 1
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i], options)
+            prod_length = calc_product_length(tx_paths[i], primer_coord)
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i], options, prod_length)
 
         if i == (num_of_txs - 1):
             first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]
