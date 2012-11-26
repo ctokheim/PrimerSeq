@@ -7,7 +7,7 @@ for appropriate flanking "constitutive" exons to place primers on.
 import algorithms as algs
 import logging
 import json
-
+import sequence_interval
 
 class ExonSeek(object):
     '''
