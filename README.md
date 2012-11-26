@@ -1,11 +1,15 @@
 PrimerSeq
 =========
 
+(c) 2012 Collin Tokheim GPLv3
+
 Design RT-PCR primers using RNA-Seq data. 
 Annotations often contain isoforms that only occur in 
 certain tissues or cells. PrimerSeq tackles this issue by weighting 
 isoforms supported in your RNA-Seq data when finding
 flanking constitutive exons to place primers around a target.
+
+You can find all of the licenses mentioned in this README in the `help/licenses` directory.
 
 Installation
 ============
@@ -52,7 +56,8 @@ Primer3
 Primer3 does the actual primer design after appropriate sequences are extracted.
 Primer3 is assumed to be in the `PrimerSeq/primer3`
 directory. That means primer3_core should be found `PrimerSeq/primer3/src/primer3_core`.
-A custom path for Primer3 can be specified by modifying PrimerSeq.cfg.
+A custom path for Primer3 can be specified by modifying PrimerSeq.cfg. Primer3 is licensed
+under GPLv2.0.
 
 Java
 ====
@@ -65,3 +70,4 @@ The external libraries are listed below with their license version:
 
 * [Sam-JDK](http://picard.sourceforge.net/) handles BAM/SAM files ([Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0.html), [MIT](http://opensource.org/licenses/MIT))
 * [BigWig API](http://code.google.com/p/bigwig/) extracts regions from a BigWig file ([LGPL v2.1](http://www.gnu.org/licenses/lgpl-2.1.html))
+
