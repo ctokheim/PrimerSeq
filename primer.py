@@ -250,13 +250,14 @@ def primer3(options, primer3_options):
                 output_list.append(tmp)
 
     # write output information
-    with open(config_options['tmp'] + '/' + jobs_ID + '.txt', 'wb') as outputfile_tab:
+    # with open(config_options['tmp'] + '/' + jobs_ID + '.txt', 'wb') as outputfile_tab:
+    with open(options['output'], 'wb') as outputfile_tab:
         # define csv header
         header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'upstream primer', 'downstream primer', 'average TM',
                   'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream']
         output_list = [header] + output_list  # pre-pend header to output file
-        csv.writer(outputfile_tab, delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
-    shutil.copy(config_options['tmp'] + '/' + jobs_ID + '.txt', options['output'])  # copy file to output destination
+        csv.writer(outputfile_tab, dialect='excel', delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
+    # shutil.copy(config_options['tmp'] + '/' + jobs_ID + '.txt', options['output'])  # copy file to output destination
 
 
 def main(options):

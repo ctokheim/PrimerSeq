@@ -489,6 +489,8 @@ class PrimerFrame(wx.Frame):
         # Menu Bar
         self.primer_frame_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
+        load_ex_id = wx.NewId()
+        wxglade_tmp_menu.Append(load_ex_id, "Load Ex.", "", wx.ITEM_NORMAL)
         quit_id = wx.NewId()
         wxglade_tmp_menu.Append(quit_id, "Quit", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "File")
@@ -561,6 +563,7 @@ class PrimerFrame(wx.Frame):
         self.__set_properties()
         self.__do_layout()
 
+        self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.quit_event, id=quit_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.plot_event, id=plot_id)
         self.Bind(wx.EVT_MENU, self.add_genes_event, id=add_genes_id)
@@ -695,6 +698,12 @@ class PrimerFrame(wx.Frame):
         self.Layout()
         # end wxGlade
 
+    def on_load_example(self, event):
+        self.set_fasta("example/chr18.fa", "chr18.fa", use_dlg=False)
+        self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
+        self.set_gtf('example/example.chr18.gtf', 'example.chr18.gtf', use_dlg=False)
+        self.coordinates_text_field.SetValue('-chr18:9562919-9563044')
+
     def add_genes_event(self, event):
         AddGeneIdsDialog(self, -1, 'Add Valid Gene IDs')
 
@@ -728,6 +737,22 @@ class PrimerFrame(wx.Frame):
         Updates attributes and gui components from a started Process
         or thread. This is called by PubSub.
         '''
+        try:
+            self.load_progress
+        except:
+            if msg.data[0] is None:
+                self.enable_load_buttons()
+            elif isinstance(msg.data[0], int):
+                pass
+            else:
+                for obj, value in msg.data:
+                    if isinstance(value, str):
+                        getattr(self, obj).SetLabel(value)
+                    else:
+                        setattr(self, obj, value)
+                self.enable_load_buttons()
+            return
+
         if msg.data[0] is None:
             self.load_progress.Update(100)
             self.enable_load_buttons()
@@ -771,10 +796,16 @@ class PrimerFrame(wx.Frame):
                             wildcard='Text file (*.txt)|*.txt')  # open file dialog
 
         if dlg.ShowModal() == wx.ID_OK:
-            self.output = dlg.GetPath()  # get the new filenames from the dialog
-            self.output_choice_label.SetLabel(dlg.GetFilename())
+            self.set_output(dlg.GetPath(), dlg.GetFilename())
             dlg.Destroy()  # best to do this sooner
         event.Skip()
+
+    def set_output(self, path, filename):
+        """
+        Set the output file location for PrimerSeq
+        """
+        self.output = path
+        self.output_choice_label.SetLabel(filename)
 
     def choose_fasta_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         dlg = wx.FileDialog(self, message='Choose your FASTA file', defaultDir=os.getcwd(),
@@ -784,36 +815,29 @@ class PrimerFrame(wx.Frame):
             filename = dlg.GetPath()  # get the new filenames from the dialog
             filename_without_path = dlg.GetFilename()
             dlg.Destroy()  # best to do this sooner
-
-            try:
-                # set the fasta attribute
-                # self.load_progress = CustomProgressDialog(self, -1, 'FASTA', 'Loading FASTA . . . will take several min.')
-                self.load_progress = CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . .\n\nThis will take several minutes')
-                self.load_progress.Update(0)
-                self.disable_load_buttons()  # disable loading other files while another is running
-                # self.current_process = DialogThread(target=DialogProcess,
-                #                                    args=(SequenceFileDB, (str(filename),)),
-                #                                    attr='fasta', label='fasta_choice_label', label_text=str(filename.split('/')[-1]))
-                self.current_process = RunThread(target=SequenceFileDB,
-                                                 args=(str(filename),),
-                                                 attr='fasta', label='fasta_choice_label', label_text=str(filename_without_path))
-                # self.load_progress = wx.ProgressDialog('FASTA', 'Loading FASTA . . . this may take ~1 min.',
-                #                                       maximum=100, parent=self, style=wx.PD_CAN_ABORT
-                #                                       | wx.PD_APP_MODAL
-                #                                       | wx.PD_ELAPSED_TIME)  # add progress dialog so user knows what happens
-                # self.fasta = SequenceFileDB(filename.encode('ascii', 'replace'))
-                # self.fasta_choice_label.SetLabel(filename.split('/')[-1])  # set label to just the filename and not the whole path
-                # fasta_thread = DialogThread(target=lambda x: SequenceFileDB(x), args=(filename.encode('ascii', 'replace'),), attr='fasta')
-            except:
-                self.load_progress.Destroy()
-                t, v, trace = sys.exc_info()
-                print('ERROR! For more information read the following lines')
-                print('Type: ' + str(t))
-                print('Value: ' + str(v))
-                print('Traceback:\n' + traceback.format_exc())
+            self.set_fasta(filename, filename_without_path)
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
+
+    def set_fasta(self, filename, filename_without_path, use_dlg = True):
+        try:
+            # set the fasta attribute
+            if use_dlg:
+                self.load_progress = CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . .\n\nThis will take several minutes')
+                self.load_progress.Update(0)
+            self.disable_load_buttons()  # disable loading other files while another is running
+            self.current_process = RunThread(target=SequenceFileDB,
+                                             args=(str(filename),),
+                                             attr='fasta', label='fasta_choice_label', label_text=str(filename_without_path))
+        except:
+            if use_dlg:
+                self.load_progress.Destroy()
+            t, v, trace = sys.exc_info()
+            print('ERROR! For more information read the following lines')
+            print('Type: ' + str(t))
+            print('Value: ' + str(v))
+            print('Traceback:\n' + traceback.format_exc())
 
     def choose_gtf_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         dlg = wx.FileDialog(self, message='Choose your GTF file', defaultDir=os.getcwd(),
@@ -822,17 +846,20 @@ class PrimerFrame(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()  # get the new filenames from the dialog
             dlg.Destroy()  # best to do this sooner
-
-            # set the gtf attribute
             filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
-            self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
-            self.load_progress.Update(0)
-            self.disable_load_buttons()
-            self.current_process = RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
-                                             attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
+            self.set_gtf(filename, filename_without_path)
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
+
+    def set_gtf(self, filename, filename_without_path, use_dlg=True):
+        # set the gtf attribute
+        if use_dlg:
+            self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
+            self.load_progress.Update(0)
+        self.disable_load_buttons()
+        self.current_process = RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
+                                         attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
 
     def choose_bam_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         dlg = wx.FileDialog(self, message='Choose your bam files', defaultDir=os.getcwd(),
@@ -842,18 +869,22 @@ class PrimerFrame(wx.Frame):
             filenames = dlg.GetPaths()  # get the new filenames from the dialog
             filenames_without_path = dlg.GetFilenames()  # only grab the actual filenames and none of the path information
             dlg.Destroy()  # best to do this sooner
-            self.bam = []  # clear bam attribute
 
-            # set the bam attribute
-            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes')
-            self.load_progress.Update(0)
-            self.disable_load_buttons()
-            self.current_process = RunThread(target=self.process_bam,
-                                             args=(map(str, filenames), filenames_without_path, int(self.anchor_length_text_field.GetValue())),
-                                             attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
+            self.set_bam(filenames, filenames_without_path)  # load bam file
         else:
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
+
+    def set_bam(self, filenames, filenames_without_path, use_dlg=True):
+        # set the bam attribute
+        self.bam = []  # clear bam attribute
+        if use_dlg:
+            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes')
+            self.load_progress.Update(0)
+        self.disable_load_buttons()
+        self.current_process = RunThread(target=self.process_bam,
+                                         args=(map(str, filenames), filenames_without_path, int(self.anchor_length_text_field.GetValue())),
+                                         attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
 
     def run_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         # alert the user there is missing input
@@ -904,7 +935,6 @@ class PrimerFrame(wx.Frame):
         except AttributeError:
             dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
             dlg.ShowModal()
-
 
     def about_event(self, event):
 
