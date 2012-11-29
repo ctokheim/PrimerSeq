@@ -1,0 +1,30 @@
+.. PrimerSeq documentation master file, created by
+   sphinx-quickstart on Mon Nov 26 16:51:50 2012.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to PrimerSeq!
+=====================
+
+PrimerSeq aims to design RT-PCR primers on appropriate flanking 
+exons around your target of interest. Its aim is to design
+primers for validating alternative splicing events. PrimerSeq is particularly
+advantageous for designing a large number of primers for validating
+alternative splicing events found in RNA-Seq data.
+
+Users
+-----
+
+Please visit the `user documentation <user/index.html>`_
+
+Developers
+----------
+
+For developers and command line users please visit this `documentation <developer/index.html>`_
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+

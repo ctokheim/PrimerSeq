@@ -1,0 +1,509 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>splice_graph &mdash; PrimerSeq 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="top" title="PrimerSeq 1.0.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">PrimerSeq 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for splice_graph</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">**Author:** Collin Tokheim</span>
+
+<span class="sd">Splice Graph</span>
+<span class="sd">------------</span>
+
+<span class="sd">The splice_graph.py deals with gene structure as a (weighted) directed</span>
+<span class="sd">acyclic graph (DAG) normally known as a splice graph. Like you would expect,</span>
+<span class="sd">the :class:`~splice_graph.SpliceGraph` class represents gene structure</span>
+<span class="sd">as a splice graph.</span>
+
+<span class="sd">Transcripts Overlapping Target</span>
+<span class="sd">------------------------------</span>
+
+<span class="sd">:func:`~splice_graph.get_from_gtf_using_gene_name`</span>
+<span class="sd">returns the all transcripts from a gene if the gene overlaps the user&#39;s</span>
+<span class="sd">target. :func:`~splice_graph.get_weakly_connected_tx` returns all transcripts</span>
+<span class="sd">that are weakly connected to the user&#39;s target. This approach is used when</span>
+<span class="sd">gene IDs are not valid and thus can not be used.</span>
+
+<span class="sd">Flanking Exons</span>
+<span class="sd">--------------</span>
+
+<span class="sd">If read counts are used (psi &lt; 1) then splice_graph uses the</span>
+<span class="sd">:func:`~splice_graph.get_sufficient_psi_exons` function to find</span>
+<span class="sd">flanking exons with at least a user defined inclusion level.</span>
+<span class="sd">If psi == 1 then flanking exons are only determined by the biconnected</span>
+<span class="sd">componenets algorithm using :func:`~splice_graph.get_flanking_biconnected_exons`.</span>
+
+<span class="sd">Documentation</span>
+<span class="sd">-------------</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="kn">as</span> <span class="nn">nx</span>
+<span class="kn">import</span> <span class="nn">itertools</span> <span class="kn">as</span> <span class="nn">it</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">algorithms</span> <span class="kn">as</span> <span class="nn">algs</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">gtf</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">get_chr</span><span class="p">,</span> <span class="n">get_start_pos</span><span class="p">,</span> <span class="n">get_end_pos</span><span class="p">,</span> <span class="n">get_pos</span><span class="p">,</span> <span class="n">merge_list_of_dicts</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">bed</span> <span class="kn">import</span> <span class="n">Bed</span>
+<span class="kn">from</span> <span class="nn">wig</span> <span class="kn">import</span> <span class="n">Wig</span>
+<span class="kn">from</span> <span class="nn">exon_seek</span> <span class="kn">import</span> <span class="n">ExonSeek</span>
+
+<span class="c"># logging imports</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+
+<div class="viewcode-block" id="SpliceGraph"><a class="viewcode-back" href="../splice_graph.html#splice_graph.SpliceGraph">[docs]</a><span class="k">class</span> <span class="nc">SpliceGraph</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    The SpliceGraph class is meant to provide a common repository for creation</span>
+<span class="sd">    of splice graphs for a single gene.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">annotation</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span> <span class="n">strand</span><span class="p">,</span> <span class="n">read_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">filter_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_count</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chr</span> <span class="o">=</span> <span class="nb">chr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strand</span> <span class="o">=</span> <span class="n">strand</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">READ_THRESHOLD</span> <span class="o">=</span> <span class="n">read_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">MIN_COUNT</span> <span class="o">=</span> <span class="n">min_count</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FILTER_FACTOR</span> <span class="o">=</span> <span class="n">filter_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># set value using set_graph_as_annotation</span>
+        <span class="k">if</span> <span class="n">annotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_graph_as_annotation</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">get_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span>
+
+<div class="viewcode-block" id="SpliceGraph.set_graph_as_annotation"><a class="viewcode-back" href="../splice_graph.html#splice_graph.SpliceGraph.set_graph_as_annotation">[docs]</a>    <span class="k">def</span> <span class="nf">set_graph_as_annotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">annotation</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a nx DiGraph from list of tx in gene. FILTER_FACTOR defines a cutoff for</span>
+<span class="sd">        using a tx of a gene. A tx must have x num of exon where x &gt; MAX tx exon num / FILTER_FACTOR.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># filter low exon tx</span>
+        <span class="n">max_exons</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">annotation</span><span class="p">))</span>  <span class="c"># figure out max num exons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>  <span class="c"># make sure exons are sorted by position</span>
+                              <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_exons</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">FILTER_FACTOR</span><span class="p">,</span> <span class="n">annotation</span><span class="p">))</span>  <span class="c"># filter based on max num exons criteria</span>
+
+        <span class="c"># create graph</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation</span><span class="p">:</span>
+            <span class="n">graph</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">graph</span>  <span class="c"># set graph attribute</span>
+</div>
+<div class="viewcode-block" id="SpliceGraph.set_annotation_edge_weights"><a class="viewcode-back" href="../splice_graph.html#splice_graph.SpliceGraph.set_annotation_edge_weights">[docs]</a>    <span class="k">def</span> <span class="nf">set_annotation_edge_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Only try to find weights for already existing edges in the graph.</span>
+<span class="sd">        This function is intended to add weight values to edges defined</span>
+<span class="sd">        in the gtf annotation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># add edge weights to edges from annotation</span>
+        <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c">#tmpChr = get_chr(exon_forms[u])</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c"># get_start_pos(exon_forms[u])</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c"># get_end_pos(exon_forms[v])</span>
+                <span class="c">#tmpWeight = weights[self.chr][start][end]</span>
+                <span class="n">tmpWeight</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">chr</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">][</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmpWeight</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">][</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c"># set dummy value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">][</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">][</span><span class="s">&#39;weight&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">MIN_COUNT</span><span class="p">)</span>  <span class="c"># set read count to at least a user-defined value</span>
+</div>
+<div class="viewcode-block" id="SpliceGraph.set_graph_as_nodes_only"><a class="viewcode-back" href="../splice_graph.html#splice_graph.SpliceGraph.set_graph_as_nodes_only">[docs]</a>    <span class="k">def</span> <span class="nf">set_graph_as_nodes_only</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exons</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Simple function that makes a DAG (nx.DiGraph) with only nodes and no edges.</span>
+<span class="sd">        Meant to be used to before add_all_possible_edge_weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
+        <span class="n">G</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">(</span><span class="n">exons</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">G</span>
+</div>
+<div class="viewcode-block" id="SpliceGraph.add_all_possible_edge_weights"><a class="viewcode-back" href="../splice_graph.html#splice_graph.SpliceGraph.add_all_possible_edge_weights">[docs]</a>    <span class="k">def</span> <span class="nf">add_all_possible_edge_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>  <span class="c"># use to have exon_forms rather than chr</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add edge/weights to graph if supported by atleast READ_THRESHOLD number of reads</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># add novel edges if well supported</span>
+        <span class="n">sorted_nodes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sorted_nodes</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sorted_nodes</span><span class="p">)):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c"># tmpChr = get_chr(exon_forms[sorted_nodes[i]])</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="n">sorted_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>   <span class="c"># get_start_pos(exon_forms[sorted_nodes[i]])</span>
+                    <span class="n">end</span> <span class="o">=</span> <span class="n">sorted_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>    <span class="c"># get_end_pos(exon_forms[sorted_nodes[j]])</span>
+                    <span class="k">if</span> <span class="n">weights</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">chr</span><span class="p">][</span><span class="n">start</span><span class="p">][</span><span class="n">end</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">READ_THRESHOLD</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">sorted_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sorted_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                        <span class="c">#self.graph[sorted_nodes[i]][sorted_nodes[</span>
+                        <span class="c">#    j]][&#39;weight&#39;] = weights[self.chr][start][end]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">sorted_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">sorted_nodes</span><span class="p">[</span>
+                            <span class="n">j</span><span class="p">]][</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">chr</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+</div></div>
+<div class="viewcode-block" id="get_from_gtf_using_gene_name"><a class="viewcode-back" href="../splice_graph.html#splice_graph.get_from_gtf_using_gene_name">[docs]</a><span class="k">def</span> <span class="nf">get_from_gtf_using_gene_name</span><span class="p">(</span><span class="n">gtf</span><span class="p">,</span> <span class="n">strand</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This function finds the first gene in the gtf that completely contains the target interval.</span>
+<span class="sd">    I should really think about checking for multiple genes instead of just returning.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">gene_key</span> <span class="ow">in</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;strand&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">strand</span> <span class="ow">and</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;start&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">start</span> <span class="ow">and</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">end</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;exons&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">start</span> <span class="o">&gt;=</span> <span class="n">ex</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">end</span> <span class="o">&lt;=</span> <span class="n">ex</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ex</span>  <span class="c"># this line needed for compatability reasons</span>
+                    <span class="k">return</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="mi">1</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;Did not find an appropriate gtf annotation&quot;</span>  <span class="c"># not the most elegant way to say I don&#39;t expect to get to this line</span>
+
+</div>
+<div class="viewcode-block" id="get_weakly_connected_tx"><a class="viewcode-back" href="../splice_graph.html#splice_graph.get_weakly_connected_tx">[docs]</a><span class="k">def</span> <span class="nf">get_weakly_connected_tx</span><span class="p">(</span><span class="n">gtf</span><span class="p">,</span> <span class="n">strand</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">plus_or_minus</span><span class="o">=</span><span class="mi">1000000</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This function is meant to handle tx annotations without gene ids.</span>
+<span class="sd">    Currently this is a function outside of the SpliceGraph class but it may be beneficial</span>
+<span class="sd">    to later include this as a method.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># compile all tx paths that are reasonably close</span>
+    <span class="n">tmp_tx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">gene_key</span> <span class="ow">in</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;strand&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">strand</span> <span class="ow">and</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;start&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">plus_or_minus</span><span class="p">)</span> <span class="ow">and</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">plus_or_minus</span><span class="p">):</span>
+            <span class="n">tmp_tx</span> <span class="o">+=</span> <span class="n">gtf</span><span class="p">[</span><span class="nb">chr</span><span class="p">][</span><span class="n">gene_key</span><span class="p">][</span><span class="s">&#39;graph&#39;</span><span class="p">]</span>
+
+    <span class="c"># get the weakly connected subgraph that contains the target exon</span>
+    <span class="n">sg</span> <span class="o">=</span> <span class="n">SpliceGraph</span><span class="p">(</span><span class="n">tmp_tx</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span> <span class="n">strand</span><span class="p">,</span> <span class="n">filter_factor</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">get_graph</span><span class="p">()</span>
+    <span class="n">weakly_con_subgraphs</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">weakly_connected_component_subgraphs</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">weakly_con_subgraphs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;No annotations were even near your target&#39;</span>
+    <span class="n">target_graph</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">weak_subgraph</span> <span class="ow">in</span> <span class="n">weakly_con_subgraphs</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">node_start</span><span class="p">,</span> <span class="n">node_end</span> <span class="ow">in</span> <span class="n">weak_subgraph</span><span class="o">.</span><span class="n">nodes</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">node_start</span> <span class="o">&lt;=</span> <span class="n">start</span> <span class="ow">and</span> <span class="n">node_end</span> <span class="o">&gt;=</span> <span class="n">end</span><span class="p">:</span>
+                <span class="n">target_graph</span> <span class="o">=</span> <span class="n">weak_subgraph</span>
+                <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">node_start</span><span class="p">,</span> <span class="n">node_end</span>
+    <span class="k">assert</span> <span class="n">target_graph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">,</span> <span class="s">&#39;Target was not contained in a tx&#39;</span>
+
+    <span class="c"># filter tmp_tx to tx that contain atleast one node in subgraph</span>
+    <span class="n">filtered_tmp_tx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">tmp_tx</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">exon</span> <span class="ow">in</span> <span class="n">tx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exon</span> <span class="ow">in</span> <span class="n">target_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">():</span>
+                <span class="n">filtered_tmp_tx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span>
+                <span class="k">break</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">filtered_tmp_tx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;Your target was not contained in a tx.&#39;</span>
+
+    <span class="c">### convert info to dict ###</span>
+    <span class="n">g_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c"># get a unique set of all exons</span>
+    <span class="n">exons</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">filtered_tmp_tx</span><span class="p">:</span>
+        <span class="n">exons</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;exons&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">exons</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;exons&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;exons&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;chr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">chr</span>
+    <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;graph&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filtered_tmp_tx</span>
+    <span class="n">g_dict</span><span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">g_dict</span>
+
+</div>
+<div class="viewcode-block" id="get_flanking_biconnected_exons"><a class="viewcode-back" href="../splice_graph.html#splice_graph.get_flanking_biconnected_exons">[docs]</a><span class="k">def</span> <span class="nf">get_flanking_biconnected_exons</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sGraph</span><span class="p">,</span> <span class="n">genome</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Defines flanking exons as exons that cannot be skipped in</span>
+<span class="sd">    the graph structure. Theese exons are 100% included and do not</span>
+<span class="sd">    need estimation of inclusion level.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">sGraph</span><span class="o">.</span><span class="n">get_graph</span><span class="p">()</span>  <span class="c"># nx.DiGraph</span>
+    <span class="c"># search through each biconnected component</span>
+    <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">algs</span><span class="o">.</span><span class="n">get_biconnected</span><span class="p">(</span><span class="n">graph</span><span class="p">):</span>
+        <span class="n">component</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>  <span class="c"># ensure first component is first exon, etc</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">component</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="c"># define upstream/downstream flanking exon</span>
+            <span class="k">if</span> <span class="n">sGraph</span><span class="o">.</span><span class="n">strand</span> <span class="o">==</span> <span class="s">&#39;+&#39;</span><span class="p">:</span>
+                <span class="n">upstream</span> <span class="o">=</span> <span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">downstream</span> <span class="o">=</span> <span class="n">component</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">upstream</span> <span class="o">=</span> <span class="n">component</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">downstream</span> <span class="o">=</span> <span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c"># get possible lengths</span>
+            <span class="n">all_paths</span> <span class="o">=</span> <span class="n">algs</span><span class="o">.</span><span class="n">AllPaths</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span>
+                                      <span class="nb">chr</span><span class="o">=</span><span class="n">sGraph</span><span class="o">.</span><span class="n">chr</span><span class="p">,</span> <span class="n">strand</span><span class="o">=</span><span class="n">sGraph</span><span class="o">.</span><span class="n">strand</span><span class="p">)</span>
+            <span class="n">all_paths</span><span class="o">.</span><span class="n">set_all_path_lengths</span><span class="p">()</span>
+            <span class="n">all_paths</span><span class="o">.</span><span class="n">set_all_path_coordinates</span><span class="p">()</span>
+
+            <span class="c"># get sequence of upstream/target/downstream combo</span>
+            <span class="n">genome_chr</span> <span class="o">=</span> <span class="n">genome</span><span class="p">[</span><span class="n">sGraph</span><span class="o">.</span><span class="n">chr</span><span class="p">]</span>  <span class="c"># chr object from pygr</span>
+            <span class="n">upstream_seq</span><span class="p">,</span> <span class="n">target_seq</span><span class="p">,</span> <span class="n">downstream_seq</span> <span class="o">=</span> <span class="n">genome_chr</span><span class="p">[</span><span class="n">upstream</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">upstream</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">genome_chr</span><span class="p">[</span><span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">target</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">genome_chr</span><span class="p">[</span><span class="n">downstream</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">downstream</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">sGraph</span><span class="o">.</span><span class="n">strand</span> <span class="o">==</span> <span class="s">&#39;-&#39;</span><span class="p">:</span>
+                <span class="n">upstream_seq</span><span class="p">,</span> <span class="n">target_seq</span><span class="p">,</span> <span class="n">downstream_seq</span> <span class="o">=</span>  \
+                    <span class="o">-</span><span class="n">upstream_seq</span><span class="p">,</span> <span class="o">-</span><span class="n">target_seq</span><span class="p">,</span> <span class="o">-</span><span class="n">downstream_seq</span>
+
+            <span class="k">return</span> <span class="p">[</span><span class="n">sGraph</span><span class="o">.</span><span class="n">strand</span><span class="p">,</span> <span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                    <span class="n">sGraph</span><span class="o">.</span><span class="n">chr</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">upstream</span><span class="p">)),</span>
+                    <span class="n">sGraph</span><span class="o">.</span><span class="n">chr</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">downstream</span><span class="p">)),</span>
+                    <span class="n">all_paths</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">upstream_seq</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">target_seq</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="nb">str</span><span class="p">(</span><span class="n">downstream_seq</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s">&#39; was not found in a biconnected component&#39;</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="get_sufficient_psi_exons"><a class="viewcode-back" href="../splice_graph.html#splice_graph.get_sufficient_psi_exons">[docs]</a><span class="k">def</span> <span class="nf">get_sufficient_psi_exons</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sGraph</span><span class="p">,</span> <span class="n">genome</span><span class="p">,</span> <span class="n">ID</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Utilizes the ExonSeek class to find flanking exons that are</span>
+<span class="sd">    good enough to be called &quot;constitutive&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># find appropriate flanking &quot;constitutive&quot; exon for primers</span>
+    <span class="c"># upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)</span>
+    <span class="n">exon_seek_obj</span> <span class="o">=</span> <span class="n">ExonSeek</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">sGraph</span><span class="p">,</span> <span class="n">ID</span><span class="p">)</span>
+    <span class="n">all_paths</span><span class="p">,</span> <span class="n">upstream</span><span class="p">,</span> <span class="n">downstream</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">psi_target</span><span class="p">,</span> <span class="n">psi_upstream</span><span class="p">,</span> <span class="n">psi_downstream</span> <span class="o">=</span> <span class="n">exon_seek_obj</span><span class="o">.</span><span class="n">get_info</span><span class="p">()</span>
+
+    <span class="c"># lack of successor/predecessor nodes</span>
+    <span class="k">if</span> <span class="n">upstream</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">downstream</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> does not have an upstream exon, downstream exon, or possibly both&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">component</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> does not have an upstream exon, downstream exon, or possibly both&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">component</span><span class="p">)]</span>
+
+    <span class="c"># get sequence of upstream/target/downstream combo</span>
+    <span class="n">genome_chr</span> <span class="o">=</span> <span class="n">genome</span><span class="p">[</span><span class="n">sGraph</span><span class="o">.</span><span class="n">chr</span><span class="p">]</span>  <span class="c"># chr object from pygr</span>
+    <span class="n">upstream_seq</span><span class="p">,</span> <span class="n">target_seq</span><span class="p">,</span> <span class="n">downstream_seq</span> <span class="o">=</span> <span class="n">genome_chr</span><span class="p">[</span><span class="n">upstream</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">upstream</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">genome_chr</span><span class="p">[</span><span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">target</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">genome_chr</span><span class="p">[</span><span class="n">downstream</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">downstream</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="n">sGraph</span><span class="o">.</span><span class="n">strand</span> <span class="o">==</span> <span class="s">&#39;-&#39;</span><span class="p">:</span>
+        <span class="n">upstream_seq</span><span class="p">,</span> <span class="n">target_seq</span><span class="p">,</span> <span class="n">downstream_seq</span> <span class="o">=</span>  \
+            <span class="o">-</span><span class="n">upstream_seq</span><span class="p">,</span> <span class="o">-</span><span class="n">target_seq</span><span class="p">,</span> <span class="o">-</span><span class="n">downstream_seq</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">sGraph</span><span class="o">.</span><span class="n">strand</span><span class="p">,</span> <span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">psi_target</span><span class="p">,</span>
+            <span class="n">sGraph</span><span class="o">.</span><span class="n">chr</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">upstream</span><span class="p">)),</span> <span class="n">psi_upstream</span><span class="p">,</span>
+            <span class="n">sGraph</span><span class="o">.</span><span class="n">chr</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="s">&#39;-&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">downstream</span><span class="p">)),</span> <span class="n">psi_downstream</span><span class="p">,</span>
+            <span class="n">all_paths</span><span class="p">,</span> <span class="n">upstream_seq</span><span class="p">,</span>
+            <span class="n">target_seq</span><span class="p">,</span> <span class="n">downstream_seq</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../splice_graph.html#splice_graph.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">args_output</span><span class="o">=</span><span class="s">&#39;tmp/debug.json&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The gtf main function is the function designed to be called from other scripts. It iterates through each target</span>
+<span class="sd">    exons and returns the necessary information for primer design.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">genome</span><span class="p">,</span> <span class="n">args_big_bed</span><span class="p">,</span> <span class="n">args_gtf</span><span class="p">,</span> <span class="n">args_target</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;fasta&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;big_bed&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;gtf&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">args_big_bed</span><span class="p">:</span> <span class="n">bed</span> <span class="o">=</span> <span class="n">Bed</span><span class="p">(</span><span class="n">args_big_bed</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s">&#39;bed&#39;</span><span class="p">)</span>
+
+    <span class="c"># the sam object interfaces with the user specified BAM/SAM file!!!</span>
+    <span class="n">sam_obj_list</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;rnaseq&#39;</span><span class="p">]</span>
+
+    <span class="c"># iterate through each target exon</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># output from program</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">args_target</span><span class="p">:</span>  <span class="c"># was line in handle</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">line</span> <span class="o">=</span> <span class="n">line</span>  <span class="c"># .strip().split(&#39;\t&#39;)</span>
+        <span class="n">strand</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">tmp_start</span><span class="p">,</span> <span class="n">tmp_end</span> <span class="o">=</span> <span class="n">get_pos</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="nb">chr</span> <span class="o">=</span> <span class="n">get_chr</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+        <span class="c"># This try block is to catch assertions made about the graph. If an</span>
+        <span class="c"># assertion is raised it only impacts a single target for primer design</span>
+        <span class="c"># so complete exiting of the program is not warranted.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># get gene annotation from bigBed (maybe deprecate) or gtf file file</span>
+            <span class="k">if</span> <span class="n">args_gtf</span><span class="p">:</span>
+                <span class="c"># if the gtf doesn&#39;t have a valid gene_id attribute then use</span>
+                <span class="c"># the first method otherwise use the second method.</span>
+                <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;no_gene_id&#39;</span><span class="p">]:</span>
+                    <span class="n">gene_dict</span> <span class="o">=</span> <span class="n">get_weakly_connected_tx</span><span class="p">(</span><span class="n">args_gtf</span><span class="p">,</span> <span class="n">strand</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span> <span class="n">tmp_start</span><span class="p">,</span> <span class="n">tmp_end</span><span class="p">)</span>  <span class="c"># hopefully filter out junk</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">gene_dict</span> <span class="o">=</span> <span class="n">get_from_gtf_using_gene_name</span><span class="p">(</span><span class="n">args_gtf</span><span class="p">,</span> <span class="n">strand</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span> <span class="n">tmp_start</span><span class="p">,</span> <span class="n">tmp_end</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># I no longer use BigBed for gene annotations. This code is</span>
+                <span class="c"># legacy and eventually will be deleted.</span>
+                <span class="n">bed</span><span class="o">.</span><span class="n">extractBigRegion</span><span class="p">(</span><span class="n">strand</span><span class="p">,</span> <span class="nb">chr</span><span class="p">,</span> <span class="n">tmp_start</span><span class="p">,</span> <span class="n">tmp_end</span><span class="p">)</span>
+                <span class="n">bed</span><span class="o">.</span><span class="n">load_bed_file</span><span class="p">()</span>
+                <span class="n">gene_dict</span> <span class="o">=</span> <span class="n">bed</span><span class="o">.</span><span class="n">get_annotation</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;both_flag&#39;</span><span class="p">]:</span>
+                <span class="n">splice_graph</span> <span class="o">=</span> <span class="n">SpliceGraph</span><span class="p">(</span><span class="n">annotation</span><span class="o">=</span><span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;graph&#39;</span><span class="p">],</span>  <span class="c"># use junctions from annotation</span>
+                                           <span class="nb">chr</span><span class="o">=</span><span class="nb">chr</span><span class="p">,</span>
+                                           <span class="n">strand</span><span class="o">=</span><span class="n">strand</span><span class="p">,</span>
+                                           <span class="n">read_threshold</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;read_threshold&#39;</span><span class="p">],</span>
+                                           <span class="n">min_count</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;min_jct_count&#39;</span><span class="p">])</span>
+                <span class="n">edge_weights_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">sam_obj</span><span class="o">.</span><span class="n">extractSamRegion</span><span class="p">(</span><span class="nb">chr</span><span class="p">,</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">],</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">])</span>
+                                     <span class="k">for</span> <span class="n">sam_obj</span> <span class="ow">in</span> <span class="n">sam_obj_list</span><span class="p">]</span>
+                <span class="n">edge_weights</span> <span class="o">=</span> <span class="n">merge_list_of_dicts</span><span class="p">(</span><span class="n">edge_weights_list</span><span class="p">)</span>  <span class="c"># merge all SAM/BAM read counts to a single dictionary</span>
+                <span class="n">splice_graph</span><span class="o">.</span><span class="n">set_annotation_edge_weights</span><span class="p">(</span><span class="n">edge_weights</span><span class="p">)</span>  <span class="c"># set edge weights supported from annotation</span>
+                <span class="n">splice_graph</span><span class="o">.</span><span class="n">add_all_possible_edge_weights</span><span class="p">(</span><span class="n">edge_weights</span><span class="p">)</span>  <span class="c"># also use junctions from RNA-Seq</span>
+            <span class="k">elif</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;annotation_flag&#39;</span><span class="p">]:</span>
+                <span class="n">splice_graph</span> <span class="o">=</span> <span class="n">SpliceGraph</span><span class="p">(</span><span class="n">annotation</span><span class="o">=</span><span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;graph&#39;</span><span class="p">],</span>  <span class="c"># use annotation</span>
+                                           <span class="nb">chr</span><span class="o">=</span><span class="nb">chr</span><span class="p">,</span>
+                                           <span class="n">strand</span><span class="o">=</span><span class="n">strand</span><span class="p">,</span>
+                                           <span class="n">read_threshold</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;read_threshold&#39;</span><span class="p">],</span>
+                                           <span class="n">min_count</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;min_jct_count&#39;</span><span class="p">])</span>
+                <span class="n">edge_weights_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">sam_obj</span><span class="o">.</span><span class="n">extractSamRegion</span><span class="p">(</span><span class="nb">chr</span><span class="p">,</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">],</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">])</span>
+                                     <span class="k">for</span> <span class="n">sam_obj</span> <span class="ow">in</span> <span class="n">sam_obj_list</span><span class="p">]</span>
+                <span class="n">edge_weights</span> <span class="o">=</span> <span class="n">merge_list_of_dicts</span><span class="p">(</span><span class="n">edge_weights_list</span><span class="p">)</span>  <span class="c"># merge all SAM/BAM read counts to a single dictionary</span>
+                <span class="n">splice_graph</span><span class="o">.</span><span class="n">set_annotation_edge_weights</span><span class="p">(</span><span class="n">edge_weights</span><span class="p">)</span>  <span class="c"># set edge weights supported from annotation</span>
+            <span class="k">elif</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;rnaseq_flag&#39;</span><span class="p">]:</span>
+                <span class="n">splice_graph</span> <span class="o">=</span> <span class="n">SpliceGraph</span><span class="p">(</span><span class="n">annotation</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>  <span class="c"># set to None to not use annotation</span>
+                                           <span class="nb">chr</span><span class="o">=</span><span class="nb">chr</span><span class="p">,</span>
+                                           <span class="n">strand</span><span class="o">=</span><span class="n">strand</span><span class="p">,</span>
+                                           <span class="n">read_threshold</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;read_threshold&#39;</span><span class="p">])</span>
+                <span class="n">splice_graph</span><span class="o">.</span><span class="n">set_graph_as_nodes_only</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;exons&#39;</span><span class="p">]))</span>
+                <span class="n">edge_weights_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">sam_obj</span><span class="o">.</span><span class="n">extractSamRegion</span><span class="p">(</span><span class="nb">chr</span><span class="p">,</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">],</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">])</span>
+                                     <span class="k">for</span> <span class="n">sam_obj</span> <span class="ow">in</span> <span class="n">sam_obj_list</span><span class="p">]</span>
+                <span class="n">edge_weights</span> <span class="o">=</span> <span class="n">merge_list_of_dicts</span><span class="p">(</span><span class="n">edge_weights_list</span><span class="p">)</span>  <span class="c"># merge all SAM/BAM read counts to a single dictionary</span>
+                <span class="n">splice_graph</span><span class="o">.</span><span class="n">add_all_possible_edge_weights</span><span class="p">(</span><span class="n">edge_weights</span><span class="p">)</span>  <span class="c"># add all edges supported by rna seq</span>
+
+            <span class="c"># default case</span>
+            <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;psi&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="o">.</span><span class="mi">9999</span><span class="p">:</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">get_flanking_biconnected_exons</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">],</span>
+                                                     <span class="n">splice_graph</span><span class="p">,</span>
+                                                     <span class="n">genome</span><span class="p">)</span>  <span class="c"># note this function ignores edge weights</span>
+            <span class="c"># user specified a sufficient psi value to call constitutive exons</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">get_sufficient_psi_exons</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">gene_dict</span><span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">],</span>
+                                               <span class="n">splice_graph</span><span class="p">,</span>
+                                               <span class="n">genome</span><span class="p">,</span>
+                                               <span class="n">name</span><span class="p">)</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AssertionError</span><span class="p">,</span> <span class="ne">FloatingPointError</span><span class="p">):</span>
+            <span class="n">t</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">trace</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)])</span>  <span class="c"># just append assertion msg</span>
+
+    <span class="k">return</span> <span class="n">output</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Running this script directly is only for debug purposes&quot;&quot;&quot;</span>
+    <span class="c"># process command line arguments</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;Get flanking constitutive exons&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-b&#39;</span><span class="p">,</span> <span class="s">&#39;--big-bed&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;big_bed&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;annotation file with legitimate gene_id</span><span class="se">\&#39;</span><span class="s">s&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-t&#39;</span><span class="p">,</span> <span class="s">&#39;--target&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;target&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;file of list of coordinate targets&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">,</span> <span class="s">&#39;--fasta&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;fasta&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--annotaton&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;annotation_flag&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--rnaseq&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;rnaseq_flag&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--both&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;both_flag&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--psi&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;psi&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--read-threshold&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;read_threshold&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-o&#39;</span><span class="p">,</span> <span class="s">&#39;--output&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;output&#39;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
+
+    <span class="n">options</span><span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;target&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;dash&#39;</span><span class="p">,</span> <span class="s">&#39;-&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>  <span class="c"># fix bug with - as input for strand</span>
+
+    <span class="c"># call main function</span>
+    <span class="n">main</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;output&#39;</span><span class="p">])</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper"><h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2012, CollinTokheim.
+    </div>
+    <a href="https://github.com/ctokheim/PrimerSeq" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
+    </a>
+<!--
+    <script type="text/javascript">
+
+      var _gaq2 = _gaq2 || [];
+      _gaq2.push(['_setAccount', 'UA-8742933-10']);
+      _gaq2.push(['_setDomainName', 'none']);
+      _gaq2.push(['_setAllowLinker', true]);
+      _gaq2.push(['_trackPageview']);
+
+      (function() {
+        var ga2 = document.createElement('script'); ga.type = 'text/javascript'; ga2.async = true;
+        ga2.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga2, s);
+      })();
+
+    </script>
+
+    <script type="text/javascript">
+      (function() {
+        var t   = document.createElement('script');
+        t.type  = 'text/javascript';
+        t.async = true;
+        t.id    = 'gauges-tracker';
+        t.setAttribute('data-site-id',
+                       '4ddc1cfaf5a1f50fcc000001');
+        t.src = '//secure.gaug.es/track.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(t, s);
+      })();
+    </script>
+-->
+  </body>
+</html>

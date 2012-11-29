@@ -509,6 +509,8 @@ class PrimerFrame(wx.Frame):
         wxglade_tmp_menu.Append(primer3_manual_id, "Primer3 Doc.", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "View")
         wxglade_tmp_menu = wx.Menu()
+        help_id = wx.NewId()
+        wxglade_tmp_menu.Append(help_id, "Help", "", wx.ITEM_NORMAL)
         about_id = wx.NewId()
         wxglade_tmp_menu.Append(about_id, "&About", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "Help")
@@ -572,6 +574,7 @@ class PrimerFrame(wx.Frame):
         self.__set_properties()
         self.__do_layout()
 
+        self.Bind(wx.EVT_MENU, self.on_help, id=help_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.quit_event, id=quit_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.plot_event, id=plot_id)
@@ -712,6 +715,12 @@ class PrimerFrame(wx.Frame):
         self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
         self.set_gtf('example/example.chr18.gtf', 'example.chr18.gtf', use_dlg=False)
         self.coordinates_text_field.SetValue('-chr18:9562919-9563044')
+
+    def on_help(self, event):
+        """
+        Open documentation in default webbrowser
+        """
+        webbrowser.open('help/index.html')
 
     def add_genes_event(self, event):
         AddGeneIdsDialog(self, -1, 'Add Valid Gene IDs')

@@ -1,0 +1,18 @@
+Code
+====
+
+PrimerSeq is ~90% python and ~10% java. Java is used for speed
+increases when handling sequencing data. The bottleneck for the
+code is file IO so a disproportionate amount of run time is spent
+in java byte code even though all of the algorithms are implemented
+in python.
+
+**Documentation:**
+
+.. toctree::
+   :maxdepth: 2
+
+   primer
+   splice_graph
+   algorithms
+   exon_seek

@@ -1,0 +1,462 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>algorithms &mdash; PrimerSeq 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="top" title="PrimerSeq 1.0.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">PrimerSeq 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for algorithms</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="kn">as</span> <span class="nn">nx</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="c"># import matplotlib.pyplot as plt</span>
+
+<span class="n">oldsettings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s">&#39;raise&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="get_biconnected"><a class="viewcode-back" href="../algorithms.html#algorithms.get_biconnected">[docs]</a><span class="k">def</span> <span class="nf">get_biconnected</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper arround the networkx biconnected_components function. To find out why the biconnected</span>
+<span class="sd">    components algorithm is useful for finding constitutive exons check the information section or</span>
+<span class="sd">    wikipedia.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">G_undirected</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">()</span>  <span class="c"># make sure undirected graph for biconnected components</span>
+    <span class="n">components</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span>
+        <span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">nx</span><span class="o">.</span><span class="n">biconnected_components</span><span class="p">(</span><span class="n">G_undirected</span><span class="p">)))</span>  <span class="c"># filter out trivial dyad biconnected components</span>
+
+    <span class="c"># assert len(components) &gt; 0, &#39;what nothing in it&#39; + str(components)</span>
+    <span class="c"># assert components != None, &#39;Oddly there is a none object in the biconnected comp&#39; + str(components)</span>
+    <span class="k">return</span> <span class="n">components</span>
+
+</div>
+<div class="viewcode-block" id="bellman_ford_longest_path"><a class="viewcode-back" href="../algorithms.html#algorithms.bellman_ford_longest_path">[docs]</a><span class="k">def</span> <span class="nf">bellman_ford_longest_path</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="n">visited</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s">&#39;weight&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the longest path (most total weight) by only considering unexplained edges. That is weights of any edge already in an isoform</span>
+<span class="sd">    is set to zero. This function tries to minimize the number of isoforms that could possibly be generated based on novel edges.</span>
+<span class="sd">    Assumes topologically sorted with source node as first in topological sort. Topological sort version runs in O(n+m) instead of O(nm).</span>
+
+<span class="sd">    input:</span>
+<span class="sd">        G - a networkx DAG</span>
+<span class="sd">        num_nodes - the number of nodes in the entire graph (not just the subgraph)</span>
+<span class="sd">        weight - the string that represents edge weight for G</span>
+<span class="sd">    output:</span>
+<span class="sd">        path - longest path from first node to last</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># initialize variables</span>
+    <span class="n">sorted_nodes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span>
+    <span class="c">#d = [float(&#39;-inf&#39;)] * num_nodes  # was len(G)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="n">nde</span><span class="p">:</span><span class="nb">float</span><span class="p">(</span><span class="s">&#39;-inf&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">nde</span> <span class="ow">in</span> <span class="n">sorted_nodes</span><span class="p">}</span>
+    <span class="n">d</span><span class="p">[</span><span class="n">sorted_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>   <span class="c"># initialize source to have 0 distance</span>
+    <span class="c">#p = [[]] * num_nodes  # was len(G)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">{</span><span class="n">nde</span><span class="p">:[]</span> <span class="k">for</span> <span class="n">nde</span> <span class="ow">in</span> <span class="n">sorted_nodes</span><span class="p">}</span>
+    <span class="n">p</span><span class="p">[</span><span class="n">sorted_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="n">sorted_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>  <span class="c"># initialize source path to be it&#39;s self</span>
+
+    <span class="c"># &quot;edge relax&quot;</span>
+    <span class="k">for</span> <span class="n">tail_node</span> <span class="ow">in</span> <span class="n">sorted_nodes</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">head_node</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">tail_node</span><span class="p">):</span>
+            <span class="c"># want longest path of unexplained edges, so all explained edges have zero weight</span>
+            <span class="n">edge_weight</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="n">tail_node</span><span class="p">][</span><span class="n">head_node</span><span class="p">][</span>
+                <span class="n">weight</span><span class="p">]</span> <span class="k">if</span> <span class="n">visited</span><span class="p">[</span><span class="n">tail_node</span><span class="p">][</span><span class="n">head_node</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+            <span class="c"># larger total weight case</span>
+            <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="n">head_node</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">d</span><span class="p">[</span><span class="n">tail_node</span><span class="p">]</span> <span class="o">+</span> <span class="n">edge_weight</span><span class="p">:</span>
+                <span class="n">d</span><span class="p">[</span><span class="n">head_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">tail_node</span><span class="p">]</span> <span class="o">+</span> <span class="n">edge_weight</span>
+                <span class="n">p</span><span class="p">[</span><span class="n">head_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">tail_node</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">head_node</span><span class="p">]</span>
+            <span class="c"># same total weight case, choose edge with greater weight into head node</span>
+            <span class="k">elif</span> <span class="n">d</span><span class="p">[</span><span class="n">head_node</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">tail_node</span><span class="p">]</span> <span class="o">+</span> <span class="n">edge_weight</span><span class="p">)</span> <span class="ow">and</span> <span class="n">G</span><span class="p">[</span><span class="n">tail_node</span><span class="p">][</span><span class="n">head_node</span><span class="p">][</span><span class="n">weight</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">G</span><span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="n">head_node</span><span class="p">][</span><span class="o">-</span><span class="mi">2</span><span class="p">]][</span><span class="n">head_node</span><span class="p">][</span><span class="n">weight</span><span class="p">]:</span>
+                <span class="n">d</span><span class="p">[</span><span class="n">head_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">tail_node</span><span class="p">]</span> <span class="o">+</span> <span class="n">edge_weight</span>
+                <span class="n">p</span><span class="p">[</span><span class="n">head_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">tail_node</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">head_node</span><span class="p">]</span>
+
+    <span class="n">longest_path</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="n">sorted_nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">no_newly_visited</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">longest_path</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">no_newly_visited</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="n">visited</span><span class="p">[</span><span class="n">longest_path</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">longest_path</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="c">#no_newly_visited = reduce(</span>
+        <span class="c">#lambda x, y: x and (visited[x][y] == 1), longest_path)</span>
+
+    <span class="k">return</span> <span class="n">p</span><span class="p">[</span><span class="n">sorted_nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">no_newly_visited</span>
+
+</div>
+<div class="viewcode-block" id="AllPaths"><a class="viewcode-back" href="../algorithms.html#algorithms.AllPaths">[docs]</a><span class="k">class</span> <span class="nc">AllPaths</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Handle all possible paths in a biconnected component</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sg</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="nb">chr</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">strand</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">get_graph</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">annotation</span>
+        <span class="n">known_edges</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([(</span><span class="n">tx</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tx</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+                           <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span>
+                           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">component</span> <span class="o">=</span> <span class="n">component</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">subgraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">)</span>
+
+        <span class="c"># add any possible tx that uses novel edges to list of known txs</span>
+        <span class="n">all_paths</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">all_simple_paths</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">all_paths</span><span class="p">:</span>
+            <span class="n">novel</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">tx</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">tx</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known_edges</span><span class="p">:</span>
+                    <span class="n">novel</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">if</span> <span class="n">novel</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">chr</span> <span class="o">=</span> <span class="nb">chr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strand</span> <span class="o">=</span> <span class="n">strand</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_lengths</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_lengths</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>  <span class="c"># call set all_path_lengths method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_path_coordinates</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># call set_all_path_coordinates method</span>
+
+<div class="viewcode-block" id="AllPaths.set_chr"><a class="viewcode-back" href="../algorithms.html#algorithms.AllPaths.set_chr">[docs]</a>    <span class="k">def</span> <span class="nf">set_chr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">chr</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Chromosome setter</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chr</span> <span class="o">=</span> <span class="nb">chr</span>
+</div>
+<div class="viewcode-block" id="AllPaths.set_strand"><a class="viewcode-back" href="../algorithms.html#algorithms.AllPaths.set_strand">[docs]</a>    <span class="k">def</span> <span class="nf">set_strand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strand</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Strand setter</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">strand</span> <span class="o">==</span> <span class="s">&#39;+&#39;</span> <span class="ow">or</span> <span class="n">strand</span> <span class="o">==</span> <span class="s">&#39;-&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">strand</span> <span class="o">=</span> <span class="n">strand</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Strand should either be + or -&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="AllPaths.trim_tx_paths"><a class="viewcode-back" href="../algorithms.html#algorithms.AllPaths.trim_tx_paths">[docs]</a>    <span class="k">def</span> <span class="nf">trim_tx_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Remove all exons outside the biconnected component.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">component</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>  <span class="c"># make sure it is sorted</span>
+
+        <span class="c"># trim tx_paths to only contain paths within component_subgraph</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span><span class="p">:</span>
+            <span class="c"># make sure this tx path has the biconnected component</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">p</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span>
+                    <span class="n">p</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span><span class="n">p</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">component</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span>  <span class="c"># make sure there is no redundant paths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">tmp</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</div>
+<div class="viewcode-block" id="AllPaths.estimate_counts"><a class="viewcode-back" href="../algorithms.html#algorithms.AllPaths.estimate_counts">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Estimates read counts by using :func:`~algorithms.read_count_em`</span>
+<span class="sd">        and then returns the transcript paths and read counts for those</span>
+<span class="sd">        paths.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># assert statements about the connectivity of the graph</span>
+        <span class="k">assert</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_weakly_connected</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="p">),</span> <span class="s">&#39;Yikes! expected weakly connected graph&#39;</span>
+        <span class="k">assert</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_biconnected</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">()),</span> <span class="s">&#39;Yikes! expected a biconnected component&#39;</span>
+
+        <span class="c"># assert statements about AFE/ALE testing</span>
+        <span class="n">num_first_exons</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">predecessors</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()))</span>
+        <span class="k">assert</span> <span class="n">num_first_exons</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Yikes! AFE like event is not expected&#39;</span>
+        <span class="n">num_last_exons</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()))</span>
+        <span class="k">assert</span> <span class="n">num_last_exons</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Yikes! ALE like event is not expected&#39;</span>
+
+        <span class="c"># run EM algorithm</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Start read count EM algorithm . . . &#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count_info</span> <span class="o">=</span> <span class="n">read_count_em</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_graph</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Finished calculating counts.&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">map</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">count_info</span>
+</div>
+<div class="viewcode-block" id="AllPaths.set_all_path_coordinates"><a class="viewcode-back" href="../algorithms.html#algorithms.AllPaths.set_all_path_coordinates">[docs]</a>    <span class="k">def</span> <span class="nf">set_all_path_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Computes the coordinates ofr each tx</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span><span class="p">:</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strand</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">chr</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_path_lengths</span> <span class="o">=</span> <span class="n">tmp</span>
+</div>
+<div class="viewcode-block" id="AllPaths.set_all_path_lengths"><a class="viewcode-back" href="../algorithms.html#algorithms.AllPaths.set_all_path_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">set_all_path_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Computes the path length for each isoform</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c"># get possible lengths</span>
+        <span class="n">inc_length</span><span class="p">,</span> <span class="n">skip_length</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tx_paths</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+                <span class="n">inc_length</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>  <span class="c"># length of everything but target exon and flanking constitutive exons</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">skip_length</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>  <span class="c"># length of everything but target exon and flanking constitutive exons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_lengths</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_lengths</span> <span class="o">=</span> <span class="n">inc_length</span><span class="p">,</span> <span class="n">skip_length</span>
+
+</div></div>
+<div class="viewcode-block" id="read_count_em"><a class="viewcode-back" href="../algorithms.html#algorithms.read_count_em">[docs]</a><span class="k">def</span> <span class="nf">read_count_em</span><span class="p">(</span><span class="n">bcc_paths</span><span class="p">,</span> <span class="n">sub_graph</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Estimate multinomial probilities by using an EM algorithm by using</span>
+<span class="sd">    junction reads.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">oldsettings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="s">&#39;raise&#39;</span><span class="p">)</span>  <span class="c"># make sure error is raised instead of numerical warning</span>
+
+    <span class="c"># useful convenience dicts</span>
+    <span class="n">indexToEdge</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">e</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">edges</span><span class="p">())}</span>
+    <span class="n">edgeToIndex</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">edges</span><span class="p">())}</span>
+
+    <span class="c"># set up count/tx info variables</span>
+    <span class="n">num_tx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bcc_paths</span><span class="p">)</span>
+    <span class="n">num_edges</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_graph</span><span class="o">.</span><span class="n">edges</span><span class="p">())</span>
+    <span class="n">read_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_edges</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">read_counts</span><span class="p">):</span>
+        <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">indexToEdge</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">read_counts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sub_graph</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">][</span><span class="s">&#39;weight&#39;</span><span class="p">]</span>
+    <span class="n">total_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">read_counts</span><span class="p">)</span>
+
+    <span class="c"># set up the uncommited matrix Y</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_edges</span><span class="p">,</span> <span class="n">num_tx</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">tx_index</span><span class="p">,</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bcc_paths</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">Y</span><span class="p">[</span><span class="n">edgeToIndex</span><span class="p">[(</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])]][</span><span class="n">tx_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">read_counts</span><span class="p">[</span>
+                    <span class="n">edgeToIndex</span><span class="p">[(</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])]]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;*&#39;</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">tx_index</span><span class="p">,</span> <span class="n">edgeToIndex</span>
+                <span class="k">raise</span>
+
+    <span class="c"># set up p the probability array</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">num_tx</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">num_tx</span>
+
+    <span class="c"># start EM</span>
+    <span class="n">counter</span><span class="p">,</span> <span class="n">MAX_ITERS</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10000</span>  <span class="c"># these variables impose a max iteration restriction of 10000 on the EM algorithm</span>
+    <span class="n">epsilon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">&#39;inf&#39;</span><span class="p">)</span>
+    <span class="n">THRESHOLD</span> <span class="o">=</span> <span class="o">.</span><span class="mo">0001</span>
+    <span class="k">while</span> <span class="n">epsilon</span> <span class="o">&gt;</span> <span class="n">THRESHOLD</span> <span class="ow">and</span> <span class="n">counter</span> <span class="o">&lt;</span> <span class="n">MAX_ITERS</span><span class="p">:</span>
+        <span class="c"># E-step</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Y</span><span class="p">):</span>
+            <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span> <span class="o">*</span> <span class="n">p</span> <span class="o">/</span> <span class="n">row</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="n">read_counts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="c"># M-step</span>
+        <span class="n">p_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">total_counts</span>
+
+        <span class="c"># convergence variable</span>
+        <span class="n">epsilon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">p_new</span> <span class="o">-</span> <span class="n">p</span><span class="p">))</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">p_new</span>  <span class="c"># update probabilities</span>
+        <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c"># increment the iteration counter</span>
+
+    <span class="n">tx_counts</span> <span class="o">=</span> <span class="n">total_counts</span> <span class="o">*</span> <span class="n">p</span>
+    <span class="k">return</span> <span class="n">tx_counts</span>
+
+</div>
+<div class="viewcode-block" id="estimate_psi"><a class="viewcode-back" href="../algorithms.html#algorithms.estimate_psi">[docs]</a><span class="k">def</span> <span class="nf">estimate_psi</span><span class="p">(</span><span class="n">exon_of_interest</span><span class="p">,</span> <span class="n">paths</span><span class="p">,</span> <span class="n">counts</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Uses the estimated isoform count information from read_count_em to</span>
+<span class="sd">    estimate the exon inclusion level (psi). Note that read counts are normalized</span>
+<span class="sd">    using the number of junctions (edges) for that isoform.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inc_count</span><span class="p">,</span> <span class="n">skip_count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">counts</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">exon_of_interest</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="n">inc_count</span> <span class="o">+=</span> <span class="n">num</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c"># read counts / number of edges</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">skip_count</span> <span class="o">+=</span> <span class="n">num</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  <span class="c"># read counts / number of edges</span>
+    <span class="n">psi</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">inc_count</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">inc_count</span> <span class="o">+</span> <span class="n">skip_count</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">psi</span>
+
+</div>
+<div class="viewcode-block" id="generate_isoforms"><a class="viewcode-back" href="../algorithms.html#algorithms.generate_isoforms">[docs]</a><span class="k">def</span> <span class="nf">generate_isoforms</span><span class="p">(</span><span class="n">component_subgraph</span><span class="p">,</span> <span class="n">s_graph</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take in a digraph and output isoforms of its biconnected components (splice modules)</span>
+
+<span class="sd">    input</span>
+<span class="sd">        G - a directed acyclic graph</span>
+<span class="sd">        tx_paths - a list of paths from the annotation</span>
+<span class="sd">    output</span>
+<span class="sd">        paths - a list of isoforms for splice modules</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Start generating isoforms . . .&#39;</span><span class="p">)</span>
+    <span class="n">tx_paths</span><span class="p">,</span> <span class="n">G</span> <span class="o">=</span> <span class="n">s_graph</span><span class="o">.</span><span class="n">annotation</span><span class="p">,</span> <span class="n">s_graph</span><span class="o">.</span><span class="n">get_graph</span><span class="p">()</span>
+    <span class="c">#for component in get_biconnected(G):</span>
+    <span class="c"># define subgraph of biconnected nodes</span>
+    <span class="c">#component_subgraph = nx.subgraph(G, component)</span>
+    <span class="n">component</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">component_subgraph</span><span class="o">.</span><span class="n">nodes</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>  <span class="c"># make sure it is sorted</span>
+
+    <span class="c"># trim tx_paths to only contain paths within component_subgraph</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">tx_paths</span><span class="p">:</span>
+        <span class="c"># make sure this tx path has the biconnected component</span>
+        <span class="k">if</span> <span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">p</span> <span class="ow">and</span> <span class="n">component</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">p</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">component</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span><span class="n">p</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">component</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span>  <span class="c"># make sure there is no redundant paths</span>
+    <span class="n">tx_paths</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">tmp</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="c"># assert statements about the connectivity of the graph</span>
+    <span class="k">assert</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_weakly_connected</span><span class="p">(</span><span class="n">component_subgraph</span><span class="p">),</span> <span class="s">&#39;Yikes! expected weakly connected graph&#39;</span>
+    <span class="k">assert</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_biconnected</span><span class="p">(</span><span class="n">component_subgraph</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">()),</span> <span class="s">&#39;Yikes! expected a biconnected component&#39;</span>
+
+    <span class="c"># assert statements about AFE/ALE testing</span>
+    <span class="n">num_first_exons</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_subgraph</span><span class="o">.</span><span class="n">predecessors</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">component_subgraph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()))</span>
+    <span class="k">assert</span> <span class="n">num_first_exons</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Yikes! AFE like event is not expected&#39;</span>
+    <span class="n">num_last_exons</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_subgraph</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">component_subgraph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()))</span>
+    <span class="k">assert</span> <span class="n">num_last_exons</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Yikes! ALE like event is not expected&#39;</span>
+
+    <span class="c"># mark all edges as unvisited</span>
+    <span class="n">visited_edges</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">component_subgraph</span><span class="o">.</span><span class="n">edges</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">visited_edges</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">visited_edges</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">visited_edges</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_visited_edges</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c"># no edges visited to start with</span>
+
+    <span class="c"># mark visited edges if in known annotation</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">tx_paths</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">visited_edges</span><span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]:</span>
+                    <span class="n">visited_edges</span><span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">num_visited_edges</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+    <span class="c"># Iterate until atleast one isoform explains each edge</span>
+    <span class="n">component_paths</span> <span class="o">=</span> <span class="n">tx_paths</span>
+    <span class="k">while</span> <span class="n">num_visited_edges</span> <span class="o">&lt;</span> <span class="n">component_subgraph</span><span class="o">.</span><span class="n">number_of_edges</span><span class="p">():</span>
+        <span class="c"># find maximum weight path</span>
+        <span class="n">path</span><span class="p">,</span> <span class="n">no_new_edges</span> <span class="o">=</span> <span class="n">bellman_ford_longest_path</span><span class="p">(</span><span class="n">component_subgraph</span><span class="p">,</span>
+                                                       <span class="n">num_nodes</span><span class="o">=</span><span class="n">G</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">(),</span>
+                                                       <span class="n">visited</span><span class="o">=</span><span class="n">visited_edges</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">no_new_edges</span><span class="p">:</span>
+            <span class="n">component_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c"># bookeeping on visited edges</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">visited_edges</span><span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">visited_edges</span><span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">num_visited_edges</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">G</span><span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]][</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="n">path</span><span class="p">[</span>
+                <span class="n">i</span><span class="p">]][</span><span class="n">path</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]][</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">10.0</span>  <span class="c"># down scale path</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Finished generating isoforms.&#39;</span><span class="p">)</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>  <span class="c"># make sure nodes are sorted</span>
+    <span class="c"># component_paths += [filter(lambda x: x &gt;= start and x &lt;= stop, p) for p in tx_paths]  # add paths known from transcript annotation</span>
+    <span class="n">component_paths</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="nb">set</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="n">component_paths</span><span class="p">))))</span>  <span class="c"># remove redundant paths</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Start read count EM algorithm . . . &#39;</span><span class="p">)</span>
+    <span class="n">count_info</span> <span class="o">=</span> <span class="n">read_count_em</span><span class="p">(</span><span class="n">component_paths</span><span class="p">,</span> <span class="n">component_subgraph</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Finished calculating counts.&#39;</span><span class="p">)</span>
+    <span class="c">#original_count = sum([component_subgraph[arc_tail][arc_head][&#39;weight&#39;] for arc_tail, arc_head in component_subgraph.edges()])  # total actual read counts that the subgraph has</span>
+    <span class="c">#module_info.append([[start, stop], list(count_info), original_count])   # module starts at first node and ends at last node</span>
+    <span class="c"># paths.append(component_paths)  # add paths</span>
+
+    <span class="k">return</span> <span class="n">component_paths</span><span class="p">,</span> <span class="n">count_info</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper"><h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2012, CollinTokheim.
+    </div>
+    <a href="https://github.com/ctokheim/PrimerSeq" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
+    </a>
+<!--
+    <script type="text/javascript">
+
+      var _gaq2 = _gaq2 || [];
+      _gaq2.push(['_setAccount', 'UA-8742933-10']);
+      _gaq2.push(['_setDomainName', 'none']);
+      _gaq2.push(['_setAllowLinker', true]);
+      _gaq2.push(['_trackPageview']);
+
+      (function() {
+        var ga2 = document.createElement('script'); ga.type = 'text/javascript'; ga2.async = true;
+        ga2.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga2, s);
+      })();
+
+    </script>
+
+    <script type="text/javascript">
+      (function() {
+        var t   = document.createElement('script');
+        t.type  = 'text/javascript';
+        t.async = true;
+        t.id    = 'gauges-tracker';
+        t.setAttribute('data-site-id',
+                       '4ddc1cfaf5a1f50fcc000001');
+        t.src = '//secure.gaug.es/track.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(t, s);
+      })();
+    </script>
+-->
+  </body>
+</html>

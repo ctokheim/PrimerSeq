@@ -1,0 +1,222 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>primer.py &mdash; PrimerSeq 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="top" title="PrimerSeq 1.0.0 documentation" href="index.html" />
+    <link rel="up" title="Code" href="code.html" />
+    <link rel="next" title="splice_graph.py" href="splice_graph.html" />
+    <link rel="prev" title="Code" href="code.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="splice_graph.html" title="splice_graph.py"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="code.html" title="Code"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">PrimerSeq 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="code.html" accesskey="U">Code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-primer">
+<span id="primer-py"></span><h1>primer.py<a class="headerlink" href="#module-primer" title="Permalink to this headline">¶</a></h1>
+<p><strong>Author:</strong>  Collin Tokheim</p>
+<p><strong>Description:</strong> primer.py can design primers from the command line.
+Note that PrimerApp.py (the GUI) just uses the primer module to design the
+primers.</p>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="primer.ValidateRnaseq">
+<em class="property">class </em><tt class="descclassname">primer.</tt><tt class="descname">ValidateRnaseq</tt><big>(</big><em>option_strings</em>, <em>dest</em>, <em>nargs=None</em>, <em>const=None</em>, <em>default=None</em>, <em>type=None</em>, <em>choices=None</em>, <em>required=False</em>, <em>help=None</em>, <em>metavar=None</em><big>)</big><a class="reference internal" href="_modules/primer.html#ValidateRnaseq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.ValidateRnaseq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes sure the -r parameter input is a SAM/BAM file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="primer.call_primer3">
+<tt class="descclassname">primer.</tt><tt class="descname">call_primer3</tt><big>(</big><em>target_string</em>, <em>jobs_ID</em><big>)</big><a class="reference internal" href="_modules/primer.html#call_primer3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.call_primer3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does the actual call to primer3. Will raise a CalledProcessError if primer3
+exits with a non-zero exit status.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="primer.gene_annotation_reader">
+<tt class="descclassname">primer.</tt><tt class="descname">gene_annotation_reader</tt><big>(</big><em>file_path</em>, <em>FILTER_FACTOR=2</em><big>)</big><a class="reference internal" href="_modules/primer.html#gene_annotation_reader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.gene_annotation_reader" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>creates two data structures from gtf:</em></p>
+<dl class="docutils">
+<dt>gene_dict is a dictionary with gene_id&#8217;s as keys:</dt>
+<dd><ul class="first last simple">
+<li>gene_dict[&#8216;chr&#8217;][&#8216;My_favorite_gene&#8217;][&#8216;graph&#8217;] = list of list of exons</li>
+<li>gene_dict[&#8216;chr&#8217;][&#8216;My_favorite_gene&#8217;][&#8216;strand&#8217;] = gene strand (+, -)</li>
+<li>gene_dict[&#8216;chr&#8217;][&#8216;My_favorite_gene&#8217;][&#8216;chr&#8217;] = chromosome</li>
+<li>gene_dict[&#8216;chr&#8217;][&#8216;My_favorite_gene&#8217;][&#8216;start&#8217;] = start of gene</li>
+<li>gene_dict[&#8216;chr&#8217;][&#8216;My_favorite_gene&#8217;][&#8216;end&#8217;] = end of gene</li>
+<li>gene_dict[&#8216;chr&#8217;][&#8216;My_favorite_gene&#8217;][&#8216;exons&#8217;] = the set of exons (nodes)</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="primer.main">
+<tt class="descclassname">primer.</tt><tt class="descname">main</tt><big>(</big><em>options</em><big>)</big><a class="reference internal" href="_modules/primer.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads in primer3 options, starts logging, and then calls the primer3 function to run primer3</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="primer.mkdir_tmp">
+<tt class="descclassname">primer.</tt><tt class="descname">mkdir_tmp</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/primer.html#mkdir_tmp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.mkdir_tmp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make all the necessary directories for temporary files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="primer.primer3">
+<tt class="descclassname">primer.</tt><tt class="descname">primer3</tt><big>(</big><em>options</em>, <em>primer3_options</em><big>)</big><a class="reference internal" href="_modules/primer.html#primer3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.primer3" title="Permalink to this definition">¶</a></dt>
+<dd><p>The primer.py main function uses the gtf module to find information about constitutive flanking exons for the target exons of interest.
+It then designs primers by calling primer3. Next it parses the primer3 output and outputs the final results to a file. The output file
+is then emailed to the designated address in the command line parameters.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="primer.primer_coordinates">
+<tt class="descclassname">primer.</tt><tt class="descname">primer_coordinates</tt><big>(</big><em>p3_output</em>, <em>strand</em>, <em>tar</em>, <em>up</em>, <em>down</em><big>)</big><a class="reference internal" href="_modules/primer.html#primer_coordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.primer_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function parses the .Primer3 file to find the primer coordinates on
+the genome.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="primer.read_primer3">
+<tt class="descclassname">primer.</tt><tt class="descname">read_primer3</tt><big>(</big><em>path</em><big>)</big><a class="reference internal" href="_modules/primer.html#read_primer3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#primer.read_primer3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the output from primer3_core into a dictionary containing
+the key:value relationship for the output tags.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">primer.py</a><ul>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="code.html">Code</a><ul>
+      <li>Previous: <a href="code.html" title="previous chapter">Code</a></li>
+      <li>Next: <a href="splice_graph.html" title="next chapter">splice_graph.py</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/primer.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2012, CollinTokheim.
+    </div>
+    <a href="https://github.com/ctokheim/PrimerSeq" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
+    </a>
+<!--
+    <script type="text/javascript">
+
+      var _gaq2 = _gaq2 || [];
+      _gaq2.push(['_setAccount', 'UA-8742933-10']);
+      _gaq2.push(['_setDomainName', 'none']);
+      _gaq2.push(['_setAllowLinker', true]);
+      _gaq2.push(['_trackPageview']);
+
+      (function() {
+        var ga2 = document.createElement('script'); ga.type = 'text/javascript'; ga2.async = true;
+        ga2.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga2, s);
+      })();
+
+    </script>
+
+    <script type="text/javascript">
+      (function() {
+        var t   = document.createElement('script');
+        t.type  = 'text/javascript';
+        t.async = true;
+        t.id    = 'gauges-tracker';
+        t.setAttribute('data-site-id',
+                       '4ddc1cfaf5a1f50fcc000001');
+        t.src = '//secure.gaug.es/track.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(t, s);
+      })();
+    </script>
+-->
+  </body>
+</html>

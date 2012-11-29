@@ -1,0 +1,236 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Command Line Tutorial &mdash; PrimerSeq 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="top" title="PrimerSeq 1.0.0 documentation" href="index.html" />
+    <link rel="next" title="Methods" href="methods.html" />
+    <link rel="prev" title="Welcome to PrimerSeq’s Developer Documentation" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="methods.html" title="Methods"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to PrimerSeq’s Developer Documentation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">PrimerSeq 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="command-line-tutorial">
+<h1>Command Line Tutorial<a class="headerlink" href="#command-line-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Copy my project to where ever you want. You will need to have installed the Java JRE.
+If you use PrimerSeq from source files you will need to do a little more setup.
+First, I recommend using python2.7. Next, you will need to install additional python packages:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> pip install pygr
+<span class="gp">$</span> pip install numpy
+<span class="gp">$</span> pip install matplotlib
+<span class="gp">$</span> wget http://networkx.lanl.gov/download/networkx/networkx-1.7.tar.gz
+<span class="gp">$</span> tar xvzf networkx-1.7.tar.gz
+<span class="gp">$</span> <span class="nb">cd </span>networkx-1.7
+<span class="gp">$</span> python setup.py install
+</pre></div>
+</div>
+</div>
+<div class="section" id="run">
+<h2>Run<a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h2>
+<p>To run the program you will need several files:</p>
+<ul class="simple">
+<li>FASTA</li>
+<li>GTF</li>
+<li>single or multiple SAM/BAM file(s) (name with .sorted.bam extension if sorted)</li>
+</ul>
+<p>You can checkout the command line options by typing <strong>python primer.py &#8211;help</strong>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="go">usage: primer.py [-h] -g GTF [--no-gene-id] -f FASTA -r RNASEQ -t TARGET</span>
+<span class="go">                 (--annotaton | --both) [--psi PSI]</span>
+<span class="go">                 [--read-threshold READ_THRESHOLD] [--keep-temp]</span>
+<span class="go">                 [-m MIN_JCT_COUNT] [-a ANCHOR_LENGTH] -o OUTPUT</span>
+
+<span class="go">Command line interface for designing primers</span>
+
+<span class="go">optional arguments:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -g GTF                gtf file that defines the possible exons in a gene</span>
+<span class="go">  --no-gene-id          Use this flag if your gtf does not have a valid</span>
+<span class="go">                        gene_id</span>
+<span class="go">  -f FASTA              path to fasta file</span>
+<span class="go">  -r RNASEQ             path to SAM/BAM file(s) (&quot;,&quot; delimited)</span>
+<span class="go">  -t TARGET             path to txt file with &lt;strand&gt;&lt;chr&gt;:&lt;start&gt;-&lt;end&gt; for</span>
+<span class="go">                        each target on separate lines.</span>
+<span class="go">  --annotaton           only use junctions supported from annotation</span>
+<span class="go">  --both                use junctions from both RNA-Seq and annotation</span>
+<span class="go">  --psi PSI             Define inclusion level sufficient to define</span>
+<span class="go">                        constitutive exon. Valid: 0&lt;psi&lt;1.</span>
+<span class="go">  --read-threshold READ_THRESHOLD</span>
+<span class="go">                        Define the minimum number of read support necessary to</span>
+<span class="go">                        call a junction from RNA-Seq</span>
+<span class="go">  --keep-temp           Keep temporary files in your tmp directory</span>
+<span class="go">  -m MIN_JCT_COUNT, --min-jct-count MIN_JCT_COUNT</span>
+<span class="go">                        Assign junctions that are known from annotation at</span>
+<span class="go">                        least MIN_JCT_COUNT number of reads</span>
+<span class="go">  -a ANCHOR_LENGTH, --anchor-length ANCHOR_LENGTH</span>
+<span class="go">                        Set the minimum number of bases a junction read must</span>
+<span class="go">                        span on both sides of the junction</span>
+<span class="go">  -o OUTPUT             Output directory</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>The following command has paths where you should specify your own data.</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="go">python primer.py -g example/example.chr18.gtf -f example/chr18.fa -r example/chr18_9546792_9614600.sorted.bam -t example.input.txt --both --psi .95 -o output.txt</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The gtf file should be sorted. Use gtf.py to sort your GTF (type <strong>python gtf.py &#8211;help</strong> to learn more). You can obtain pre-sorted GTFs from
+<a class="reference external" href="http://sourceforge.net/projects/primerseq/files/GTF/">here</a>.</p>
+</div>
+<p>To define your own targets (<strong>-t</strong> option) create a two column tab-separated file with no header. The provided example in example.input.txt looks like the following:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="93%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">ID</th>
+<th class="head">Target</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>1</td>
+<td>-chr18:9562919-9563044</td>
+</tr>
+</tbody>
+</table>
+<p>Although there is only one target exon, you may specify additional targets by following the same column format.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Command Line Tutorial</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#run">Run</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to PrimerSeq&#8217;s Developer Documentation</a></li>
+      <li>Next: <a href="methods.html" title="next chapter">Methods</a></li>
+  </ul></li>
+</ul>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2012, CollinTokheim.
+    </div>
+    <a href="https://github.com/ctokheim/PrimerSeq" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
+    </a>
+<!--
+    <script type="text/javascript">
+
+      var _gaq2 = _gaq2 || [];
+      _gaq2.push(['_setAccount', 'UA-8742933-10']);
+      _gaq2.push(['_setDomainName', 'none']);
+      _gaq2.push(['_setAllowLinker', true]);
+      _gaq2.push(['_trackPageview']);
+
+      (function() {
+        var ga2 = document.createElement('script'); ga.type = 'text/javascript'; ga2.async = true;
+        ga2.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga2, s);
+      })();
+
+    </script>
+
+    <script type="text/javascript">
+      (function() {
+        var t   = document.createElement('script');
+        t.type  = 'text/javascript';
+        t.async = true;
+        t.id    = 'gauges-tracker';
+        t.setAttribute('data-site-id',
+                       '4ddc1cfaf5a1f50fcc000001');
+        t.src = '//secure.gaug.es/track.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(t, s);
+      })();
+    </script>
+-->
+  </body>
+</html>
