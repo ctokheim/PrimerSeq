@@ -593,6 +593,14 @@ class PrimerFrame(wx.Frame):
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
         pub.subscribe(self.update_after_dialog, "update")
 
+        # check if the user has java installed
+        try:
+            with open(os.devnull, 'wb') as f:
+                subprocess.call('java', stdout=f, stderr=f)
+        except (subprocess.CalledProcessError, OSError):
+            dlg = wx.MessageDialog(self, 'You need java installed on your computer.\nYou can download java from:\n\nhttp://www.oracle.com/technetwork/java/javase/downloads/java-se-jre-7-download-432155.html', style=wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+
     def __set_properties(self):
         # begin wxGlade: PrimerFrame.__set_properties
         self.SetTitle("PrimerSeq")
