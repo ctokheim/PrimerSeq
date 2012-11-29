@@ -74,7 +74,6 @@ log
 tmp
 primer3/
 myDir
-*.gtf
 *bed
 *pureseq
 *seqlen
