@@ -238,7 +238,7 @@ def main(tx_paths, counts, primer_coord, options):
         # exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
 
         if i == 0:
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, 'primer', options)
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, 'primers', options)
         else:
             i -= 1
             prod_length = calc_product_length(tx_paths[i], primer_coord)
