@@ -104,6 +104,8 @@ class CustomDialog(wx.Dialog):
         else:
             pass
 
+    def check_dialog(self):
+        pass
 
 class PlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, output_file, text=''):
@@ -719,6 +721,7 @@ class PrimerFrame(wx.Frame):
         # end wxGlade
 
     def on_load_example(self, event):
+        self.gtf, self.bam, self.fasta = [], [], None
         self.set_fasta("example/chr18.fa", "chr18.fa", use_dlg=False)
         self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
         self.set_gtf('example/example.chr18.gtf', 'example.chr18.gtf', use_dlg=False)
@@ -764,7 +767,7 @@ class PrimerFrame(wx.Frame):
         or thread. This is called by PubSub.
         '''
         try:
-            self.load_progress
+            self.load_progress.check_dialog()
         except:
             if msg.data[0] is None:
                 self.enable_load_buttons()
