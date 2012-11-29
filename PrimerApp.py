@@ -118,6 +118,7 @@ class PlotDialog(wx.Dialog):
 
         self.bigwig_label = wx.StaticText(self, -1, "BigWig(s):")
         self.choose_bigwig_button = wx.Button(self, -1, "Choose . . .")
+        self.bigwig = []
         self.panel_3 = wx.Panel(self, -1)
         self.bigwig_choice_label = wx.StaticText(self, -1, "None")
         bigwig_sizer = wx.GridSizer(1, 3, 0, 0)
@@ -178,6 +179,11 @@ class PlotDialog(wx.Dialog):
             dlg.Destroy()
 
     def plot_button_event(self, event):
+        if not self.bigwig or not self.target_combo_box.GetValue():
+            dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            return
+
         self.target_id = str(self.target_combo_box.GetValue().split(',')[0])
         self.target_of_interest = str(self.target_combo_box.GetValue().split(', ')[1])
 
