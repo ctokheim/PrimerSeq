@@ -1,6 +1,5 @@
 import wx
 import  wx.lib.mixins.listctrl as listmix
-import unittest
 import sys
 import csv
 
@@ -13,10 +12,10 @@ class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl):
         listmix.ListCtrlAutoWidthMixin.__init__(self)
 
 
-class ViewOutputDialog(wx.Dialog, listmix.ColumnSorterMixin):
-    def __init__(self, parent, output_file_to_load):
-        wx.Dialog.__init__(self, parent, -1, style=wx.WANTS_CHARS)
-
+class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
+    def __init__(self, parent, id, string, output_file_to_load):
+        # wx.Dialog.__init__(self, parent, -1, style=wx.WANTS_CHARS)
+        wx.Frame.__init__(self, parent, -1, string)
         # ToolBar at the top of the window
         toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
         toolbar.SetToolBitmapSize(size=(24, 24))
@@ -105,29 +104,18 @@ class ViewOutputDialog(wx.Dialog, listmix.ColumnSorterMixin):
         return (self.sm_dn, self.sm_up)
 
 
-class TestViewOutputDialog(unittest.TestCase):
-
-    def setUp(self):
-        self.app = wx.App()
-        self.frame = wx.Frame(None)
-        self.frame.Show()
-
-    def tearDown(self):
-        # wx.CallAfter(self.app.Exit)
-        self.app.MainLoop()
-
-    def testDialog(self):
-        def clickOK():
-            clickEvent = wx.CommandEvent(wx.wxEVT_COMMAND_BUTTON_CLICKED, wx.ID_OK)
-            self.dlg.ProcessEvent(clickEvent)
-        # wx.CallAfter(clickOK)
-        self.ShowDialog()
-
-    def ShowDialog(self):
-        self.dlg = ViewOutputDialog(self.frame, 'output.txt')
-        self.dlg.ShowModal()
-        # self.dlg.Destroy()
+class TestViewOutputApp(wx.App):
+    '''
+    This is just a test app to see if this works indepently
+    '''
+    def OnInit(self):
+        wx.InitAllImageHandlers()
+        view_output = ViewOutputFrame(None, -1, "", 'output.txt')
+        view_output.Show()
+        return 1
 
 if __name__ == '__main__':
-    unittest.main()
+    ViewOutputApp = TestViewOutputApp(0)
+    ViewOutputApp.MainLoop()
+
 
