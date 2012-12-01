@@ -8,8 +8,8 @@ class AttributeField {
 	String text;
 	
 	public AttributeField(String attr){
-		this.text = attr;  // store input for toString method
-		String[] split_string = attr.split("[ ]*;*[ ]+");
+		this.text = attr.trim();  // store input for toString method
+		String[] split_string = this.text.split("[ ]*;*[ ]+");
 		int i; // counter
 		String tmp, next_str;
 		for(i=0;i<split_string.length-1;i+=2){
@@ -33,20 +33,44 @@ class AttributeField {
 	}
 }
 
+// Puts a String array and a AttributeField object into one single object for comparator
+// Perhaps not the best you of a class but it avoids type casting issues when inheriting from comparator
+class LineData {
+	String[] line;
+	AttributeField attr;
+	
+	public LineData(String[] splitted_line) {
+		this.line = splitted_line;
+		this.attr = new AttributeField(this.line[8]);
+		this.line[8] = this.attr.toString();
+	}
+	
+	// getter for string array
+	public String[] getLine(){
+		return this.line;
+	}
+	
+	// getter for attr
+	public AttributeField getAttr(){
+		return this.attr;
+	}
+}
 
-class SortGtfComparator implements Comparator {
+class SortGtfComparator implements Comparator<Object> {
 	
 	public int compare(Object o1, Object o2){
-		String[] line1 = (String[]) o1;
-		String[] line2 = (String[]) o2;
+		LineData l1 = (LineData) o1;
+		LineData l2 = (LineData) o2;
+		String[] line1 = l1.getLine();
+		String[] line2 = l2.getLine();
 		
 		// compare chromosome names
 		String seqname1 = (String) line1[0];
 		int seqCompare = seqname1.compareTo((String) line2[0]);
 		
 		// compare gene/tx ids
-		AttributeField attr1 = new AttributeField(line1[8]);
-		AttributeField attr2 = new AttributeField(line2[8]);
+		AttributeField attr1 = l1.getAttr();
+		AttributeField attr2 = l2.getAttr();
 		try{
 			int geneCompare = attr1.getGeneID().compareTo(attr2.getGeneID());
 			int txCompare = attr1.getTxID().compareTo(attr2.getTxID());
@@ -78,40 +102,47 @@ class SortGtfComparator implements Comparator {
 		} catch(Exception e){
 			System.out.println(Arrays.toString(line1));
 			System.out.println(Arrays.toString(line2));
-			//e.printStackTrace();
+			e.printStackTrace();
 			System.exit(1);
 			return 0;
 		}
-		
-
 	}
 }
 
+
+
+
 // Read in tab delimited gtf file
 class TabDelimReader {
-	ArrayList<String[]> lines = new ArrayList<String[]>();
-	
+	// ArrayList<String[]> lines = new ArrayList<String[]>();
+	ArrayList<LineData> lines = new ArrayList<LineData>();
 	public TabDelimReader(String fname){
 		try {
+			String[] tmp_line;
 			Scanner scan = new Scanner(new File(fname));
 			while(scan.hasNextLine()){
-				this.lines.add(scan.nextLine().split("\t"));
+				tmp_line = scan.nextLine().split("\t");  // hold line data temporarily
+				
+				// Ignore lines that are not "exon" features for a speed up in performance
+				if(tmp_line[2].equals("exon")) {
+					this.lines.add(new LineData(tmp_line));
+				}
 			}
 		}catch(Exception e){
 			e.printStackTrace();
 		}
 	}
 	
-	public ArrayList<String[]> getLines(){
+	public ArrayList<LineData> getLines(){
 		return this.lines;
 	}
 }
 
 
-/*
- * SortGtf is the main class that drives sorting of a GTF by [seqname, gene id, tx id, start, end]
- */
+// SortGtf is the main class that drives sorting of a GTF by [seqname, gene id, tx id, start, end]
 public class SortGtf {
+
+	// The join method acts just like python's string.join()
 	public static String join(String[] fields, String separator){
 	    StringBuilder stringBuilder = new StringBuilder();
 	    for(int i = 0; i < fields.length; i++){
@@ -132,8 +163,9 @@ public class SortGtf {
 			System.exit(1);
 		}
 		
+		// Read in and then sort the GTF
 		TabDelimReader inputReader = new TabDelimReader(args[0]);
-		ArrayList<String[]> lines = inputReader.getLines();
+		ArrayList<LineData> lines = inputReader.getLines();  // read in GTF (tab-separated)
 		Object[] data = lines.toArray();
 		Arrays.sort(data, new SortGtfComparator()); // sort the data
 		
@@ -143,8 +175,11 @@ public class SortGtf {
 			
 			String[] dataLine;
 			int i;
+			LineData tmp;
 			for(i=0;i<data.length;i++){
-				dataLine = (String[]) data[i];
+				// dataLine = (String[]) data[i];
+				tmp = (LineData) data[i];
+				dataLine = (String[]) tmp.getLine();
 				output.format("%s\n", SortGtf.join(dataLine, "\t"));
 			}
 			output.close();
