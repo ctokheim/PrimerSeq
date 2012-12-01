@@ -28,6 +28,7 @@ import utils
 import json
 import webbrowser
 import subprocess
+import custom_thread as ct
 
 # logging imports
 import traceback
@@ -204,7 +205,7 @@ class PlotDialog(wx.Dialog):
         self.plot_button.Disable()
 
         # draw isoforms
-        plot_thread = PlotThread(target=self.generate_plots, args=(self.target_id, plot_domain, self.bigwig, self.output_file))
+        plot_thread = ct.PlotThread(target=self.generate_plots, args=(self.target_id, plot_domain, self.bigwig, self.output_file))
 
     def generate_plots(self, tgt_id, plt_domain, bigwig, out_file):
         # generate isoform drawing
@@ -340,9 +341,9 @@ class SortGtfDialog(wx.Dialog):
         self.sort_button.Disable()
 
         # draw isoforms
-        sort_thread = UpdateThread(target=self.sort_gtf,
-                                   args=(self.gtf, self.output_gtf),
-                                   update='sort_update')
+        sort_thread = ct.UpdateThread(target=self.sort_gtf,
+                                      args=(self.gtf, self.output_gtf),
+                                      update='sort_update')
 
 
     def sort_update(self, msg):
@@ -459,9 +460,9 @@ class AddGeneIdsDialog(wx.Dialog):
                 'output': self.output_gtf}
 
         # draw isoforms
-        gene_thread = UpdateThread(target=gn.main,
-                                   args=(opts,),
-                                   update='add_update')
+        gene_thread = ct.UpdateThread(target=gn.main,
+                                      args=(opts,),
+                                      update='add_update')
 
     def add_gene_ids_update(self, msg):
         self.add_genes_button.SetLabel('Change Gene IDs')
@@ -855,16 +856,16 @@ class PrimerFrame(wx.Frame):
             dlg.Destroy()  # make sure to destroy if they hit cancel
         event.Skip()
 
-    def set_fasta(self, filename, filename_without_path, use_dlg = True):
+    def set_fasta(self, filename, filename_without_path, use_dlg=True):
         try:
             # set the fasta attribute
             if use_dlg:
                 self.load_progress = CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . .\n\nThis will take several minutes')
                 self.load_progress.Update(0)
             self.disable_load_buttons()  # disable loading other files while another is running
-            self.current_process = RunThread(target=SequenceFileDB,
-                                             args=(str(filename),),
-                                             attr='fasta', label='fasta_choice_label', label_text=str(filename_without_path))
+            self.current_process = ct.RunThread(target=SequenceFileDB,
+                                                args=(str(filename),),
+                                                attr='fasta', label='fasta_choice_label', label_text=str(filename_without_path))
         except:
             if use_dlg:
                 self.load_progress.Destroy()
@@ -893,8 +894,8 @@ class PrimerFrame(wx.Frame):
             self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
             self.load_progress.Update(0)
         self.disable_load_buttons()
-        self.current_process = RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
-                                         attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
+        self.current_process = ct.RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
+                                            attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
 
     def choose_bam_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         dlg = wx.FileDialog(self, message='Choose your bam files', defaultDir=os.getcwd(),
@@ -917,9 +918,9 @@ class PrimerFrame(wx.Frame):
             self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes')
             self.load_progress.Update(0)
         self.disable_load_buttons()
-        self.current_process = RunThread(target=self.process_bam,
-                                         args=(map(str, filenames), filenames_without_path, int(self.anchor_length_text_field.GetValue())),
-                                         attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
+        self.current_process = ct.RunThread(target=self.process_bam,
+                                            args=(map(str, filenames), filenames_without_path, int(self.anchor_length_text_field.GetValue())),
+                                            attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
 
     def run_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         # alert the user there is missing input
@@ -953,10 +954,10 @@ class PrimerFrame(wx.Frame):
         options['anchor_length'] = int(self.anchor_length_text_field.GetValue())
         options['job_id'] = 'jobs_id'
 
-        self.load_progress  = CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
+        self.load_progress = CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
         self.load_progress.Update(0)
         self.disable_load_buttons()
-        self.current_process = RunThread(target=primer.main, args=(options,))
+        self.current_process = ct.RunThread(target=primer.main, args=(options,))
 
         event.Skip()
 
