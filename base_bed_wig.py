@@ -41,7 +41,7 @@ class BaseBedWig(object):
     def extractBigRegion(self, chr, start, end, strand='+'):
         try:
             logging.debug('Extracting %s lines overlaping %s:%d-%d' % (self.ext, chr, start, end))
-            cmd = 'java -jar -Xmx512m %s/ExtractBigRegion.jar %s %s/%s/%s_%d_%d.%s %s %d %d true' % (
+            cmd = 'java -jar -Xmx512m "%s/ExtractBigRegion.jar" "%s" "%s/%s/%s_%d_%d.%s" %s %d %d true' % (
                 self.BIN_DIR, self.bbfile, self.TMP_DIR, self.ext, chr, start, end, self.ext, chr, start, end)
             logging.debug('CMD is [%s]' % cmd)
             subprocess.check_call(cmd, shell=True)  # call to ExtractBigRegion.jar
