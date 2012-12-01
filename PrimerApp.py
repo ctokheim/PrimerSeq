@@ -29,6 +29,7 @@ import json
 import webbrowser
 import subprocess
 import custom_thread as ct
+import custom_dialog as cd
 
 # logging imports
 import traceback
@@ -37,50 +38,6 @@ import datetime
 
 # begin wxGlade: extracode
 # end wxGlade
-
-
-class PlotThread(threading.Thread):
-    def __init__(self, target, args):
-        threading.Thread.__init__(self)
-        self.tar = target
-        self.args = args
-        self.start()
-
-    def run(self):
-        output = self.tar(*self.args)  # threaded call
-        wx.CallAfter(pub.sendMessage, "plot_update", ())
-
-class UpdateThread(threading.Thread):
-    def __init__(self, target, args, update=''):
-        threading.Thread.__init__(self)
-        self.update = update
-        self.tar = target
-        self.args = args
-        self.start()
-
-    def run(self):
-        output = self.tar(*self.args)  # threaded call
-        wx.CallAfter(pub.sendMessage, self.update, ())
-
-
-class RunThread(threading.Thread):
-    def __init__(self, target, args, attr='', label='', label_text=''):
-        threading.Thread.__init__(self)
-        self.label = label
-        self.label_text = label_text
-        self.tar = target
-        self.args = args
-        self.attr = attr
-        self.start()
-
-    def run(self):
-        output = self.tar(*self.args)  # threaded call
-
-        # Only for loading files. Not for when running PrimerSeq.
-        if self.attr and self.label and self.label_text:
-            wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
-        else:
-            wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
 
 
 class CustomDialog(wx.Dialog):
@@ -741,10 +698,10 @@ class PrimerFrame(wx.Frame):
         webbrowser.open('help/index.html')
 
     def add_genes_event(self, event):
-        AddGeneIdsDialog(self, -1, 'Add Valid Gene IDs')
+        cd.AddGeneIdsDialog(self, -1, 'Add Valid Gene IDs')
 
     def sort_gtf_event(self, event):
-        SortGtfDialog(self, -1, 'Sort GTF')
+        cd.SortGtfDialog(self, -1, 'Sort GTF')
 
     def primer3_event(self, event):
         '''
@@ -860,7 +817,7 @@ class PrimerFrame(wx.Frame):
         try:
             # set the fasta attribute
             if use_dlg:
-                self.load_progress = CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . .\n\nThis will take several minutes')
+                self.load_progress = cd.CustomDialog(self, -1, 'FASTA', 'Loading FASTA . . .\n\nThis will take several minutes')
                 self.load_progress.Update(0)
             self.disable_load_buttons()  # disable loading other files while another is running
             self.current_process = ct.RunThread(target=SequenceFileDB,
@@ -891,7 +848,7 @@ class PrimerFrame(wx.Frame):
     def set_gtf(self, filename, filename_without_path, use_dlg=True):
         # set the gtf attribute
         if use_dlg:
-            self.load_progress = CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
+            self.load_progress = cd.CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
             self.load_progress.Update(0)
         self.disable_load_buttons()
         self.current_process = ct.RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
@@ -915,7 +872,7 @@ class PrimerFrame(wx.Frame):
         # set the bam attribute
         self.bam = []  # clear bam attribute
         if use_dlg:
-            self.load_progress = CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes')
+            self.load_progress = cd.CustomDialog(self, -1, 'BAM', 'Loading BAM/SAM . . .\n\nThis may take several minutes')
             self.load_progress.Update(0)
         self.disable_load_buttons()
         self.current_process = ct.RunThread(target=self.process_bam,
@@ -954,7 +911,7 @@ class PrimerFrame(wx.Frame):
         options['anchor_length'] = int(self.anchor_length_text_field.GetValue())
         options['job_id'] = 'jobs_id'
 
-        self.load_progress = CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
+        self.load_progress = cd.CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
         self.load_progress.Update(0)
         self.disable_load_buttons()
         self.current_process = ct.RunThread(target=primer.main, args=(options,))
@@ -964,7 +921,7 @@ class PrimerFrame(wx.Frame):
     def plot_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
         try:
             if self.output:
-                PlotDialog(self, -1, 'Plot Results', self.output)
+                cd.PlotDialog(self, -1, 'Plot Results', self.output)
             else:
                 dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
                 dlg.ShowModal()
