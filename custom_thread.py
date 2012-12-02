@@ -47,3 +47,19 @@ class RunThread(threading.Thread):
         else:
             wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
 
+
+class RunPrimerSeqThread(threading.Thread):
+    def __init__(self, target, args, attr='', label='', label_text=''):
+        threading.Thread.__init__(self)
+        self.label = label
+        self.label_text = label_text
+        self.tar = target
+        self.args = args
+        self.attr = attr
+        self.start()
+
+    def run(self):
+        output = self.tar(*self.args)  # threaded call
+        wx.CallAfter(pub.sendMessage, "update_after_run", (self.args[0]['output'],))  # need to make this call more elegant
+
+

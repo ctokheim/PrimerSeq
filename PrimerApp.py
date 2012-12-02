@@ -30,6 +30,7 @@ import webbrowser
 import subprocess
 import custom_thread as ct
 import custom_dialog as cd
+import view_output as vo
 
 # logging imports
 import traceback
@@ -63,14 +64,10 @@ class PrimerFrame(wx.Frame):
         add_genes_id = wx.NewId()
         wxglade_tmp_menu.Append(add_genes_id, "Add Genes", "", wx.ITEM_NORMAL)
         wxglade_tmp_menu = wx.Menu()
-        plot_id = wx.NewId()
-        wxglade_tmp_menu.Append(plot_id, "Plot", "", wx.ITEM_NORMAL)
-        primer3_manual_id = wx.NewId()
-        wxglade_tmp_menu.Append(primer3_manual_id, "Primer3 Doc.", "", wx.ITEM_NORMAL)
-        self.primer_frame_menubar.Append(wxglade_tmp_menu, "View")
-        wxglade_tmp_menu = wx.Menu()
         help_id = wx.NewId()
         wxglade_tmp_menu.Append(help_id, "Help", "", wx.ITEM_NORMAL)
+        primer3_manual_id = wx.NewId()
+        wxglade_tmp_menu.Append(primer3_manual_id, "Primer3 Doc.", "", wx.ITEM_NORMAL)
         about_id = wx.NewId()
         wxglade_tmp_menu.Append(about_id, "&About", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "Help")
@@ -137,7 +134,6 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_help, id=help_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.quit_event, id=quit_id)  # used to specify id as -1
-        self.Bind(wx.EVT_MENU, self.plot_event, id=plot_id)
         self.Bind(wx.EVT_MENU, self.add_genes_event, id=add_genes_id)
         self.Bind(wx.EVT_MENU, self.sort_gtf_event, id=sort_id)
         self.Bind(wx.EVT_MENU, self.primer3_event, id=primer3_id)
@@ -152,6 +148,7 @@ class PrimerFrame(wx.Frame):
 
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
         pub.subscribe(self.update_after_dialog, "update")
+        pub.subscribe(self.update_after_run, "update_after_run")
 
         # check if the user has java installed
         try:
@@ -355,6 +352,12 @@ class PrimerFrame(wx.Frame):
             self.load_progress.Update(100)
             self.enable_load_buttons()
 
+    def update_after_run(self, msg):
+        self.load_progress.Destroy()
+        self.enable_load_buttons()
+        view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", msg.data[0])
+        view_output_frame.Show()
+
     def disable_load_buttons(self):
         self.choose_bam_button.Disable()
         self.choose_fasta_button.Disable()
@@ -508,11 +511,15 @@ class PrimerFrame(wx.Frame):
         self.load_progress = cd.CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
         self.load_progress.Update(0)
         self.disable_load_buttons()
-        self.current_process = ct.RunThread(target=primer.main, args=(options,))
+        self.current_process = ct.RunPrimerSeqThread(target=primer.main,
+                                                     args=(options,))
 
         event.Skip()
 
     def plot_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        '''
+        This method is deprecated since plotting is now done in the view output frame
+        '''
         try:
             if self.output:
                 cd.PlotDialog(self, -1, 'Plot Results', self.output)
