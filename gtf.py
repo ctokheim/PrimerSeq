@@ -38,7 +38,8 @@ def sort_gtf(file_name, output):
     with open(file_name) as handle:
         for gtf_line in csv.reader(handle, delimiter='\t'):
             gtf = Gtf(gtf_line)
-            gtf_list.append(gtf)
+            if gtf.feature.lower() == 'exon':
+                gtf_list.append(gtf)
     gtf_list.sort(key=lambda x: (x.seqname, x.attribute['gene_id'], x.attribute['transcript_id'], x.start, x.end))
 
     # write the contents back to a file
