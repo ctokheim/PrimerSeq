@@ -73,7 +73,9 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.Destroy()
 
     def on_insilico_pcr(self, event):
-        pass
+        dlg = cd.InSilicoPcrDialog(self, -1, "In Silico PCR",
+                                   self.output_filename)
+        dlg.ShowModal()
 
     def on_plot(self, event):
         cd.PlotDialog(self, -1, 'Plot Results', self.output_filename)

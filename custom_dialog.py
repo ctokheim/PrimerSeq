@@ -14,6 +14,7 @@ import draw
 import depth_plot
 import subprocess
 import gtf
+import webbrowser
 
 
 class CustomDialog(wx.Dialog):
@@ -284,6 +285,7 @@ class SortGtfDialog(wx.Dialog):
         self.sort_button.SetLabel('Sort')
         self.sort_button.Enable()
 
+
 class AddGeneIdsDialog(wx.Dialog):
     def __init__(self, parent, id, title):
         wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
@@ -403,6 +405,101 @@ class AddGeneIdsDialog(wx.Dialog):
         self.add_genes_button.Enable()
 
 
+class InSilicoPcrDialog(wx.Dialog):
+    def __init__(self, parent, id, title, output_file):
+        wx.Dialog.__init__(self, parent, id, title,
+                           size=wx.DefaultSize,
+                           style=wx.DEFAULT_DIALOG_STYLE)
+
+        self.parent = parent
+        self.output_file = output_file
+
+        # read in valid primer output
+        with open(self.output_file) as handle:
+            self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
+                                  csv.reader(handle, delimiter='\t'))[1:]
+            select_results = [', '.join(r[:2]) for r in self.results]
+
+        self.genome_label = wx.StaticText(self, -1, "Genome:  ")
+        self.panel_3 = wx.Panel(self, -1)
+        self.genome_text_field = wx.TextCtrl(self, -1, "Human")
+        genome_sizer = wx.GridSizer(1, 2, 0, 0)
+        genome_sizer.Add(self.genome_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        genome_sizer.Add(self.genome_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.assembly_label = wx.StaticText(self, -1, "Assembly:  ")
+        self.assembly_text_field = wx.TextCtrl(self, -1, "hg19")
+        assembly_sizer = wx.GridSizer(1, 2, 0, 0)
+        assembly_sizer.Add(self.assembly_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        assembly_sizer.Add(self.assembly_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.max_prod_size_label = wx.StaticText(self, -1, "Max Product size:  ")
+        self.max_prod_size_text_field = wx.TextCtrl(self, -1, "40000")
+        max_prod_size_sizer = wx.GridSizer(1, 2, 0, 0)
+        max_prod_size_sizer.Add(self.max_prod_size_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        max_prod_size_sizer.Add(self.max_prod_size_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.target_label = wx.StaticText(self, -1, "Select Target:  ")
+        self.target_combo_box = wx.ComboBox(self, -1, choices=select_results, style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
+        self.target_combo_box.SetMinSize((145, 27))
+        target_sizer = wx.GridSizer(1, 2, 0, 0)
+        target_sizer.Add(self.target_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        target_sizer.Add(self.target_combo_box, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.run_button = wx.Button(self, -1, 'Run In-Silico PCR')
+        self.cancel_button = wx.Button(self, -1, 'Cancel')
+        button_sizer.Add(self.run_button, 0, wx.ALIGN_RIGHT)
+        button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(genome_sizer, 0, wx.EXPAND, 10)
+        sizer.Add(assembly_sizer, 0, wx.EXPAND)
+        sizer.Add(max_prod_size_sizer, 0, wx.EXPAND)
+        sizer.Add(target_sizer, 0, wx.EXPAND)
+        sizer.Add(button_sizer, 0, wx.ALIGN_CENTER)
+        sizer.SetMinSize((300, 100))
+
+        self.Bind(wx.EVT_BUTTON, self.on_run, self.run_button)
+        self.Bind(wx.EVT_BUTTON, self.on_cancel, self.cancel_button)
+        self.SetSizer(sizer)
+        self.Show()
+
+        pub.subscribe(self.sort_update, "sort_update")
+
+    def on_cancel(self, event):
+        self.Destroy()
+        event.Skip()
+
+    def choose_output_gtf_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
+                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.output_gtf = filename
+            self.output_gtf_choice_label.SetLabel(filename_without_path)
+        else:
+            dlg.Destroy()
+
+    def choose_gtf_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
+                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()  # get the new filenames from the dialog
+            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.gtf = filename
+            self.gtf_choice_label.SetLabel(filename_without_path)
+        else:
+            dlg.Destroy()
+
+    def on_run(self, event):
+        webbrowser.open('http://genome.ucsc.edu/cgi-bin/hgPcr')
+
+
 class DisplayPlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, img_files):
         # call super constructor
@@ -422,3 +519,12 @@ class DisplayPlotDialog(wx.Dialog):
 
         self.SetSizerAndFit(sizer)
         self.Show()
+
+
+
+
+
+
+
+
+
