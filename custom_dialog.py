@@ -15,6 +15,7 @@ import depth_plot
 import subprocess
 import gtf
 import webbrowser
+import utils
 
 
 class CustomDialog(wx.Dialog):
@@ -408,8 +409,8 @@ class AddGeneIdsDialog(wx.Dialog):
 class InSilicoPcrDialog(wx.Dialog):
     def __init__(self, parent, id, title, output_file):
         wx.Dialog.__init__(self, parent, id, title,
-                           size=wx.DefaultSize,
-                           style=wx.DEFAULT_DIALOG_STYLE)
+                           size=(300, 140))
+                           #style=wx.DEFAULT_DIALOG_STYLE)
 
         self.parent = parent
         self.output_file = output_file
@@ -432,7 +433,7 @@ class InSilicoPcrDialog(wx.Dialog):
         assembly_sizer.Add(self.assembly_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         assembly_sizer.Add(self.assembly_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
         self.max_prod_size_label = wx.StaticText(self, -1, "Max Product size:  ")
-        self.max_prod_size_text_field = wx.TextCtrl(self, -1, "40000")
+        self.max_prod_size_text_field = wx.TextCtrl(self, -1, "4000")
         max_prod_size_sizer = wx.GridSizer(1, 2, 0, 0)
         max_prod_size_sizer.Add(self.max_prod_size_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         max_prod_size_sizer.Add(self.max_prod_size_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
@@ -462,42 +463,31 @@ class InSilicoPcrDialog(wx.Dialog):
         self.SetSizer(sizer)
         self.Show()
 
-        pub.subscribe(self.sort_update, "sort_update")
-
     def on_cancel(self, event):
         self.Destroy()
         event.Skip()
 
-    def choose_output_gtf_event(self, event):
-        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
-                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
-        # if they press ok
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()  # get the new filenames from the dialog
-            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
-            dlg.Destroy()  # best to do this sooner
-
-            self.output_gtf = filename
-            self.output_gtf_choice_label.SetLabel(filename_without_path)
-        else:
-            dlg.Destroy()
-
-    def choose_gtf_event(self, event):
-        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
-                            wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
-        # if they press ok
-        if dlg.ShowModal() == wx.ID_OK:
-            filename = dlg.GetPath()  # get the new filenames from the dialog
-            filename_without_path = dlg.GetFilename()  # only grab the actual filenames and none of the path information
-            dlg.Destroy()  # best to do this sooner
-
-            self.gtf = filename
-            self.gtf_choice_label.SetLabel(filename_without_path)
-        else:
-            dlg.Destroy()
-
     def on_run(self, event):
-        webbrowser.open('http://genome.ucsc.edu/cgi-bin/hgPcr')
+        # check user input, alert user if missing data
+        if not self.target_combo_box.GetValue() or not self.genome_text_field.GetValue() or not self.max_prod_size_text_field.GetValue() or not self.assembly_text_field.GetValue():
+            dlg = wx.MessageDialog(self, 'Please fill in all input fields.', style=wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            return
+
+        # find result which matches user selection
+        user_selected_id = str(self.target_combo_box.GetValue().split(',')[0])
+        for row in self.results:
+            if row[0] == user_selected_id:
+                upstream_seq = row[4]
+                downstream_seq = row[5]
+
+        # construct url
+        ucsc_url = utils.InSilicoPcrUrl(genome=str(self.genome_text_field.GetValue()),
+                                        assembly=str(self.assembly_text_field.GetValue()),
+                                        forward=upstream_seq,
+                                        reverse=downstream_seq,
+                                        max_size=int(self.max_prod_size_text_field.GetValue()))
+        webbrowser.open(ucsc_url.get_url())  # open url in webbrowser
 
 
 class DisplayPlotDialog(wx.Dialog):

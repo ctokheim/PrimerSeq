@@ -41,3 +41,31 @@ def merge_list_of_dicts(list_of_dicts):
             merged_dict[key] = merged_dict.get(key, 0) + tmp_dict.get(key, 0)
     return merged_dict
 
+
+class InSilicoPcrUrl(object):
+    '''
+    Construct url for In-Silico PCR. This class constructs all of
+    the GET submission parameters.
+    '''
+    def __init__(self, genome='', assembly='', target='',
+                 forward='', reverse='', max_size=4000, perfect=15,
+                 good=15, flip=0):
+        # initialize variables
+        self.genome = genome
+        self.assembly = assembly
+        self.target = target if target else self.assembly + 'Kg'
+        self.forward = forward
+        self.reverse = reverse
+        self.max_size = max_size
+        self.perfect = perfect
+        self.good = good
+        self.flip = flip
+
+        # base url for ucsc in-silico pcr
+        self.base_url = 'http://genome.ucsc.edu/cgi-bin/hgPcr'
+
+    def get_url(self):
+        get_params = '?org=%s&db=%s&wp_target=%s&wp_f=%s&wp_r=%s&wp_size=%s&wp_perfect=%s&wp_good=%s&boolshad.wp_flipReverse=%s&Submit=submit' % (
+                            self.genome, self.assembly, self.target, self.forward, self.reverse, str(self.max_size), str(self.perfect), str(self.good), str(self.flip))
+        return self.base_url + get_params
+

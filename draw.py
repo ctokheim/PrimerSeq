@@ -205,6 +205,7 @@ def calc_product_length(path, primer_coord):
     """
     Calculate product length based on the primer coordinates
     """
+    # calculate length between primers
     tmp_len = 0
     flag = True
     for start, end in path:
@@ -215,7 +216,12 @@ def calc_product_length(path, primer_coord):
             flag = False
         elif flag:
             tmp_len += end - start
-    return tmp_len
+
+    # add length between primers to actual length of sequnces for each primer
+    first_primer_len = primer_coord[0][1] - primer_coord[0][0]
+    second_primer_len = primer_coord[1][1] - primer_coord[1][0]
+    final_len = tmp_len + first_primer_len + second_primer_len
+    return final_len
 
 
 def main(tx_paths, counts, primer_coord, options):
