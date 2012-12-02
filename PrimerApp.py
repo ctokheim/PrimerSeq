@@ -108,7 +108,7 @@ class PrimerFrame(wx.Frame):
         self.psi_text_field = wx.TextCtrl(self.primer_notebook_pane_2, -1, ".95")
         self.psi_text_field.SetToolTip(wx.ToolTip("Valid: 0 < PSI <= 1"))
         # self.psi_help_info = wx.StaticText(self.primer_notebook_pane_2, -1, "0 < PSI <= 1")
-        self.type_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Exon Junction:")
+        self.type_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Splice Junction:")
         self.type_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, choices=["Annotation", "RNA-Seq + Annotation"], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
         # self.type_help_info = wx.StaticText(self.primer_notebook_pane_2, -1, "Novel Jcts?")
         self.gene_id_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Gene ID:")
