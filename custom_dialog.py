@@ -1,7 +1,10 @@
+# Note to self, pubsub import must immediately follow wx
 import wx
+from wx.lib.pubsub import setuparg1
+from wx.lib.pubsub import pub
+
 import custom_thread as ct
 import csv
-from wx.lib.pubsub import pub
 import os
 import utils
 import primer

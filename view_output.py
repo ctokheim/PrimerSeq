@@ -2,6 +2,7 @@ import wx
 import  wx.lib.mixins.listctrl as listmix
 import sys
 import csv
+import custom_dialog as cd
 
 
 class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl):
@@ -16,18 +17,22 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
     def __init__(self, parent, id, string, output_file_to_load):
         # wx.Dialog.__init__(self, parent, -1, style=wx.WANTS_CHARS)
         wx.Frame.__init__(self, parent, -1, string)
+        self.output_filename = output_file_to_load
+
         # ToolBar at the top of the window
         toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
         toolbar.SetToolBitmapSize(size=(24, 24))
-        toolbar.AddSimpleTool(wx.ID_OPEN, self.get_bmp(wx.ART_FILE_OPEN),
-            "Load", "Load a text file")
-        toolbar.AddSimpleTool(wx.ID_SAVE, self.get_bmp(wx.ART_FILE_SAVE),
-            "Save", "Save the text file")
-        toolbar.AddSimpleTool(wx.ID_ABOUT, self.get_bmp(wx.ART_INFORMATION),
-            "About", "About message")
+        plot_id = wx.NewId()
+        toolbar.AddSimpleTool(plot_id, self.get_bmp(wx.ART_NEW),
+                              "Create Plots", "Create new primer plots")
+        insilico_pcr_id = wx.NewId()
+        toolbar.AddSimpleTool(insilico_pcr_id, self.get_bmp(wx.ART_EXECUTABLE_FILE),
+                              "In Silico PCR", "Test primers with in silico PCR")
+        toolbar.AddSimpleTool(wx.ID_HELP, self.get_bmp(wx.ART_HELP),
+                              "Help", "Help Information")
         toolbar.AddSeparator()
         toolbar.AddSimpleTool(wx.ID_EXIT, self.get_bmp(wx.ART_QUIT),
-            "Exit", "Exit the program")
+                              "Exit", "Exit the program")
         toolbar.Realize()
         self.SetToolBar(toolbar)
 
@@ -54,10 +59,29 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.SetSizer(sizer)
         self.SetAutoLayout(True)
 
+        # bind toolbar icons
+        self.Bind(wx.EVT_TOOL, self.on_insilico_pcr, id=insilico_pcr_id)
+        self.Bind(wx.EVT_TOOL, self.on_plot, id=plot_id)
+        self.Bind(wx.EVT_TOOL, self.on_help, id=wx.ID_HELP)
+        self.Bind(wx.EVT_TOOL, self.on_exit, id=wx.ID_EXIT)
+
+    def on_help(self, event):
+        dlg = wx.MessageDialog(self, 'Instructions:\n\nUse the tool bar to validate that the primer design was successful.\n\nPress the Create Plots button to view how your data supports the primer design results\n\nPress the In Silico Pcr button to validate primer products', style=wx.OK)
+        dlg.ShowModal()
+
+    def on_exit(self, event):
+        self.Destroy()
+
+    def on_insilico_pcr(self, event):
+        pass
+
+    def on_plot(self, event):
+        cd.PlotDialog(self, -1, 'Plot Results', self.output_filename)
+
     def read_output_file(self, output_file):
         # define the columns
         self.list.InsertColumn(0, 'ID')
-        self.list.InsertColumn(1, 'Target Coordinate', wx.LIST_FORMAT_RIGHT)
+        self.list.InsertColumn(1, 'Target Coordinate')
         self.list.InsertColumn(2, 'Primer Coordinates')
         self.list.InsertColumn(3, 'Psi Target')
         self.list.InsertColumn(4, 'Upstream Primer')
@@ -111,6 +135,7 @@ class TestViewOutputApp(wx.App):
     def OnInit(self):
         wx.InitAllImageHandlers()
         view_output = ViewOutputFrame(None, -1, "", 'output.txt')
+        self.SetTopWindow(view_output)
         view_output.Show()
         return 1
 
