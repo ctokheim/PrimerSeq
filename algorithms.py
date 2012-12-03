@@ -76,6 +76,7 @@ class AllPaths(object):
     '''
     def __init__(self, sg, component, target, chr=None, strand=None):
         self.set_splice_graph(sg, component, target)
+        self.asm_component = self.component  # save the ASM components, self.components may get trimmed if primers aren't placed on first and last exon
         self.chr = chr
         self.strand = strand
 

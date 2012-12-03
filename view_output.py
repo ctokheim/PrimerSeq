@@ -95,6 +95,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.list.InsertColumn(10, 'Upstream Psi')
         self.list.InsertColumn(11, 'Downstream Exon Coord.')
         self.list.InsertColumn(12, 'Downstream Psi')
+        self.list.InsertColumn(13, 'ASM Region')
 
         # get information from results file
         with open(output_file) as handle:

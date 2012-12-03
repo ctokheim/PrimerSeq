@@ -265,7 +265,6 @@ class ExonSeek(object):
         self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
-        print 'PATHS:', paths
 
         # my_subgraph = self.graph.subgraph(self.component)
         # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)

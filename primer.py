@@ -242,11 +242,15 @@ def primer3(options, primer3_options):
                 inclusion_size = ';'.join(inclusion_size_list)
                 left_seq = Sequence(primer3_dict['PRIMER_LEFT_0_SEQUENCE'], 'left')
                 right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
+                asm_region = '%s:%d-%d' % (flanking_info[z][ALL_PATHS].chr,
+                                           flanking_info[z][ALL_PATHS].asm_component[0][0],
+                                           flanking_info[z][ALL_PATHS].asm_component[-1][1])
 
                 # append results to output_list
                 tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], str(left_seq).upper(), str(right_seq).upper(),
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
-                       flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET], flanking_info[z][PSI_DOWNSTREAM]]
+                       flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET],
+                       flanking_info[z][PSI_DOWNSTREAM], asm_region]
                 output_list.append(tmp)
 
     # write output information
@@ -254,7 +258,7 @@ def primer3(options, primer3_options):
     with open(options['output'], 'wb') as outputfile_tab:
         # define csv header
         header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'upstream primer', 'downstream primer', 'average TM',
-                  'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream']
+                  'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream', 'ASM Region']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, dialect='excel', delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
     # shutil.copy(config_options['tmp'] + '/' + jobs_ID + '.txt', options['output'])  # copy file to output destination
