@@ -146,7 +146,8 @@ def get_from_gtf_using_gene_name(gtf, strand, chr, start, end):
     for gene_key in gtf[chr]:
         if gtf[chr][gene_key]['strand'] == strand and gtf[chr][gene_key]['start'] <= start and gtf[chr][gene_key]['end'] >= end:
             for ex in gtf[chr][gene_key]['exons']:
-                if start >= ex[0] and end <= ex[1]:
+                # if start >= ex[0] and end <= ex[1]:
+                if start == ex[0] and end == ex[1]:
                     gtf[chr][gene_key]['target'] = ex  # this line needed for compatability reasons
                     return gtf[chr][gene_key]
     assert 1 == 0, "Did not find an appropriate gtf annotation"  # not the most elegant way to say I don't expect to get to this line
@@ -172,7 +173,8 @@ def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000)
     target_graph = None
     for weak_subgraph in weakly_con_subgraphs:
         for node_start, node_end in weak_subgraph.nodes():
-            if node_start <= start and node_end >= end:
+            # if node_start <= start and node_end >= end:
+            if node_start == start and node_end == end:
                 target_graph = weak_subgraph
                 start, end = node_start, node_end
     assert target_graph is not None, 'Target was not contained in a tx'
@@ -399,13 +401,17 @@ def main(options, args_output='tmp/debug.json'):
                                                splice_graph,
                                                genome,
                                                name)
-            # edit target psi value
-            tmp_all_paths = tmp[-4]  # CAREFUL the index for the AllPaths object may change
-            tmp[2] = calculate_target_psi(gene_dict['target'], single_bam_splice_graphs, tmp_all_paths.component)  # CAREFUL index for psi_target may change
+
+            # Error msgs are of length one, so only do psi calculations for
+            # non-error msgs
+            if len(tmp) > 1:
+                # edit target psi value
+                tmp_all_paths = tmp[-4]  # CAREFUL the index for the AllPaths object may change
+                tmp[2] = calculate_target_psi(gene_dict['target'], single_bam_splice_graphs, tmp_all_paths.component)  # CAREFUL index for psi_target may change
 
             # append result to output list
             output.append(tmp)
-        except (AssertionError, FloatingPointError):
+        except (AssertionError,):
             t, v, trace = sys.exc_info()
             output.append([str(v)])  # just append assertion msg
 

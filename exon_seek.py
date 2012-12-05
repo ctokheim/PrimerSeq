@@ -86,10 +86,10 @@ class ExonSeek(object):
         # since there is two components I need two subgraphs/paths. One for
         # before and after the target exon (before/after are defined by
         # chromosome position)
-        before_all_paths = algs.AllPaths(self.splice_graph, self.before_component, self.target, self.splice_graph.chr)
+        before_all_paths = algs.AllPaths(self.splice_graph, before_component, self.target, self.splice_graph.chr)
         before_all_paths.trim_tx_paths()
         before_paths, before_counts = before_all_paths.estimate_counts()
-        after_all_paths = algs.AllPaths(self.splice_graph, self.after_component, self.target, self.splice_graph.chr)
+        after_all_paths = algs.AllPaths(self.splice_graph, after_component, self.target, self.splice_graph.chr)
         after_all_paths.trim_tx_paths()
         after_paths, after_counts = after_all_paths.estimate_counts()
         # my_before_subgraph = self.graph.subgraph(before_component)
@@ -121,7 +121,7 @@ class ExonSeek(object):
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
-        paths, counts = self.before_all_paths.estimate_counts()
+        paths, counts = self.all_paths.estimate_counts()  # used to be self.before_all_paths
         self.save_path_info(paths, counts)
 
     def no_biconnected_case(self):

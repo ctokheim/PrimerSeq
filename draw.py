@@ -231,7 +231,7 @@ def main(tx_paths, counts, primer_coord, options):
     matplotlib.rcParams['ytick.labelsize'] = 13
     #matplotlib.rc("lines", linewidth=optionDict["thick"])
 
-    tx_paths, counts, num_of_txs, percent_estimate = retrieve_top(tx_paths, counts)
+    tx_paths, counts, num_of_txs, percent_estimate = retrieve_top(tx_paths, counts, n=10)
 
     # add primer to drawing
     num_of_drawings = num_of_txs + 1

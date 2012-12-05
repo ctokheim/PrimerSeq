@@ -220,7 +220,15 @@ def read_count_em(bcc_paths, sub_graph):
     while epsilon > THRESHOLD and counter < MAX_ITERS:
         # E-step
         for i, row in enumerate(Y):
-            Y[i] = row * p / row.dot(p) * read_counts[i]
+            try:
+                if np.sum(row) != 0:
+                    Y[i] = row * p / row.dot(p) * read_counts[i]
+            except:
+                print counter
+                print row
+                print p
+                print row.dot(p)
+                raise
 
         # M-step
         p_new = np.sum(Y, axis=0) / total_counts
@@ -229,6 +237,7 @@ def read_count_em(bcc_paths, sub_graph):
         epsilon = np.sum(np.abs(p_new - p))
 
         p = p_new  # update probabilities
+        p = p * (p > THRESHOLD)  # call effectively small probabilities zero to avoid numerical underflow errors
         counter += 1  # increment the iteration counter
 
     tx_counts = total_counts * p
