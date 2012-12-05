@@ -3,6 +3,8 @@ PrimerSeq
 
 (c) 2012 Collin Tokheim GPLv3
 
+http://primerseq.sf.net
+
 Design RT-PCR primers using RNA-Seq data. 
 Annotations often contain isoforms that only occur in 
 certain tissues or cells. PrimerSeq tackles this issue by weighting 
