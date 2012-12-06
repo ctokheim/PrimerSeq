@@ -53,13 +53,16 @@ class InSilicoPcrUrl(object):
         # initialize variables
         self.genome = genome
         self.assembly = assembly
-        self.target = target if target else self.assembly + 'Kg'
         self.forward = forward
         self.reverse = reverse
         self.max_size = max_size
         self.perfect = perfect
         self.good = good
         self.flip = flip
+        if target == 'Genome':
+            self.target = 'genome'
+        elif target == 'UCSC Genes':
+            self.target = self.assembly + 'Kg'
 
         # base url for ucsc in-silico pcr
         self.base_url = 'http://genome.ucsc.edu/cgi-bin/hgPcr'

@@ -411,7 +411,7 @@ class AddGeneIdsDialog(wx.Dialog):
 class InSilicoPcrDialog(wx.Dialog):
     def __init__(self, parent, id, title, output_file):
         wx.Dialog.__init__(self, parent, id, title,
-                           size=(300, 140))
+                           size=(300, 165))
                            #style=wx.DEFAULT_DIALOG_STYLE)
 
         self.parent = parent
@@ -434,13 +434,19 @@ class InSilicoPcrDialog(wx.Dialog):
         assembly_sizer = wx.GridSizer(1, 2, 0, 0)
         assembly_sizer.Add(self.assembly_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         assembly_sizer.Add(self.assembly_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        self.type_label = wx.StaticText(self, -1, "Select Type:  ")
+        self.type_combo_box = wx.ComboBox(self, -1, 'UCSC Genes', choices=['UCSC Genes', 'Genome'], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
+        self.type_combo_box.SetMinSize((145, 27))
+        type_sizer = wx.GridSizer(1, 2, 0, 0)
+        type_sizer.Add(self.type_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        type_sizer.Add(self.type_combo_box, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
         self.max_prod_size_label = wx.StaticText(self, -1, "Max Product size:  ")
         self.max_prod_size_text_field = wx.TextCtrl(self, -1, "4000")
         max_prod_size_sizer = wx.GridSizer(1, 2, 0, 0)
         max_prod_size_sizer.Add(self.max_prod_size_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         max_prod_size_sizer.Add(self.max_prod_size_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
         self.target_label = wx.StaticText(self, -1, "Select Target:  ")
-        self.target_combo_box = wx.ComboBox(self, -1, choices=select_results, style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
+        self.target_combo_box = wx.ComboBox(self, -1, select_results[0], choices=select_results, style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
         self.target_combo_box.SetMinSize((145, 27))
         target_sizer = wx.GridSizer(1, 2, 0, 0)
         target_sizer.Add(self.target_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
@@ -455,6 +461,7 @@ class InSilicoPcrDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(genome_sizer, 0, wx.EXPAND, 10)
         sizer.Add(assembly_sizer, 0, wx.EXPAND)
+        sizer.Add(type_sizer, 0, wx.EXPAND)
         sizer.Add(max_prod_size_sizer, 0, wx.EXPAND)
         sizer.Add(target_sizer, 0, wx.EXPAND)
         sizer.Add(button_sizer, 0, wx.ALIGN_CENTER)
@@ -471,7 +478,7 @@ class InSilicoPcrDialog(wx.Dialog):
 
     def on_run(self, event):
         # check user input, alert user if missing data
-        if not self.target_combo_box.GetValue() or not self.genome_text_field.GetValue() or not self.max_prod_size_text_field.GetValue() or not self.assembly_text_field.GetValue():
+        if not self.target_combo_box.GetValue() or not self.type_combo_box.GetValue or not self.genome_text_field.GetValue() or not self.max_prod_size_text_field.GetValue() or not self.assembly_text_field.GetValue():
             dlg = wx.MessageDialog(self, 'Please fill in all input fields.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return
@@ -488,6 +495,7 @@ class InSilicoPcrDialog(wx.Dialog):
                                         assembly=str(self.assembly_text_field.GetValue()),
                                         forward=upstream_seq,
                                         reverse=downstream_seq,
+                                        target=str(self.type_combo_box.GetValue()),
                                         max_size=int(self.max_prod_size_text_field.GetValue()))
         webbrowser.open(ucsc_url.get_url())  # open url in webbrowser
 
