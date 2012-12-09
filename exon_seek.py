@@ -8,6 +8,8 @@ import algorithms as algs
 import logging
 import json
 import sequence_interval
+import utils
+
 
 class ExonSeek(object):
     '''
@@ -26,7 +28,7 @@ class ExonSeek(object):
         self.target = target  # (start, end)
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
-            assert 1==0, 'The target was not found in the graph (likely a bug in the code)'
+            raise utils.PrimerSeqError('The target was not found in the graph')
 
         self.strand = splice_graph.strand  # convenience variable
         self.splice_graph = splice_graph

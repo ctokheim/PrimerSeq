@@ -42,6 +42,14 @@ def merge_list_of_dicts(list_of_dicts):
     return merged_dict
 
 
+class PrimerSeqError(Exception):
+    """
+    Used to uniquely catch this exception so that only one primer
+    fails to be designed
+    """
+    pass
+
+
 class InSilicoPcrUrl(object):
     '''
     Construct url for In-Silico PCR. This class constructs all of
