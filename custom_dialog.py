@@ -16,6 +16,7 @@ import subprocess
 import gtf
 import webbrowser
 import utils
+import logging
 
 
 class CustomDialog(wx.Dialog):
@@ -269,11 +270,12 @@ class SortGtfDialog(wx.Dialog):
             dlg.Destroy()
 
     def sort_gtf(self, infile, outfile):
-        try:
-            gtf.sort_gtf(infile, outfile)
-        except MemoryError:
-            cmd = 'java -jar -Xmx2048m "bin/SortGtf.jar" "%s" "%s"' % (infile, outfile)
-            subprocess.check_call(cmd, shell=True)
+        # try:
+        #    gtf.sort_gtf(infile, outfile)
+        # except MemoryError:
+        cmd = 'java -jar -Xmx1024m "bin/SortGtf.jar" "%s" "%s"' % (infile, outfile)
+        logging.debug('Sort GTF cmd: ' + cmd)
+        subprocess.check_call(cmd, shell=True)
 
     def sort_button_event(self, event):
         self.sort_button.SetLabel('Sorting . . .')
