@@ -503,7 +503,8 @@ class InSilicoPcrDialog(wx.Dialog):
 class DisplayPlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, img_files):
         # call super constructor
-        wx.Dialog.__init__(self, parent, id, title, style=wx.DEFAULT_DIALOG_STYLE ^ wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, parent, id, title,)
+                           # style=wx.DEFAULT_DIALOG_STYLE ^ wx.RESIZE_BORDER)
 
         # containers for imgs
         depth_png = wx.Image(img_files[0], wx.BITMAP_TYPE_ANY).ConvertToBitmap()

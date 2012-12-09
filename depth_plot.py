@@ -102,8 +102,13 @@ def generate_plot(ax, bw, chr, start, stop, options):
     depth_dict = wig_obj.get_annotation()
     if options['step'] != 1: depth_dict, tmp_start, tmp_stop = scale_depth(depth_dict, start, stop, options['step'])
     max_count = max(depth_dict.itervalues()) if len(list(depth_dict.itervalues())) > 0 else 1
-    depth_counts = list(it.chain.from_iterable([key] * depth_dict[key] for key in depth_dict)) if depth_dict else [0]
-    ax.hist(depth_counts, range(tmp_start, tmp_stop + 1), facecolor='k')
+    # depth_counts = list(it.chain.from_iterable([key] * depth_dict[key] for key in depth_dict)) if depth_dict else [0]
+    # ax.hist(depth_counts, range(tmp_start, tmp_stop + 1), facecolor='k')
+    ax.hist(map(lambda x: (x[0] + x[1]) / 2., depth_dict.keys()),
+            # range(tmp_start, tmp_stop + 1),
+            wig_obj.bins,
+            weights=depth_dict.values(),
+            facecolor='k')
     return max_count, tmp_start, tmp_stop
 
 
