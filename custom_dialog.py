@@ -16,7 +16,7 @@ import subprocess
 import gtf
 import webbrowser
 import utils
-import logging
+import ConfigParser
 
 
 class CustomDialog(wx.Dialog):
@@ -273,7 +273,11 @@ class SortGtfDialog(wx.Dialog):
         # try:
         #    gtf.sort_gtf(infile, outfile)
         # except MemoryError:
-        cmd = 'java -jar -Xmx1024m "bin/SortGtf.jar" "%s" "%s"' % (infile, outfile)
+        my_config = ConfigParser.ConfigParser()
+        my_config.read('PrimerSeq.cfg')
+        config_options = dict(my_config.items('memory'))
+
+        cmd = 'java -jar -Xmx%sm "bin/SortGtf.jar" "%s" "%s"' % (config_options['sort'], infile, outfile)
         logging.debug('Sort GTF cmd: ' + cmd)
         subprocess.check_call(cmd, shell=True)
 
