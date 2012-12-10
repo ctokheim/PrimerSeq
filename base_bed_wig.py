@@ -19,6 +19,8 @@ class BaseBedWig(object):
         cfg_options = dict(cfg.items('directory'))
         self.TMP_DIR = cfg_options['tmp']
         self.BIN_DIR = 'bin'
+        cfg_options = dict(cfg.items('memory'))
+        self.BIG_MEM = cfg_options['big']
         self.ext = ext  # the file extension (either "bed" or "wig")
         if not os.path.exists(self.TMP_DIR + '/' + self.ext):
             os.mkdir(self.TMP_DIR + '/' + self.ext)  # mkdir in case it doesn't exist
@@ -41,8 +43,8 @@ class BaseBedWig(object):
     def extractBigRegion(self, chr, start, end, strand='+'):
         try:
             logging.debug('Extracting %s lines overlaping %s:%d-%d' % (self.ext, chr, start, end))
-            cmd = 'java -jar -Xmx512m "%s/ExtractBigRegion.jar" "%s" "%s/%s/%s_%d_%d.%s" %s %d %d true' % (
-                self.BIN_DIR, self.bbfile, self.TMP_DIR, self.ext, chr, start, end, self.ext, chr, start, end)
+            cmd = 'java -jar -Xmx%sm "%s/ExtractBigRegion.jar" "%s" "%s/%s/%s_%d_%d.%s" %s %d %d true' % (
+                self.BIG_MEM, self.BIN_DIR, self.bbfile, self.TMP_DIR, self.ext, chr, start, end, self.ext, chr, start, end)
             logging.debug('CMD is [%s]' % cmd)
             subprocess.check_call(cmd, shell=True)  # call to ExtractBigRegion.jar
             self.strand, self.chr, self.start, self.end = strand, chr, start, end  # hold on to target information just in case

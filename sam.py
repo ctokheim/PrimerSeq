@@ -22,6 +22,9 @@ cfg_options = dict(cfg.items('directory'))
 TMP_DIR = cfg_options['tmp'] + '/sam/'  # directory to dump intermediate sam files
 BIN_DIR = 'bin/'  # directory of jar files
 JCT_DIR = cfg_options['tmp'] + '/jct/'  # directory for .jct files
+cfg_options = dict(cfg.items('memory'))
+SAM_MEM = cfg_options['sam']
+BAM_MEM = cfg_options['bam']
 
 
 class Sam(object):
@@ -58,7 +61,7 @@ class Sam(object):
             logging.debug('Converting %s to a sorted BAM file . . .' % myPath)
             beginTime = time.time()
             sorted_bam_path = myPath[:-4] + '.sorted.bam'
-            cmd = 'java -jar -Xmx1024m "%sConvert2SortedBam.jar" "%s" "%s"' % (BIN_DIR, myPath, sorted_bam_path)
+            cmd = 'java -jar -Xmx%sm "%sConvert2SortedBam.jar" "%s" "%s"' % (BAM_MEM, BIN_DIR, myPath, sorted_bam_path)
             subprocess.check_call(cmd, shell=True)
             endTime = time.time()
             runTime = endTime - beginTime
@@ -90,10 +93,6 @@ class Sam(object):
                 start, stop, count = int(start), int(stop), int(count)  # convert to int
 
                 # add counts to jct_dict
-                #jct_dict.setdefault(chr, {})
-                #jct_dict[chr].setdefault(start, {})
-                #jct_dict[chr][start].setdefault(stop, 0)
-                #jct_dict[chr][start][stop] += count
                 jct_dict[(chr, start, stop)] = count  # this simplifies the key comparted to a multi-level dict
 
         return jct_dict
@@ -124,8 +123,8 @@ class Sam(object):
             start += 1  # extraction is done in 1-based coordinates
             logging.debug('Extracting reads for %s:%d-%d' % (chr, start, end))
             tmp_sam_path = '%s%s_%d_%d.sam' % (TMP_DIR, chr, start, end)  # path to tmp sam file with region specific reads
-            cmd = 'java -jar -Xmx1024m "%sExtractSamRegion.jar" "%s" "%s" %s %d %d' % (
-                BIN_DIR, self.path, tmp_sam_path, chr, start, end)
+            cmd = 'java -jar -Xmx%sm "%sExtractSamRegion.jar" "%s" "%s" %s %d %d' % (
+                SAM_MEM, BIN_DIR, self.path, tmp_sam_path, chr, start, end)
             subprocess.check_call(cmd, shell=True)
             logging.debug('Finished getting sam reads. Parsing jcts . . .')
             junctionDict = self.__get_sam_jct(tmp_sam_path)
