@@ -86,7 +86,11 @@ class Sam(object):
 
     def __jct_to_dict(self, file_name, jct_dict={}):
         """Reads jct counts created from jctCounts.py"""
-        with open(file_name) as handle:
+        # with open(file_name, 'r') as test:
+        #    print test.read()
+
+        jct_dict={}
+        with open(file_name, 'r') as handle:
             for line in handle:
                 lineSplit = line.split('\t')
                 chr, start, stop, count = lineSplit  # rename line columns something meaningful
@@ -103,6 +107,7 @@ class Sam(object):
         """
         logging.debug('Reading junctions from %s' % samFile)
         jctOutputFile = JCT_DIR + samFile.split('/')[-1][:-4] + '.jct'  # use .jct file for jct count files
+        if os.path.exists(jctOutputFile): os.remove(jctOutputFile)
 
         # specify options for jct_counts.py main function
         options = {}
@@ -123,6 +128,7 @@ class Sam(object):
             start += 1  # extraction is done in 1-based coordinates
             logging.debug('Extracting reads for %s:%d-%d' % (chr, start, end))
             tmp_sam_path = '%s%s_%d_%d.sam' % (TMP_DIR, chr, start, end)  # path to tmp sam file with region specific reads
+            if os.path.exists(tmp_sam_path): os.remove(tmp_sam_path)
             cmd = 'java -jar -Xmx%sm "%sExtractSamRegion.jar" "%s" "%s" %s %d %d' % (
                 SAM_MEM, BIN_DIR, self.path, tmp_sam_path, chr, start, end)
             subprocess.check_call(cmd, shell=True)
