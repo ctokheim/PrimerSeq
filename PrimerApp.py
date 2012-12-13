@@ -52,6 +52,8 @@ class PrimerFrame(wx.Frame):
         wxglade_tmp_menu = wx.Menu()
         load_ex_id = wx.NewId()
         wxglade_tmp_menu.Append(load_ex_id, "Load Ex.", "", wx.ITEM_NORMAL)
+        reset_id = wx.NewId()
+        wxglade_tmp_menu.Append(reset_id, "Reset", "", wx.ITEM_NORMAL)
         quit_id = wx.NewId()
         wxglade_tmp_menu.Append(quit_id, "Quit", "", wx.ITEM_NORMAL)
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "File")
@@ -133,6 +135,7 @@ class PrimerFrame(wx.Frame):
 
         self.Bind(wx.EVT_MENU, self.on_help, id=help_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
+        self.Bind(wx.EVT_MENU, self.on_reset, id=reset_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.quit_event, id=quit_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.add_genes_event, id=add_genes_id)
         self.Bind(wx.EVT_MENU, self.sort_gtf_event, id=sort_id)
@@ -281,6 +284,26 @@ class PrimerFrame(wx.Frame):
         self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
         self.set_gtf('example/example.chr18.gtf', 'example.chr18.gtf', use_dlg=False)
         self.coordinates_text_field.SetValue('-chr18:9562919-9563044')
+
+    def on_reset(self, event):
+        """
+        Event handler for user reseting input if a fail/crash happened.
+        """
+        try:
+            if self.load_progress:
+                self.load_progress.Destroy()
+                self.load_progress = None
+        except AttributeError:
+            pass
+        self.gtf = []
+        self.bam = []
+        self.fasta = None
+        self.bam_choice_label.SetLabel('None')
+        self.fasta_choice_label.SetLabel('None')
+        self.gtf_choice_label.SetLabel('None')
+        self.output_choice_label.SetLabel('None')
+        self.coordinates_text_field.SetValue('')
+        self.enable_load_buttons()  # enable buttons
 
     def on_help(self, event):
         """
