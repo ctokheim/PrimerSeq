@@ -34,15 +34,17 @@ def main(options):
         skips = map(int, skip_search.findall(line[CIGAR]))
         if not len(skips): continue  # skip if not junction
         incs = map(int, inc_search.findall(line[CIGAR]))
-        if not reduce(lambda x, y: x and x >= options['anchor'], incs): continue  # small anchor length
+        valid_anchor_lengths = map(lambda x: x >= options['anchor'], incs)
+        # if not reduce(lambda x, y: x and x >= options['anchor'], incs): continue  # small anchor length
 
         # add 1 to weights
         start_pos = int(line[POS]) - 1  # init to start pos of mapped read
         for i in range(len(incs) - 1):
             jct_start = start_pos + incs[i]
             jct_stop = jct_start + skips[i]
-            weights.setdefault((line[RNAME], jct_start, jct_stop), 1)
-            weights[(line[RNAME], jct_start, jct_stop)] += 1
+            if valid_anchor_lengths[i] and valid_anchor_lengths[i+1]:
+                weights.setdefault((line[RNAME], jct_start, jct_stop), 0)
+                weights[(line[RNAME], jct_start, jct_stop)] += 1
             start_pos = jct_stop
     file_input.close()  # close input
 
