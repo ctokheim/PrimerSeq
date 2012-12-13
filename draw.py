@@ -6,6 +6,7 @@ Created on Feb 8, 2012
 # external dependencies
 import numpy as np
 import matplotlib
+matplotlib.use('Agg') 
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -230,6 +231,8 @@ def main(tx_paths, counts, primer_coord, options):
     matplotlib.rcParams['xtick.labelsize'] = 13
     matplotlib.rcParams['ytick.labelsize'] = 13
     #matplotlib.rc("lines", linewidth=optionDict["thick"])
+    plt.close()  # try to make sure previous is closed
+    plt.close('all')  # try to make sure previous is closed
 
     tx_paths, counts, num_of_txs, percent_estimate = retrieve_top(tx_paths, counts, n=10)
 
@@ -267,6 +270,7 @@ def main(tx_paths, counts, primer_coord, options):
     fig.subplots_adjust(hspace=.00, wspace=.00)  # change subplot spacing
     # plt.show()
     plt.savefig(options['output'])
+    plt.clf()
 
 
 if __name__ == '__main__':

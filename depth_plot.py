@@ -1,5 +1,5 @@
 # graphing imports
-# import matplotlib
+import matplotlib
 # matplotlib.use('Agg')  # prevent figure pop-ups
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker

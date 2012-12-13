@@ -35,7 +35,6 @@ import networkx as nx
 import itertools as it
 import argparse
 import algorithms as algs
-import matplotlib.pyplot as plt
 import gtf
 from utils import get_chr, get_start_pos, get_end_pos, get_pos, merge_list_of_dicts
 import utils
