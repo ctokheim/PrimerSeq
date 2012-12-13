@@ -1,6 +1,7 @@
 from base_bed_wig import BaseBedWig
 import csv
 from collections import OrderedDict
+import logging
 
 
 class Wig(BaseBedWig):
@@ -8,7 +9,7 @@ class Wig(BaseBedWig):
     Reads in depth information from big wig file
     """
     def load_wig_file(self):
-        # depth_dict = {}
+        logging.debug('Extracting wig file from ' + self.current_file + ' . . .')
         depth_dict = OrderedDict()
         self.bins = []  # defines the histogram bins for plotting
         with open(self.current_file) as handle:
@@ -20,3 +21,4 @@ class Wig(BaseBedWig):
                 self.bins += [interval_start, interval_end]
         self.annotation = depth_dict
         self.bins = sorted(list(set(self.bins)))
+        logging.debug('Finished extracting wig file.')
