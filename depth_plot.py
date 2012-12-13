@@ -133,7 +133,7 @@ def read_depth_plot(options):
         iterable = axes.flat
     for i, ax in enumerate(iterable):
         #ax.locator_params(nbins=2)
-        ax.yaxis.set_label_text('Counts')
+        ax.yaxis.set_label_text('')
         # set bg
         ax.patch.set_facecolor(gray)
         ax.patch.set_edgecolor(gray)
