@@ -121,13 +121,10 @@ class SpliceGraph(object):
         for i in range(len(sorted_nodes) - 1):
             for j in range(i + 1, len(sorted_nodes)):
                 try:
-                    # tmpChr = get_chr(exon_forms[sorted_nodes[i]])
                     start = sorted_nodes[i][1]   # get_start_pos(exon_forms[sorted_nodes[i]])
                     end = sorted_nodes[j][0]    # get_end_pos(exon_forms[sorted_nodes[j]])
-                    if weights[self.chr][start][end] >= self.READ_THRESHOLD:
+                    if weights[(self.chr, start, end)] >= self.READ_THRESHOLD:
                         self.graph.add_edge(sorted_nodes[i], sorted_nodes[j])
-                        #self.graph[sorted_nodes[i]][sorted_nodes[
-                        #    j]]['weight'] = weights[self.chr][start][end]
                         self.graph[sorted_nodes[i]][sorted_nodes[
                             j]]['weight'] = weights[(self.chr, start, end)]
                 except KeyError:
