@@ -217,7 +217,7 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
                 downstream = component[0]
 
             # get possible lengths
-            all_paths = algs.AllPaths(graph, component, target,
+            all_paths = algs.AllPaths(sGraph, component, target,
                                       chr=sGraph.chr, strand=sGraph.strand)
             all_paths.set_all_path_lengths()
             all_paths.set_all_path_coordinates()
@@ -229,9 +229,9 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
                 upstream_seq, target_seq, downstream_seq =  \
                     -upstream_seq, -target_seq, -downstream_seq
 
-            return [sGraph.strand, name[1:],
-                    sGraph.chr + ':' + '-'.join(map(str, upstream)),
-                    sGraph.chr + ':' + '-'.join(map(str, downstream)),
+            return [sGraph.strand, name[1:], 'NA',
+                    sGraph.chr + ':' + '-'.join(map(str, upstream)), '1.0',
+                    sGraph.chr + ':' + '-'.join(map(str, downstream)), '1.0',
                     all_paths, str(upstream_seq).upper(),
                     str(target_seq).upper(), str(downstream_seq).upper()]
     return [name + ' was not found in a biconnected component']
