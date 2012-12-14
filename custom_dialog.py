@@ -425,7 +425,7 @@ class AddGeneIdsDialog(wx.Dialog):
 class InSilicoPcrDialog(wx.Dialog):
     def __init__(self, parent, id, title, output_file):
         wx.Dialog.__init__(self, parent, id, title,
-                           size=(300, 165))
+                           size=(300, 175))
                            #style=wx.DEFAULT_DIALOG_STYLE)
 
         self.parent = parent
