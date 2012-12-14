@@ -208,21 +208,28 @@ def calc_product_length(path, primer_coord):
     """
     # calculate length between primers
     tmp_len = 0
+    first_exon_primer, second_exon_primer = False, False  # flag for telling if a primer was contained within an exon
     flag = False
     for start, end in path:
         if start <= primer_coord[0][0] and end >= primer_coord[0][1]:
             tmp_len += end - primer_coord[0][1]
             flag = True
+            first_exon_primer = True
         elif start <= primer_coord[1][0] and end >= primer_coord[1][1]:
             tmp_len += primer_coord[1][0] - start
             flag = False
+            second_exon_primer = True
         elif flag:
             tmp_len += end - start
 
-    # add length between primers to actual length of sequnces for each primer
-    first_primer_len = primer_coord[0][1] - primer_coord[0][0]
-    second_primer_len = primer_coord[1][1] - primer_coord[1][0]
-    final_len = tmp_len + first_primer_len + second_primer_len
+    if not (first_exon_primer and second_exon_primer):
+        # case where either one or both primers were not located within an exon
+        final_len = 0
+    else:
+        # add length between primers to actual length of sequnces for each primer
+        first_primer_len = primer_coord[0][1] - primer_coord[0][0]
+        second_primer_len = primer_coord[1][1] - primer_coord[1][0]
+        final_len = tmp_len + first_primer_len + second_primer_len
     return final_len
 
 
