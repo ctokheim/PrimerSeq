@@ -547,8 +547,7 @@ class PrimerFrame(wx.Frame):
         self.load_progress.Update(0)
         self.disable_load_buttons()
         self.current_process = ct.RunPrimerSeqThread(target=primer.main,
-                                                     args=(options,),
-                                                     my_excepthook=handle_uncaught_exceptions)
+                                                     args=(options,))
 
         event.Skip()
 
