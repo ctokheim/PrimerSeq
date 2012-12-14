@@ -237,14 +237,14 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
     return [name + ' was not found in a biconnected component']
 
 
-def get_sufficient_psi_exons(name, target, sGraph, genome, ID):
+def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff):
     """
     Utilizes the ExonSeek class to find flanking exons that are
     good enough to be called "constitutive".
     """
     # find appropriate flanking "constitutive" exon for primers
     # upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
-    exon_seek_obj = ExonSeek(target, sGraph, ID)
+    exon_seek_obj = ExonSeek(target, sGraph, ID, cutoff)
     all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
 
     # lack of successor/predecessor nodes
@@ -307,8 +307,8 @@ def main(options, args_output='tmp/debug.json'):
         tmp_start, tmp_end = get_pos(line)
         chr = get_chr(line[1:])
 
-        # This try block is to catch assertions made about the graph. If an
-        # assertion is raised it only impacts a single target for primer design
+        # This try block is to catch assertions made about the graph. If a
+        # PrimerSeqError is raised it only impacts a single target for primer design
         # so complete exiting of the program is not warranted.
         try:
             # get gene annotation from bigBed (maybe deprecate) or gtf file file
@@ -392,7 +392,8 @@ def main(options, args_output='tmp/debug.json'):
                 tmp = get_sufficient_psi_exons(line, gene_dict['target'],
                                                splice_graph,
                                                genome,
-                                               name)
+                                               name,
+                                               options['psi'])
 
             # Error msgs are of length one, so only do psi calculations for
             # non-error msgs

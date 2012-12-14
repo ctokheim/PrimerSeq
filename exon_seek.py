@@ -18,13 +18,14 @@ class ExonSeek(object):
     inclusion level is above a user-defined value.
     '''
 
-    def __init__(self, target, splice_graph, ID):
+    def __init__(self, target, splice_graph, ID, cutoff):
         '''
         As the purpose of ExonSeek is to flanking constitutive exons, it is necessary
         to know what needs to be "flanked", the target, and have a splice graph representation
         of gene structure (splice_graph). The ID variable is meant to prevent overwriting of files.
         '''
         self.id = ID  # id is to prevent overwriting files in self.save_path_info
+        self.cutoff = cutoff
         self.target = target  # (start, end)
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
@@ -64,13 +65,13 @@ class ExonSeek(object):
         with open('tmp/isoforms/' + str(self.id) + '.json', 'w') as handle:
             json.dump({'path': p, 'counts': list(cts)}, handle, indent=4)  # output path information to tmp file
 
-    def find_closest_exon_above_cutoff(self, paths, counts, possible_exons, CUT_OFF=.95):
+    def find_closest_exon_above_cutoff(self, paths, counts, possible_exons):
         """
         Progressively step away from the target exon to find a sufficient constitutive exon
         """
         for exon in possible_exons:
             psi = algs.estimate_psi(exon, paths, counts)
-            if psi >= CUT_OFF:
+            if psi >= self.cutoff:
                 return exon, psi
 
     def two_biconnected_case(self):
@@ -94,10 +95,6 @@ class ExonSeek(object):
         after_all_paths = algs.AllPaths(self.splice_graph, after_component, self.target, self.splice_graph.chr)
         after_all_paths.trim_tx_paths()
         after_paths, after_counts = after_all_paths.estimate_counts()
-        # my_before_subgraph = self.graph.subgraph(before_component)
-        # before_paths, before_counts = algs.generate_isoforms(my_before_subgraph, self.splice_graph)
-        # my_after_subgraph = self.graph.subgraph(after_component)
-        # after_paths, after_counts = algs.generate_isoforms(my_after_subgraph, self.splice_graph)
 
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(before_paths,
