@@ -97,6 +97,10 @@ class PlotDialog(wx.Dialog):
         self.Show()
 
         pub.subscribe(self.plot_update, "plot_update")
+        pub.subscribe(self.on_plot_error, "plot_error")
+
+    def on_plot_error(self, msg):
+        self.parent.update_after_error((None,))
 
     def cancel_button_event(self, event):
         self.Destroy()
@@ -236,6 +240,10 @@ class SortGtfDialog(wx.Dialog):
         self.Show()
 
         pub.subscribe(self.sort_update, "sort_update")
+        pub.subscribe(self.sort_error, "update_after_error")
+
+    def sort_error(self, msg):
+        self.parent.update_after_error((None,))
 
     def cancel_button_event(self, event):
         self.Destroy()

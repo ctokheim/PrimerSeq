@@ -41,6 +41,12 @@ import datetime
 # end wxGlade
 
 
+def handle_uncaught_exceptions(t, ex, tb):
+    dlg = wx.MessageDialog(None, 'An uncaught error occured in PrimerSeq. Please check the log file (%s) for details. You may need to press File->Reset to continue.' % log_file, style=wx.OK | wx.ICON_ERROR)
+    dlg.ShowModal()
+    # primerApp.primer_frame.on_reset(None)
+
+
 class PrimerFrame(wx.Frame):
     def __init__(self, *args, **kwds):
         # begin wxGlade: PrimerFrame.__init__
@@ -152,6 +158,7 @@ class PrimerFrame(wx.Frame):
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
         pub.subscribe(self.update_after_dialog, "update")
         pub.subscribe(self.update_after_run, "update_after_run")
+        pub.subscribe(self.update_after_error, "update_after_error")
 
         # check if the user has java installed
         try:
@@ -381,6 +388,11 @@ class PrimerFrame(wx.Frame):
         view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", msg.data[0])
         view_output_frame.Show()
 
+    def update_after_error(self, msg):
+        dlg = wx.MessageDialog(self, 'An uncaught error occured in PrimerSeq. Please check the log file (%s) for details. You may need to press Reset from the File menu to continue.\n\nIf you are consistently having problems please check the PrimerSeq FAQ:\nhttp://primerseq.sourceforge.net/faq.html' % log_file, style=wx.OK | wx.ICON_ERROR)
+        dlg.ShowModal()
+        self.on_reset(None)
+
     def disable_load_buttons(self):
         self.choose_bam_button.Disable()
         self.choose_fasta_button.Disable()
@@ -535,7 +547,8 @@ class PrimerFrame(wx.Frame):
         self.load_progress.Update(0)
         self.disable_load_buttons()
         self.current_process = ct.RunPrimerSeqThread(target=primer.main,
-                                                     args=(options,))
+                                                     args=(options,),
+                                                     my_excepthook=handle_uncaught_exceptions)
 
         event.Skip()
 
@@ -598,21 +611,25 @@ Suite 330, Boston, MA  02111-1307  USA"""
 class PrimerApp(wx.App):
     def OnInit(self):
         wx.InitAllImageHandlers()
-        primer_frame = PrimerFrame(None, -1, "")
-        self.SetTopWindow(primer_frame)
-        primer_frame.Show()
+        self.primer_frame = PrimerFrame(None, -1, "")
+        self.SetTopWindow(self.primer_frame)
+        self.primer_frame.Show()
         return 1
 
 # end of class PrimerApp
 
 if __name__ == "__main__":
+    # handle all uncaught exceptions
+    sys.excepthook = handle_uncaught_exceptions
+
     # define logging file before using logging.debug
     if not os.path.exists(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
+    log_file = primer.config_options['log'] + '/log.PrimerApp.' + str(datetime.datetime.now()).replace(':', '.')
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(message)s',
-                        filename=primer.config_options['log'] + '/log.PrimerApp.' + str(datetime.datetime.now()).replace(':', '.'),
+                        filename=log_file,
                         filemode='w')
 
     # start GUI
-    PrimerApp = PrimerApp(0)
-    PrimerApp.MainLoop()
+    primerApp = PrimerApp(redirect=False)
+    primerApp.MainLoop()
