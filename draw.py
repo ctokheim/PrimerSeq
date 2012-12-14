@@ -6,7 +6,7 @@ Created on Feb 8, 2012
 # external dependencies
 import numpy as np
 import matplotlib
-matplotlib.use('Agg') 
+matplotlib.use('Agg')
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -208,10 +208,11 @@ def calc_product_length(path, primer_coord):
     """
     # calculate length between primers
     tmp_len = 0
-    flag = True
+    flag = False
     for start, end in path:
         if start <= primer_coord[0][0] and end >= primer_coord[0][1]:
             tmp_len += end - primer_coord[0][1]
+            flag = True
         elif start <= primer_coord[1][0] and end >= primer_coord[1][1]:
             tmp_len += primer_coord[1][0] - start
             flag = False
