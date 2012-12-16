@@ -18,7 +18,7 @@ class ExonSeek(object):
     inclusion level is above a user-defined value.
     '''
 
-    def __init__(self, target, splice_graph, ID, cutoff):
+    def __init__(self, target, splice_graph, ID, cutoff, upstream=None, downstream=None):
         '''
         As the purpose of ExonSeek is to flanking constitutive exons, it is necessary
         to know what needs to be "flanked", the target, and have a splice graph representation
@@ -27,6 +27,7 @@ class ExonSeek(object):
         self.id = ID  # id is to prevent overwriting files in self.save_path_info
         self.cutoff = cutoff
         self.target = target  # (start, end)
+        self.upstream, self.downstream = upstream, downstream  # if set, the user specified upstream or downstream exons
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
             raise utils.PrimerSeqError('The target was not found in the graph')
@@ -34,7 +35,7 @@ class ExonSeek(object):
         self.strand = splice_graph.strand  # convenience variable
         self.splice_graph = splice_graph
         biconnected_comp = filter(lambda x: target in x, algs.get_biconnected(self.graph))
-        self.upstream, self.downstream, self.total_components = None, None, None  # these will be defined after calling methods
+        self.total_components = None  # these will be defined after calling methods
         self.psi_upstream, self.psi_target, self.psi_downstream = None, None, None  # these will be defined after calling methods
         self.all_paths = None
 
@@ -96,7 +97,14 @@ class ExonSeek(object):
         after_all_paths.trim_tx_paths()
         after_paths, after_counts = after_all_paths.estimate_counts()
 
-        if self.strand == '+':
+        if self.upstream and self.downsteam:
+            if self.strand == '+':
+                self.psi_upstream = algs.estimate_psi(self.upstream, before_paths, before_counts)
+                self.psi_downstream = algs.estimate_psi(self.downstream, after_paths, after_counts)
+            elif self.strand == '-':
+                self.psi_upstream = algs.estimate_psi(self.upstream, after_paths, after_counts)
+                self.psi_downstream = algs.estimate_psi(self.downstream, before_paths, before_counts)
+        elif self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(before_paths,
                                                                                    before_counts,
                                                                                    list(reversed(before_component[:-1])))
@@ -136,10 +144,19 @@ class ExonSeek(object):
         if len(self.graph.predecessors(self.target)) > 1:
             logging.debug('Conflict between biconnected components and predecessors')
 
+        if self.upstream and self.downstream:
+            tmp_upstream = self.graph.predecessors(self.target)[0] if self.strand == '+' else self.graph.successors(self.target)[0]
+
         # define adjacent exons as flanking constitutive since all three (the
         # target exon, upstream exon, and downstream exon) are constitutive
-        self.upstream = self.graph.predecessors(self.target)[0] if self.strand == '+' else self.graph.successors(self.target)[0]
-        self.downstream = self.graph.successors(self.target)[0] if self.strand == '+' else self.graph.predecessors(self.target)[0]
+        tmp_upstream = self.graph.predecessors(self.target)[0] if self.strand == '+' else self.graph.successors(self.target)[0]
+        tmp_downstream = self.graph.successors(self.target)[0] if self.strand == '+' else self.graph.predecessors(self.target)[0]
+        if self.upstream and self.downstream:
+            if self.upstream != tmp_upstream or self.downstream != tmp_downstream:
+                # raise error if the user defined exon does not match expectation
+                raise utils.PrimerSeqError('Flanking exon choice too far from target exon')
+        self.upstream = tmp_upstream  # assign upstream after user-defined exon check
+        self.downstream = tmp_downstream  # assign downstream after user-defined exon check
 
         # defining two attributes as the same thing seems silly but in a
         # different case with two biconnected components the two components
@@ -187,8 +204,6 @@ class ExonSeek(object):
         '''
         print 'non-constitutive case'
         index = self.component.index(self.target)
-        # my_subgraph = self.graph.subgraph(self.component)
-        # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
 
         # get tx path information
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
@@ -196,7 +211,11 @@ class ExonSeek(object):
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
 
-        if self.strand == '-':
+        if self.upstream and self.downstream:
+            # known flanking exon case
+            self.psi_upstream = algs.estimate_psi(self.upstream, paths, counts)
+            self.psi_downstream = algs.estimate_psi(self.downstream, paths, counts)
+        elif self.strand == '-':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts,
                                                                                    self.component[index + 1:])
@@ -227,9 +246,17 @@ class ExonSeek(object):
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
 
-        # my_subgraph = self.graph.subgraph(self.component)
-        # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
-        if self.strand == '+':
+        if self.upstream and self.downstream:
+            # user defined flanking exon case
+            if self.strand == '+' and self.graph.predecessors(self.target)[0] == self.upstream:
+                self.psi_upstream = 1.0
+                self.psi_downsteam = algs.estimate_psi(self.downstream, paths, counts)
+            elif self.strand == '-' and self.graph.predecessors(self.target)[0] == self.downstream:
+                self.psi_downstream = 1.0
+                self.psi_upstream = algs.estimate_psi(self.upstream, paths, counts)
+            else:
+                raise utils.PrimerSeqError('Flanking exon choice too far from target exon')
+        elif self.strand == '+':
             self.upstream = self.graph.predecessors(self.target)[0]
             self.psi_upstream = 1.0  # defined by biconnected component alg as constitutive
             self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
@@ -261,8 +288,14 @@ class ExonSeek(object):
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
 
-        # my_subgraph = self.graph.subgraph(self.component)
-        # paths, counts = algs.generate_isoforms(my_subgraph, self.splice_graph)
+        if self.upstream and self.downstream:
+            # user defined flanking exon case
+            if self.strand == '+':
+                self.psi_upstream = algs.estimae_psi(self.upstream, paths, counts)
+                self.psi_downstream = 1.0
+            elif self.strand == '-':
+                self.psi_upstream = 1.0
+                self.psi_downstream = algs.estimate_psi(self.downstream, paths, counts)
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts, possible_const)
