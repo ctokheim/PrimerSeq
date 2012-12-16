@@ -178,7 +178,7 @@ def primer3(options, primer3_options):
             output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
-            tar = options['target'][z][1]  # flanking_info[z][1]  # target interval (used for print statements)
+            tar = options['target'][z][1][0]  # flanking_info[z][1]  # target interval (used for print statements)
             tar_id = options['target'][z][0]
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
@@ -318,6 +318,7 @@ class ValidateRnaseq(argparse.Action):
         # set value if no error,
         # simply assign the string as is
         setattr(namespace, self.dest, values)  # set the value
+
 
 class ValidateCutoff(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):

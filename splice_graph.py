@@ -26,9 +26,6 @@ If read counts are used (psi < 1) then splice_graph uses the
 flanking exons with at least a user defined inclusion level.
 If psi == 1 then flanking exons are only determined by the biconnected
 componenets algorithm using :func:`~splice_graph.get_flanking_biconnected_exons`.
-
-Documentation
--------------
 '''
 
 import networkx as nx
@@ -237,14 +234,13 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
     return [name + ' was not found in a biconnected component']
 
 
-def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff):
+def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_exon, downstream_exon):
     """
     Utilizes the ExonSeek class to find flanking exons that are
     good enough to be called "constitutive".
     """
     # find appropriate flanking "constitutive" exon for primers
-    # upstream, downstream, component, (psi_target, psi_upstream, psi_downstream) = find_fuzzy_constitutive(target, sGraph)
-    exon_seek_obj = ExonSeek(target, sGraph, ID, cutoff)
+    exon_seek_obj = ExonSeek(target, sGraph, ID, cutoff, upstream_exon, downstream_exon)
     all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
 
     # lack of successor/predecessor nodes
@@ -293,8 +289,7 @@ def main(options, args_output='tmp/debug.json'):
     The gtf main function is the function designed to be called from other scripts. It iterates through each target
     exons and returns the necessary information for primer design.
     """
-    genome, args_big_bed, args_gtf, args_target = options['fasta'], options['big_bed'], options['gtf'], options['target']
-    if args_big_bed: bed = Bed(args_big_bed, ext='bed')
+    genome, args_gtf, args_target = options['fasta'], options['gtf'], options['target']
 
     # the sam object interfaces with the user specified BAM/SAM file!!!
     sam_obj_list = options['rnaseq']
@@ -303,28 +298,28 @@ def main(options, args_output='tmp/debug.json'):
     output = []  # output from program
     for line in args_target:  # was line in handle
         name, line = line  # .strip().split('\t')
-        strand = line[0]
-        tmp_start, tmp_end = get_pos(line)
-        chr = get_chr(line[1:])
+        tgt = line[0]
+        strand = tgt[0]
+        tmp_start, tmp_end = get_pos(tgt)
+        chr = get_chr(tgt[1:])
+        USER_DEFINED_FLANKING_EXONS = True if len(line) == 3 else False
+        if USER_DEFINED_FLANKING_EXONS:
+            up_exon = utils.get_pos(line[1])
+            down_exon = utils.get_pos(line[2])
+        else:
+            up_exon = None
+            down_exon = None
 
         # This try block is to catch assertions made about the graph. If a
         # PrimerSeqError is raised it only impacts a single target for primer design
         # so complete exiting of the program is not warranted.
         try:
-            # get gene annotation from bigBed (maybe deprecate) or gtf file file
-            if args_gtf:
-                # if the gtf doesn't have a valid gene_id attribute then use
-                # the first method otherwise use the second method.
-                if options['no_gene_id']:
-                    gene_dict = get_weakly_connected_tx(args_gtf, strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
-                else:
-                    gene_dict = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
+            # if the gtf doesn't have a valid gene_id attribute then use
+            # the first method otherwise use the second method.
+            if options['no_gene_id']:
+                gene_dict = get_weakly_connected_tx(args_gtf, strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
             else:
-                # I no longer use BigBed for gene annotations. This code is
-                # legacy and eventually will be deleted.
-                bed.extractBigRegion(strand, chr, tmp_start, tmp_end)
-                bed.load_bed_file()
-                gene_dict = bed.get_annotation()
+                gene_dict = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
 
             if options['both_flag']:
                 splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
@@ -384,16 +379,18 @@ def main(options, args_output='tmp/debug.json'):
 
             # default case
             if options['psi'] > .9999:
-                tmp = get_flanking_biconnected_exons(line, gene_dict['target'],
+                tmp = get_flanking_biconnected_exons(tgt, gene_dict['target'],
                                                      splice_graph,
                                                      genome)  # note this function ignores edge weights
             # user specified a sufficient psi value to call constitutive exons
             else:
-                tmp = get_sufficient_psi_exons(line, gene_dict['target'],
+                tmp = get_sufficient_psi_exons(tgt, gene_dict['target'],
                                                splice_graph,
                                                genome,
                                                name,
-                                               options['psi'])
+                                               options['psi'],
+                                               up_exon,
+                                               down_exon)
 
             # Error msgs are of length one, so only do psi calculations for
             # non-error msgs

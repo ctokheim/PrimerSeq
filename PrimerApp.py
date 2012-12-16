@@ -508,7 +508,7 @@ class PrimerFrame(wx.Frame):
 
         # handle the coordinates in self.coordinates_text_input
         coordinates_string = self.coordinates_text_field.GetValue()  # a string
-        coordinates = map(str, filter(lambda x: x != '', re.split('\s*,*\s*', coordinates_string)))  # ['(strand)(chr):(start)-(end)', ...]
+        coordinates = map(lambda y: re.split('\s*,+\s*', y), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', coordinates_string))))  # ['(strand)(chr):(start)-(end)', ...]
 
         # options for primer.py
         options = {}
