@@ -35,7 +35,6 @@ import datetime
 def handle_uncaught_exceptions(t, ex, tb):
     dlg = wx.MessageDialog(None, 'An uncaught error occured in PrimerSeq. Please check the log file (%s) for details. You may need to press File->Reset to continue.' % log_file, style=wx.OK | wx.ICON_ERROR)
     dlg.ShowModal()
-    # primerApp.primer_frame.on_reset(None)
 
 
 class PrimerFrame(wx.Frame):
@@ -106,13 +105,10 @@ class PrimerFrame(wx.Frame):
         self.psi_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Minimum Flanking PSI:")
         self.psi_text_field = wx.TextCtrl(self.primer_notebook_pane_2, -1, ".95")
         self.psi_text_field.SetToolTip(wx.ToolTip("Valid: 0 < PSI <= 1"))
-        # self.psi_help_info = wx.StaticText(self.primer_notebook_pane_2, -1, "0 < PSI <= 1")
         self.type_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Splice Junction:")
         self.type_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'Annotation', choices=["Annotation", "RNA-Seq + Annotation"], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
-        # self.type_help_info = wx.StaticText(self.primer_notebook_pane_2, -1, "Novel Jcts?")
         self.gene_id_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Gene ID:")
         self.gene_id_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'Valid', choices=["Valid", "Not Valid"], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
-        # self.gene_id_help_info = wx.StaticText(self.primer_notebook_pane_2, -1, "In GTF?")
         self.temp_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Keep Temporary:")
         self.temp_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'No', choices=["No", "Yes"], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
         self.temp_combo_box.SetToolTip(wx.ToolTip('Keep intermediate files'))
@@ -133,17 +129,17 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_help, id=help_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_reset, id=reset_id)  # used to specify id as -1
-        self.Bind(wx.EVT_MENU, self.quit_event, id=quit_id)  # used to specify id as -1
-        self.Bind(wx.EVT_MENU, self.add_genes_event, id=add_genes_id)
-        self.Bind(wx.EVT_MENU, self.sort_gtf_event, id=sort_id)
+        self.Bind(wx.EVT_MENU, self.on_quit, id=quit_id)  # used to specify id as -1
+        self.Bind(wx.EVT_MENU, self.on_add_genes, id=add_genes_id)
+        self.Bind(wx.EVT_MENU, self.on_sort_gtf, id=sort_id)
         self.Bind(wx.EVT_MENU, self.primer3_event, id=primer3_id)
-        self.Bind(wx.EVT_MENU, self.about_event, id=about_id)
-        self.Bind(wx.EVT_MENU, self.primer3_manual_event, id=primer3_manual_id)
-        self.Bind(wx.EVT_BUTTON, self.choose_fasta_button_event, self.choose_fasta_button)
-        self.Bind(wx.EVT_BUTTON, self.choose_gtf_button_event, self.choose_gtf_button)
-        self.Bind(wx.EVT_BUTTON, self.choose_bam_button_event, self.choose_bam_button)
-        self.Bind(wx.EVT_BUTTON, self.choose_output_button_event, self.choose_output_button)
-        self.Bind(wx.EVT_BUTTON, self.run_button_event, self.run_button)
+        self.Bind(wx.EVT_MENU, self.on_about, id=about_id)
+        self.Bind(wx.EVT_MENU, self.on_primer3_manual, id=primer3_manual_id)
+        self.Bind(wx.EVT_BUTTON, self.on_choose_fasta_button, self.choose_fasta_button)
+        self.Bind(wx.EVT_BUTTON, self.on_choose_gtf_button, self.choose_gtf_button)
+        self.Bind(wx.EVT_BUTTON, self.on_choose_bam_button, self.choose_bam_button)
+        self.Bind(wx.EVT_BUTTON, self.on_choose_output_button, self.choose_output_button)
+        self.Bind(wx.EVT_BUTTON, self.on_run_button, self.run_button)
         # end wxGlade
 
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
@@ -182,15 +178,12 @@ class PrimerFrame(wx.Frame):
         self.output_choice_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.psi_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.psi_text_field.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        # self.psi_help_info.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.type_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.type_combo_box.SetMinSize((85, 27))
         self.type_combo_box.SetSelection(0)
-        # self.type_help_info.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.gene_id_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.gene_id_combo_box.SetMinSize((85, 27))
         self.gene_id_combo_box.SetSelection(0)
-        # self.gene_id_help_info.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.temp_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.temp_combo_box.SetMinSize((100, 27))
         self.temp_combo_box.SetSelection(-1)
@@ -249,13 +242,10 @@ class PrimerFrame(wx.Frame):
         self.primer_notebook_pane_1.SetSizer(sizer_2)
         grid_sizer_3.Add(self.psi_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_3.Add(self.psi_text_field, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        # grid_sizer_3.Add(self.psi_help_info, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_3.Add(self.type_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_3.Add(self.type_combo_box, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 1)
-        # grid_sizer_3.Add(self.type_help_info, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_3.Add(self.gene_id_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_3.Add(self.gene_id_combo_box, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        # grid_sizer_3.Add(self.gene_id_help_info, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         sizer_10.Add(grid_sizer_3, 1, wx.EXPAND, 0)
         grid_sizer_4.Add(self.temp_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_4.Add(self.temp_combo_box, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
@@ -277,6 +267,7 @@ class PrimerFrame(wx.Frame):
         # end wxGlade
 
     def on_load_example(self, event):
+        """Load a single sample test data. The test data can be found in the example directory."""
         self.gtf, self.bam, self.fasta = [], [], None
         self.set_fasta("example/chr18.fa", "chr18.fa", use_dlg=False)
         self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
@@ -304,15 +295,15 @@ class PrimerFrame(wx.Frame):
         self.enable_load_buttons()  # enable buttons
 
     def on_help(self, event):
-        """
-        Open documentation in default webbrowser
-        """
+        """Open documentation in default webbrowser"""
         webbrowser.open('help/index.html')
 
-    def add_genes_event(self, event):
+    def on_add_genes(self, event):
+        """UCSC add Gene IDs event handler"""
         cd.AddGeneIdsDialog(self, -1, 'Add Valid Gene IDs')
 
-    def sort_gtf_event(self, event):
+    def on_sort_gtf(self, event):
+        """Sort gtf event handler"""
         cd.SortGtfDialog(self, -1, 'Sort GTF')
 
     def primer3_event(self, event):
@@ -327,7 +318,7 @@ class PrimerFrame(wx.Frame):
         elif os.name == 'posix':
             subprocess.call(('xdg-open', filepath))
 
-    def primer3_manual_event(self, event):
+    def on_primer3_manual(self, event):
         '''
         Try to open primer3_manual.htm in a webbrowser.
         '''
@@ -385,12 +376,14 @@ class PrimerFrame(wx.Frame):
         self.on_reset(None)
 
     def disable_load_buttons(self):
+        """Disable loading file/run buttons when action in progress"""
         self.choose_bam_button.Disable()
         self.choose_fasta_button.Disable()
         self.choose_gtf_button.Disable()
         self.run_button.Disable()
 
     def enable_load_buttons(self):
+        """Enable loading file/run buttons when action is finished"""
         self.choose_bam_button.Enable()
         self.choose_fasta_button.Enable()
         self.choose_gtf_button.Enable()
@@ -403,11 +396,13 @@ class PrimerFrame(wx.Frame):
             tmp_bam.append(sam.Sam(f, anc_len))
         return tmp_bam
 
-    def quit_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+    def on_quit(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        """Quit PrimerSeq when user presses File -> Quit"""
         self.Destroy()
         event.Skip()
 
-    def choose_output_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+    def on_choose_output_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        """Event handler for setting output text file"""
         dlg = wx.FileDialog(self, message='Choose your output file', defaultDir=os.getcwd(),
                             wildcard='Text file (*.txt)|*.txt')  # open file dialog
 
@@ -417,13 +412,11 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def set_output(self, path, filename):
-        """
-        Set the output file location for PrimerSeq
-        """
+        """Set the output file location for PrimerSeq"""
         self.output = path
         self.output_choice_label.SetLabel(filename)
 
-    def choose_fasta_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+    def on_choose_fasta_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
         dlg = wx.FileDialog(self, message='Choose your FASTA file', defaultDir=os.getcwd(),
                             wildcard='FASTA file (*.fa)|*.fa|FASTA file(*.fasta)|*.fasta')  # open file dialog
         # if they press ok
@@ -455,7 +448,7 @@ class PrimerFrame(wx.Frame):
             print('Value: ' + str(v))
             print('Traceback:\n' + traceback.format_exc())
 
-    def choose_gtf_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+    def on_choose_gtf_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
         dlg = wx.FileDialog(self, message='Choose your GTF file', defaultDir=os.getcwd(),
                             wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
         # if they press ok
@@ -477,7 +470,8 @@ class PrimerFrame(wx.Frame):
         self.current_process = ct.RunThread(target=primer.gene_annotation_reader, args=(str(filename),),
                                             attr='gtf', label='gtf_choice_label', label_text=str(filename_without_path))
 
-    def choose_bam_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+    def on_choose_bam_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        """Event handler for loading bam file"""
         dlg = wx.FileDialog(self, message='Choose your bam files', defaultDir=os.getcwd(),
                             wildcard='BAM files (*.bam)|*.bam|SAM files (*.sam)|*.sam', style=wx.FD_MULTIPLE)  # open file dialog
         # if they press ok
@@ -502,7 +496,8 @@ class PrimerFrame(wx.Frame):
                                             args=(map(str, filenames), filenames_without_path, int(self.anchor_length_text_field.GetValue())),
                                             attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
 
-    def run_button_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+    def on_run_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        """Event handler for the running PrimerSeq button"""
         # alert the user there is missing input
         if self.gtf == [] or self.fasta is None or self.bam == [] or self.output == '':
             dlg = wx.MessageDialog(self, 'Please fill in all of the required fields.', style=wx.OK)
@@ -542,7 +537,7 @@ class PrimerFrame(wx.Frame):
 
         event.Skip()
 
-    def plot_event(self, event):  # wxGlade: PrimerFrame.<event_handler>
+    def on_plot(self, event):  # wxGlade: PrimerFrame.<event_handler>
         '''
         This method is deprecated since plotting is now done in the view output frame
         '''
@@ -556,7 +551,7 @@ class PrimerFrame(wx.Frame):
             dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
             dlg.ShowModal()
 
-    def about_event(self, event):
+    def on_about(self, event):
 
         description = """PrimerSeq aims to design primers on flanking constitutive exons around your target position of interest.
 The advantage of PrimerSeq is it handles the ambiguity of where to place primers by incorporating RNA-Seq data.
@@ -579,10 +574,7 @@ received a copy of the GNU General Public License along with PrimerSeq;
 if not, write to the Free Software Foundation, Inc., 59 Temple Place,
 Suite 330, Boston, MA  02111-1307  USA"""
 
-
         info = wx.AboutDialogInfo()
-
-        # info.SetIcon(wx.Icon('hunter.png', wx.BITMAP_TYPE_PNG))
         info.SetName('PrimerSeq')
         info.SetVersion('1.0')
         info.SetDescription(description)
@@ -591,8 +583,6 @@ Suite 330, Boston, MA  02111-1307  USA"""
         info.SetLicence(licence)
         info.AddDeveloper('Collin Tokheim')
         info.AddDocWriter('Collin Tokheim')
-        # info.AddArtist('The Tango crew')
-        # info.AddTranslator('Jan Bodnar')
 
         wx.AboutBox(info)
 
