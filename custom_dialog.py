@@ -135,11 +135,6 @@ class PlotDialog(wx.Dialog):
                 row_of_interest = row
 
         # find where the plot should span
-        # tmp_upstream_start, tmp_upstream_end = utils.get_pos(row_of_interest[9])
-        # tmp_downstream_start, tmp_downstream_end = utils.get_pos(row_of_interest[11])
-        # start = min(tmp_upstream_start, tmp_downstream_start)
-        # end = max(tmp_upstream_end, tmp_downstream_end)
-        # chr = utils.get_chr(row_of_interest[9])
         start, end = utils.get_pos(row_of_interest[-1])
         chr = utils.get_chr(row_of_interest[-1])
         plot_domain = utils.construct_coordinate(chr, start, end)

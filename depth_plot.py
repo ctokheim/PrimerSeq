@@ -6,6 +6,7 @@ import matplotlib.ticker as ticker
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredText   # import anchored text
 import itertools as it
 import argparse
+import os
 
 # important packages
 # import numpy as np
@@ -141,7 +142,7 @@ def read_depth_plot(options):
 
         # plot/label
         max_count, real_start, real_stop = generate_plot(ax, bigwigs[i], chr, start, stop, options)
-        #draw_text(ax, names[i])
+        draw_text(ax, os.path.splitext(os.path.basename(bigwigs[i]))[0])
 
         # format options
         ax.xaxis.grid(color='white', linestyle='--', linewidth=1.5)
