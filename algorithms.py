@@ -6,6 +6,7 @@ import utils
 
 oldsettings = np.seterr(all='raise')
 
+
 def get_biconnected(G):
     """
     Wrapper arround the networkx biconnected_components function. To find out why the biconnected
@@ -37,11 +38,9 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
     """
     # initialize variables
     sorted_nodes = sorted(G.nodes())
-    #d = [float('-inf')] * num_nodes  # was len(G)
-    d = {nde:float('-inf') for nde in sorted_nodes}
+    d = {nde: float('-inf') for nde in sorted_nodes}
     d[sorted_nodes[0]] = 0   # initialize source to have 0 distance
-    #p = [[]] * num_nodes  # was len(G)
-    p = {nde:[] for nde in sorted_nodes}
+    p = {nde: [] for nde in sorted_nodes}
     p[sorted_nodes[0]] = [sorted_nodes[0]]  # initialize source path to be it's self
 
     # "edge relax"
@@ -98,6 +97,7 @@ class AllPaths(object):
     def set_splice_graph(self, sg, component, target):
         self.graph = sg.get_graph()
         self.tx_paths = sg.annotation
+        self.original_tx_paths = sg.annotation  # tx paths all ways without trimming
         known_edges = set([(tx[i], tx[i + 1])
                            for tx in self.tx_paths
                            for i in range(len(tx) - 1)])
@@ -139,11 +139,11 @@ class AllPaths(object):
         and then returns the transcript paths and read counts for those
         paths.
         '''
-        # assert statements about the connectivity of the graph
+        # check the connectivity of the graph
         if not nx.is_weakly_connected(self.sub_graph): raise utils.PrimerSeqError('Yikes! expected weakly connected graph')
         # assert nx.is_biconnected(self.sub_graph.to_undirected()), 'Yikes! expected a biconnected component'
 
-        # assert statements about AFE/ALE testing
+        # AFE/ALE testing
         num_first_exons = len(filter(lambda x: len(self.sub_graph.predecessors(x)) == 0, self.sub_graph.nodes()))
         if num_first_exons > 1: utils.PrimerSeqError('Yikes! AFE like event is not expected')
         num_last_exons = len(filter(lambda x: len(self.sub_graph.successors(x)) == 0, self.sub_graph.nodes()))
@@ -165,18 +165,18 @@ class AllPaths(object):
             tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.tx_paths))
         self.all_path_lengths = tmp
 
-    def set_all_path_lengths(self):
+    def set_all_path_lengths(self, primer_coords):
         '''
         Computes the path length for each isoform
         '''
         # get possible lengths
         inc_length, skip_length = [], []
-        for path in self.tx_paths:
+        for path in self.original_tx_paths:
             if self.target in path:
-                inc_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
+                inc_length.append(utils.calc_product_length(path, primer_coords))  # length of everything but target exon and flanking constitutive exons
             else:
-                skip_length.append(sum(map(lambda x: x[1] - x[0], path[1:-1])))  # length of everything but target exon and flanking constitutive exons
-        self.inc_lengths, self.skip_lengths = inc_length, skip_length
+                skip_length.append(utils.calc_product_length(path, primer_coords))  # length of everything but target exon and flanking constitutive exons
+        self.inc_lengths, self.skip_lengths = list(set(inc_length)), list(set(skip_length))
 
 
 def read_count_em(bcc_paths, sub_graph):

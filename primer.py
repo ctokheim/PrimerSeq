@@ -4,13 +4,9 @@
 **Description:** primer.py can design primers from the command line.
 Note that PrimerApp.py (the GUI) just uses the primer module to design the
 primers.
-
-Documentation
--------------
 '''
 import subprocess
 import os
-import shutil
 import gtf
 import splice_graph
 import csv
@@ -34,6 +30,7 @@ import traceback
 my_config = ConfigParser.ConfigParser()
 my_config.read('PrimerSeq.cfg')
 config_options = dict(my_config.items('directory'))
+
 
 def gene_annotation_reader(file_path, FILTER_FACTOR=2):
     """
@@ -176,7 +173,6 @@ def primer3(options, primer3_options):
     output_list = []
     for z in range(len(flanking_info)):
         # no flanking exon information case
-        #if type('') == type(flanking_info[z]):
         if len(flanking_info[z]) == 1:
             logging.debug(flanking_info[z][0])
             output_list.append(flanking_info[z])  # write problem msg
@@ -236,10 +232,13 @@ def primer3(options, primer3_options):
                                                     flanking_info[z][EXON_TARGET],
                                                     flanking_info[z][UPSTREAM_TARGET],
                                                     flanking_info[z][DOWNSTREAM_TARGET])
-                skipping_size_list = [str(int(j) + Primer3_PRIMER_PRODUCT_SIZE) for j in flanking_info[z][ALL_PATHS].skip_lengths]
-                inclusion_size_list = [str(int(k) + Primer3_PRIMER_PRODUCT_SIZE) for k in flanking_info[z][ALL_PATHS].inc_lengths]
-                skipping_size = ';'.join(skipping_size_list)
-                inclusion_size = ';'.join(inclusion_size_list)
+                # skipping_size_list = [str(int(j) + Primer3_PRIMER_PRODUCT_SIZE) for j in flanking_info[z][ALL_PATHS].skip_lengths]
+                # inclusion_size_list = [str(int(k) + Primer3_PRIMER_PRODUCT_SIZE) for k in flanking_info[z][ALL_PATHS].inc_lengths]
+                flanking_info[z][ALL_PATHS].set_all_path_lengths(map(utils.get_pos, primer3_coords.split(';')))
+                skipping_size_list = flanking_info[z][ALL_PATHS].skip_lengths
+                inclusion_size_list = flanking_info[z][ALL_PATHS].inc_lengths
+                skipping_size = ';'.join(map(str, skipping_size_list))
+                inclusion_size = ';'.join(map(str, inclusion_size_list))
                 left_seq = Sequence(primer3_dict['PRIMER_LEFT_0_SEQUENCE'], 'left')
                 right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
                 asm_region = '%s:%d-%d' % (flanking_info[z][ALL_PATHS].chr,

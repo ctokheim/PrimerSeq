@@ -118,7 +118,6 @@ class ExonSeek(object):
         tmp_end_ix = self.total_components.index(self.downstream) if self.splice_graph.strand == '+' else self.total_components.index(self.upstream)
         self.all_paths = algs.AllPaths(self.splice_graph, self.total_components[tmp_start_ix:tmp_end_ix], self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
-        self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()  # used to be self.before_all_paths
         self.save_path_info(paths, counts)
@@ -151,7 +150,6 @@ class ExonSeek(object):
         # create a dummy all paths variable even though there is only one path
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
-        self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
 
         # only one isoform, so read counts do not really matter
@@ -195,7 +193,6 @@ class ExonSeek(object):
         # get tx path information
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
-        self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
 
@@ -227,7 +224,6 @@ class ExonSeek(object):
         # get tx path information
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
-        self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
 
