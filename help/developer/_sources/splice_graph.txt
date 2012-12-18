@@ -1,5 +1,0 @@
-splice_graph.py
-===============
-
-.. automodule:: splice_graph
-   :members:

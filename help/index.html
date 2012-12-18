@@ -52,16 +52,131 @@
 <p>PrimerSeq aims to design RT-PCR primers on appropriate flanking
 exons around your target of interest. Its aim is to design
 primers for validating alternative splicing events. PrimerSeq is particularly
-advantageous for designing a large number of primers for validating
+advantageous for designing a large number of primers for validating differential
 alternative splicing events found in RNA-Seq data.</p>
-<div class="section" id="users">
-<h2>Users<a class="headerlink" href="#users" title="Permalink to this headline">¶</a></h2>
-<p>Please visit the <a class="reference external" href="user/index.html">user documentation</a></p>
 </div>
-<div class="section" id="developers">
-<h2>Developers<a class="headerlink" href="#developers" title="Permalink to this headline">¶</a></h2>
-<p>For developers and command line users please visit this <a class="reference external" href="developer/index.html">documentation</a></p>
-<p>Contents:</p>
+<div class="section" id="external-documentation">
+<h1>External Documentation<a class="headerlink" href="#external-documentation" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference external" href="http://primerseq.sf.net/getting_started.html">Getting Started</a></li>
+<li><a class="reference external" href="http://primerseq.sf.net/user_guide.html">User Tutorial</a></li>
+<li><a class="reference external" href="http://primerseq.sf.net/gtf.html">GTF Documentation</a></li>
+</ul>
+</div>
+<div class="section" id="user-documentation">
+<h1>User Documentation<a class="headerlink" href="#user-documentation" title="Permalink to this headline">¶</a></h1>
+<p>The PrimerSeq Graphical User Interface (GUI) consists of four main components.</p>
+<ol class="arabic simple">
+<li>Menu items</li>
+<li>Required tab</li>
+<li>Optional tab</li>
+<li>Results Window</li>
+</ol>
+<div class="section" id="menu-items">
+<h2>1. Menu items<a class="headerlink" href="#menu-items" title="Permalink to this headline">¶</a></h2>
+<p>The menu has several import options within three categories.</p>
+<ol class="arabic simple">
+<li>File</li>
+<li>Edit</li>
+<li>Help</li>
+</ol>
+<div class="section" id="file">
+<h3>1.1 File<a class="headerlink" href="#file" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="load-ex">
+<h4>Load Ex.<a class="headerlink" href="#load-ex" title="Permalink to this headline">¶</a></h4>
+<p>The File-&gt;Load Ex. option automatically loads example data that is distributed with PrimerSeq.
+For details read the <a class="reference external" href="http://primerseq.sf.net/getting_started.html">getting started</a> page.</p>
+</div>
+<div class="section" id="reset">
+<h4>Reset<a class="headerlink" href="#reset" title="Permalink to this headline">¶</a></h4>
+<p>The File-&gt;Reset option resets PrimerSeq in case an error occurs during running.</p>
+</div>
+<div class="section" id="quit">
+<h4>Quit<a class="headerlink" href="#quit" title="Permalink to this headline">¶</a></h4>
+<p>The File-&gt;Quit option closes PrimerSeq.</p>
+</div>
+</div>
+<div class="section" id="edit">
+<h3>2.1 Edit<a class="headerlink" href="#edit" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="primer3">
+<h4>Primer3<a class="headerlink" href="#primer3" title="Permalink to this headline">¶</a></h4>
+<p>The Edit-&gt;Primer3 option opens a configuration file for Primer3 called primer3.txt. For information on
+editing Primer3 parameters please see their <a class="reference external" href="../primer3/primer3_manual.htm">manual</a>.</p>
+</div>
+<div class="section" id="sort-gtf-add-genes">
+<h4>Sort GTF &amp; Add Genes<a class="headerlink" href="#sort-gtf-add-genes" title="Permalink to this headline">¶</a></h4>
+<p>For more information about these options, please refer to the <a class="reference external" href="http://primerseq.sf.net/gtf.html">GTF documentation</a>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="required-tab">
+<h2>2. Required tab<a class="headerlink" href="#required-tab" title="Permalink to this headline">¶</a></h2>
+<p>The required tab consists of input that must be filled in before PrimerSeq can design
+primers. The required input is as follows:</p>
+<ol class="arabic simple">
+<li>Genome sequence (FASTA)</li>
+<li>Gene annotation (GTF)</li>
+<li>Mapped reads (SAM/BAM(s))</li>
+<li>Target exon(s)</li>
+<li>Output file</li>
+</ol>
+<img alt="alternate text" class="align-center" src="_images/required.png" />
+<div class="section" id="genome-sequence-fasta">
+<h3>2.1 Genome sequence (FASTA)<a class="headerlink" href="#genome-sequence-fasta" title="Permalink to this headline">¶</a></h3>
+<p>Genome sequences are only allowed in FASTA format. Use FASTA files that contain the entire genome
+sequence for a species to avoid problems. You can obtain the Human and Mouse genome from the following
+links:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.2bit">hg19</a></li>
+<li><a class="reference external" href="http://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/mm9.2bit">mm9</a></li>
+</ul>
+<p>The first time you load a FASTA file may take several minutes. Subsequent loading will occur instantly.</p>
+</div>
+<div class="section" id="gene-annotation-gtf">
+<h3>2.2 Gene annotation (GTF)<a class="headerlink" href="#gene-annotation-gtf" title="Permalink to this headline">¶</a></h3>
+<p>PrimerSeq uses gene annotation in GTF format. Ultimately, the choice of where you obtain the GTF is up to you. You could download GTFs known to work from the PrimerSeq sourceforge website, download GTFs from UCSC or Ensembl, or use GTF output from transcript assemblers like Cufflinks. For ease of use, GTFs for human and mouse are provided. UCSC&#8217;s known gene annotation is preferred over Ensembl.</p>
+<ul class="simple">
+<li><a class="reference external" href="http://sourceforge.net/projects/primerseq/files/GTF/Homo_sapiens.knownGene.hg19.sorted.withGenes.gtf.gz/download">UCSC Human (hg19)</a></li>
+<li><a class="reference external" href="http://sourceforge.net/projects/primerseq/files/GTF/Homo_sapiens.GRCh37.69.sorted.gtf.gz/download">Ensembl Human (hg19)</a></li>
+<li><a class="reference external" href="http://sourceforge.net/projects/primerseq/files/GTF/Mus_musculus.knownGene.mm9.sorted.withGenes.gtf.gz/download">UCSC Mouse (mm9)</a></li>
+<li><a class="reference external" href="http://sourceforge.net/projects/primerseq/files/GTF/Mus_musculus.GRCm38.69.sorted.gtf.gz/download">Ensembl Mouse (mm9)</a></li>
+</ul>
+<p>You can also mix several GTF files into a single input GTF file for PrimerSeq! For more detailed explanations please click <a class="reference external" href="http://primerseq.sourceforge.net/gtf.html">here</a>.</p>
+</div>
+<div class="section" id="mapped-reads-sam-bam-s">
+<h3>2.3 Mapped reads (SAM/BAM(s))<a class="headerlink" href="#mapped-reads-sam-bam-s" title="Permalink to this headline">¶</a></h3>
+<p>You can specify one or multiple SAM or BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a .sorted.bam extension so PrimerSeq does not try to re-sort the file.</p>
+</div>
+<div class="section" id="target-exon-s">
+<h3>2.4 Target exon(s)<a class="headerlink" href="#target-exon-s" title="Permalink to this headline">¶</a></h3>
+<p>Enter target coordinates as (strand)chr:start-end. The first nucleotide on a chromosome is at position 0. The end position is not inclusive.</p>
+</div>
+<div class="section" id="output-file">
+<h3>2.5 Output file<a class="headerlink" href="#output-file" title="Permalink to this headline">¶</a></h3>
+<p>PrimerSeq saves results to the text file you specify immediately after primer design is finished.</p>
+</div>
+</div>
+<div class="section" id="optional-tab">
+<h2>3. Optional tab<a class="headerlink" href="#optional-tab" title="Permalink to this headline">¶</a></h2>
+<img alt="alternate text" class="align-center" src="_images/optional.png" />
+<ul class="simple">
+<li><strong>Minimum Flanking PSI:</strong> minimum inclusion level where a primer is allowed to be placed on that exon</li>
+<li><strong>Splice Junction:</strong> source for defining exon junctions</li>
+<li><strong>Gene ID:</strong> flag for whether the GTF has a valid Gene ID</li>
+<li><strong>Keep Temporary:</strong> flag for keeping temporary files created when running PrimerSeq</li>
+<li><strong>Read Threshold:</strong> minimum read count necessary to define a novel junction from RNA-Seq</li>
+<li><strong>Anchor Length:</strong> minimum number of bases on both sides of a junction for a read to be considered valid</li>
+<li><strong>Min. Jct Count:</strong> assign at least this number of reads to a junction known in the GTF annotation</li>
+</ul>
+</div>
+<div class="section" id="results-window">
+<h2>4. Results Window<a class="headerlink" href="#results-window" title="Permalink to this headline">¶</a></h2>
+<img alt="alternate text" class="align-center" src="_images/display_results.png" />
+<p>The results window allows you to plot the results of primer design and check for unintended product
+amplification using UCSC&#8217;s In-Silico PCR. For information on producing these results, please see the
+<a class="reference external" href="http://primerseq.sf.net/getting_started.html">getting started</a> page.</p>
+<img alt="alternate text" class="align-center" src="_images/display_plot.png" />
+<img alt="alternate text" class="align-center" src="_images/insilico_pcr_results.png" />
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>

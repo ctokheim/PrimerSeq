@@ -1,5 +1,0 @@
-algorithms.py
-=============
-
-.. automodule:: algorithms
-   :members:

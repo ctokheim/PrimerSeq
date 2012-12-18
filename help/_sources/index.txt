@@ -6,23 +6,159 @@
 Welcome to PrimerSeq!
 =====================
 
-PrimerSeq aims to design RT-PCR primers on appropriate flanking 
+PrimerSeq aims to design RT-PCR primers on appropriate flanking
 exons around your target of interest. Its aim is to design
 primers for validating alternative splicing events. PrimerSeq is particularly
-advantageous for designing a large number of primers for validating
+advantageous for designing a large number of primers for validating differential
 alternative splicing events found in RNA-Seq data.
 
-Users
------
+External Documentation
+======================
 
-Please visit the `user documentation <user/index.html>`_
+* `Getting Started <http://primerseq.sf.net/getting_started.html>`_
+* `User Tutorial <http://primerseq.sf.net/user_guide.html>`_
+* `GTF Documentation <http://primerseq.sf.net/gtf.html>`_
 
-Developers
-----------
+User Documentation
+==================
 
-For developers and command line users please visit this `documentation <developer/index.html>`_
+The PrimerSeq Graphical User Interface (GUI) consists of four main components.
 
-Contents:
+1. Menu items
+2. Required tab
+3. Optional tab
+4. Results Window
+
+1. Menu items
+-------------
+
+The menu has several import options within three categories.
+
+1. File
+2. Edit
+3. Help
+
+1.1 File
+++++++++
+
+Load Ex.
+~~~~~~~~
+
+The File->Load Ex. option automatically loads example data that is distributed with PrimerSeq.
+For details read the `getting started <http://primerseq.sf.net/getting_started.html>`_ page.
+
+Reset
+~~~~~
+
+The File->Reset option resets PrimerSeq in case an error occurs during running.
+
+Quit
+~~~~
+
+The File->Quit option closes PrimerSeq.
+
+2.1 Edit
+++++++++
+
+Primer3
+~~~~~~~
+
+The Edit->Primer3 option opens a configuration file for Primer3 called primer3.txt. For information on
+editing Primer3 parameters please see their `manual <../primer3/primer3_manual.htm>`_.
+
+Sort GTF & Add Genes
+~~~~~~~~~~~~~~~~~~~~
+
+For more information about these options, please refer to the `GTF documentation <http://primerseq.sf.net/gtf.html>`_.
+
+2. Required tab
+---------------
+
+The required tab consists of input that must be filled in before PrimerSeq can design
+primers. The required input is as follows:
+
+1. Genome sequence (FASTA)
+2. Gene annotation (GTF)
+3. Mapped reads (SAM/BAM(s))
+4. Target exon(s)
+5. Output file
+
+.. image:: required.png
+    :align: center
+    :alt: alternate text
+
+2.1 Genome sequence (FASTA)
++++++++++++++++++++++++++++
+
+Genome sequences are only allowed in FASTA format. Use FASTA files that contain the entire genome
+sequence for a species to avoid problems. You can obtain the Human and Mouse genome from the following
+links:
+
+* `hg19 <http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.2bit>`_
+* `mm9 <http://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/mm9.2bit>`_
+
+The first time you load a FASTA file may take several minutes. Subsequent loading will occur instantly.
+
+2.2 Gene annotation (GTF)
++++++++++++++++++++++++++
+
+PrimerSeq uses gene annotation in GTF format. Ultimately, the choice of where you obtain the GTF is up to you. You could download GTFs known to work from the PrimerSeq sourceforge website, download GTFs from UCSC or Ensembl, or use GTF output from transcript assemblers like Cufflinks. For ease of use, GTFs for human and mouse are provided. UCSC's known gene annotation is preferred over Ensembl.
+
+* `UCSC Human (hg19) <http://sourceforge.net/projects/primerseq/files/GTF/Homo_sapiens.knownGene.hg19.sorted.withGenes.gtf.gz/download>`_
+* `Ensembl Human (hg19) <http://sourceforge.net/projects/primerseq/files/GTF/Homo_sapiens.GRCh37.69.sorted.gtf.gz/download>`_
+* `UCSC Mouse (mm9) <http://sourceforge.net/projects/primerseq/files/GTF/Mus_musculus.knownGene.mm9.sorted.withGenes.gtf.gz/download>`_
+* `Ensembl Mouse (mm9) <http://sourceforge.net/projects/primerseq/files/GTF/Mus_musculus.GRCm38.69.sorted.gtf.gz/download>`_
+
+You can also mix several GTF files into a single input GTF file for PrimerSeq! For more detailed explanations please click `here <http://primerseq.sourceforge.net/gtf.html>`_.
+
+2.3 Mapped reads (SAM/BAM(s))
++++++++++++++++++++++++++++++
+
+You can specify one or multiple SAM or BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a .sorted.bam extension so PrimerSeq does not try to re-sort the file.
+
+2.4 Target exon(s)
+++++++++++++++++++
+
+Enter target coordinates as (strand)chr:start-end. The first nucleotide on a chromosome is at position 0. The end position is not inclusive.
+
+2.5 Output file
++++++++++++++++
+
+PrimerSeq saves results to the text file you specify immediately after primer design is finished.
+
+3. Optional tab
+---------------
+
+.. image:: optional.png
+    :align: center
+    :alt: alternate text
+
+* **Minimum Flanking PSI:** minimum inclusion level where a primer is allowed to be placed on that exon
+* **Splice Junction:** source for defining exon junctions
+* **Gene ID:** flag for whether the GTF has a valid Gene ID
+* **Keep Temporary:** flag for keeping temporary files created when running PrimerSeq
+* **Read Threshold:** minimum read count necessary to define a novel junction from RNA-Seq
+* **Anchor Length:** minimum number of bases on both sides of a junction for a read to be considered valid
+* **Min. Jct Count:** assign at least this number of reads to a junction known in the GTF annotation
+
+4. Results Window
+-----------------
+
+.. image:: display_results.png
+    :align: center
+    :alt: alternate text
+
+The results window allows you to plot the results of primer design and check for unintended product
+amplification using UCSC's In-Silico PCR. For information on producing these results, please see the
+`getting started <http://primerseq.sf.net/getting_started.html>`_ page.
+
+.. image:: display_plot.png
+    :align: center
+    :alt: alternate text
+
+.. image:: insilico_pcr_results.png
+    :align: center
+    :alt: alternate text
 
 .. toctree::
    :maxdepth: 2

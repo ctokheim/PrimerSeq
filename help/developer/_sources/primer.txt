@@ -1,5 +1,0 @@
-primer.py
-=========
-
-.. automodule:: primer
-   :members:
