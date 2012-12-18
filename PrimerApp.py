@@ -296,7 +296,7 @@ class PrimerFrame(wx.Frame):
 
     def on_help(self, event):
         """Open documentation in default webbrowser"""
-        webbrowser.open('help/index.html')
+        webbrowser.open(os.path.abspath('help/index.html'))
 
     def on_add_genes(self, event):
         """UCSC add Gene IDs event handler"""
@@ -324,9 +324,9 @@ class PrimerFrame(wx.Frame):
         '''
         primer3_path = primer.config_options['primer3']
         if primer3_path == '../primer3':
-            webbrowser.open('primer3/primer3_manual.htm')
+            webbrowser.open(os.path.abspath('primer3/primer3_manual.htm'))
         else:
-            webbrowser.open(primer.config_options['primer3'] + '/primer3_manual.htm')
+            webbrowser.open(os.path.abspath(primer.config_options['primer3'] + '/primer3_manual.htm'))
 
     def update_after_dialog(self, msg):
         '''
