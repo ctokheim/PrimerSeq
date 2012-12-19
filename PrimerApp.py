@@ -418,6 +418,7 @@ class PrimerFrame(wx.Frame):
         self.output_choice_label.SetLabel(filename)
 
     def on_choose_fasta_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        """FASTA button event handler"""
         dlg = wx.FileDialog(self, message='Choose your FASTA file', defaultDir=os.getcwd(),
                             wildcard='FASTA file (*.fa)|*.fa|FASTA file(*.fasta)|*.fasta')  # open file dialog
         # if they press ok
@@ -431,6 +432,10 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def set_fasta(self, filename, filename_without_path, use_dlg=True):
+        """
+        Loads FASTA into PrimerSeq. Uses Pygr's SequenceFileDB object to index the FASTA file
+        so that subsequent loads occur almost instantly while still maintaining random access.
+        """
         try:
             # set the fasta attribute
             if use_dlg:
@@ -450,6 +455,7 @@ class PrimerFrame(wx.Frame):
             print('Traceback:\n' + traceback.format_exc())
 
     def on_choose_gtf_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
+        """GTF button handler"""
         dlg = wx.FileDialog(self, message='Choose your GTF file', defaultDir=os.getcwd(),
                             wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
         # if they press ok
@@ -463,6 +469,7 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def set_gtf(self, filename, filename_without_path, use_dlg=True):
+        """Loads exon features from GTF file into a python data structure."""
         # set the gtf attribute
         if use_dlg:
             self.load_progress = cd.CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
@@ -487,6 +494,11 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def set_bam(self, filenames, filenames_without_path, use_dlg=True):
+        """
+        Ultimately uses the SAM-JDK to set the BAM file. The BAM file is not loaded into
+        memory. However, if there is no .sorted.bam extension then the user's mapped reads
+        will be converted to a BAM file and then is sorted (For large files this will take a long time).
+        """
         # set the bam attribute
         self.bam = []  # clear bam attribute
         if use_dlg:
