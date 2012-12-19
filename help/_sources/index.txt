@@ -12,6 +12,13 @@ primers for validating alternative splicing events. PrimerSeq is particularly
 advantageous for designing a large number of primers for validating differential
 alternative splicing events found in RNA-Seq data.
 
+PrimerSeq is licensed under `GPLv3 <licenses/gpl-3.0.txt>`_.
+PrimerSeq relies on the following software:
+
+* Primer3 - `GPLv2 <licenses/gpl-2.0.txt>`_
+* SAM-JDK - `Apache License V2.0 <licenses/apache-license-2.0.txt>`_, `MIT <licenses/mit-license.txt>`_
+* BigWig Java API - `LGPL v2.1 <licenses/lgpl-2.1.txt>`_
+
 External Documentation
 ======================
 
