@@ -30,7 +30,7 @@ class ExonSeek(object):
         self.upstream, self.downstream = upstream, downstream  # if set, the user specified upstream or downstream exons
         self.graph = splice_graph.get_graph()  # convenience variable (could just use splice_graph)
         if self.target not in self.graph.nodes():
-            raise utils.PrimerSeqError('The target was not found in the graph')
+            raise utils.PrimerSeqError('Error: The target was not found in the splice graph')
 
         self.strand = splice_graph.strand  # convenience variable
         self.splice_graph = splice_graph
@@ -51,7 +51,7 @@ class ExonSeek(object):
             self.component = map(lambda x: sorted(x, key=lambda y: (y[0], y[1])), biconnected_comp)
             self.two_biconnected_case()
         else:
-            raise ValueError('I expect there to be either 0, 1, or 2 biconnected components. Received %s' % self.num_of_biconnected)
+            raise ValueError('Error: There to be either 0, 1, or 2 biconnected components. Received %s' % self.num_of_biconnected)
 
     def get_info(self):
         '''
@@ -154,7 +154,7 @@ class ExonSeek(object):
         if self.upstream and self.downstream:
             if self.upstream != tmp_upstream or self.downstream != tmp_downstream:
                 # raise error if the user defined exon does not match expectation
-                raise utils.PrimerSeqError('Flanking exon choice too far from target exon')
+                raise utils.PrimerSeqError('Error: Flanking exon choice too far from target exon')
         self.upstream = tmp_upstream  # assign upstream after user-defined exon check
         self.downstream = tmp_downstream  # assign downstream after user-defined exon check
 
@@ -238,7 +238,7 @@ class ExonSeek(object):
         '''
         print 'first exon case'
         if len(self.graph.predecessors(self.target)) > 1:
-            logging.debug('Conflict between biconnected components and predecessors')
+            logging.debug('Error: Conflict between biconnected components and predecessors')
 
         # get tx path information
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
@@ -255,7 +255,7 @@ class ExonSeek(object):
                 self.psi_downstream = 1.0
                 self.psi_upstream = algs.estimate_psi(self.upstream, paths, counts)
             else:
-                raise utils.PrimerSeqError('Flanking exon choice too far from target exon')
+                raise utils.PrimerSeqError('Error: Flanking exon choice too far from target exon')
         elif self.strand == '+':
             self.upstream = self.graph.predecessors(self.target)[0]
             self.psi_upstream = 1.0  # defined by biconnected component alg as constitutive

@@ -140,14 +140,14 @@ class AllPaths(object):
         paths.
         '''
         # check the connectivity of the graph
-        if not nx.is_weakly_connected(self.sub_graph): raise utils.PrimerSeqError('Yikes! expected weakly connected graph')
+        if not nx.is_weakly_connected(self.sub_graph): raise utils.PrimerSeqError('Error: SpliceGraph should be connected')
         # assert nx.is_biconnected(self.sub_graph.to_undirected()), 'Yikes! expected a biconnected component'
 
         # AFE/ALE testing
         num_first_exons = len(filter(lambda x: len(self.sub_graph.predecessors(x)) == 0, self.sub_graph.nodes()))
-        if num_first_exons > 1: utils.PrimerSeqError('Yikes! AFE like event is not expected')
+        if num_first_exons > 1: utils.PrimerSeqError('Error: not internal AS event')
         num_last_exons = len(filter(lambda x: len(self.sub_graph.successors(x)) == 0, self.sub_graph.nodes()))
-        if num_last_exons > 1: utils.PrimerSeqError('Yikes! ALE like event is not expected')
+        if num_last_exons > 1: utils.PrimerSeqError('ERror: not internal AS event')
 
         # run EM algorithm
         logging.debug('Start read count EM algorithm . . . ')

@@ -139,7 +139,7 @@ def get_from_gtf_using_gene_name(gtf, strand, chr, start, end):
                 if start == ex[0] and end == ex[1]:
                     gtf[chr][gene_key]['target'] = ex  # this line needed for compatability reasons
                     return gtf[chr][gene_key]
-    raise utils.PrimerSeqError("Did not find an appropriate gtf annotation")
+    raise utils.PrimerSeqError("Error: Did not find an appropriate gtf annotation")
 
 
 def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000):
@@ -158,7 +158,7 @@ def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000)
     sg = SpliceGraph(tmp_tx, chr, strand, filter_factor=1000)
     G = sg.get_graph()
     weakly_con_subgraphs = nx.weakly_connected_component_subgraphs(G)
-    if not (len(weakly_con_subgraphs) > 0): raise utils.PrimerSeqError('No annotations were even near your target')
+    if not (len(weakly_con_subgraphs) > 0): raise utils.PrimerSeqError('Error: No annotations were even near your target')
     target_graph = None
     for weak_subgraph in weakly_con_subgraphs:
         for node_start, node_end in weak_subgraph.nodes():
@@ -166,7 +166,7 @@ def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000)
             if node_start == start and node_end == end:
                 target_graph = weak_subgraph
                 start, end = node_start, node_end
-    if target_graph is None: raise utils.PrimerSeqError('Target was not contained in a tx')
+    if target_graph is None: raise utils.PrimerSeqError('Error: Target was not contained in a tx')
 
     # filter tmp_tx to tx that contain atleast one node in subgraph
     filtered_tmp_tx = []
@@ -175,7 +175,7 @@ def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000)
             if exon in target_graph.nodes():
                 filtered_tmp_tx.append(tx)
                 break
-    if not (len(filtered_tmp_tx) > 0): utils.PrimerSeqError('Your target was not contained in a tx.')
+    if not (len(filtered_tmp_tx) > 0): utils.PrimerSeqError('Error: Your target was not contained in a tx.')
 
     ### convert info to dict ###
     g_dict = {}
@@ -231,7 +231,7 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
                     sGraph.chr + ':' + '-'.join(map(str, downstream)), '1.0',
                     all_paths, str(upstream_seq).upper(),
                     str(target_seq).upper(), str(downstream_seq).upper()]
-    return [name + ' was not found in a biconnected component']
+    return ['Error: ' + name + ' was not found in a biconnected component']
 
 
 def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_exon, downstream_exon):
@@ -245,8 +245,8 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_
 
     # lack of successor/predecessor nodes
     if upstream is None or downstream is None:
-        logging.debug("%s does not have an upstream exon, downstream exon, or possibly both" % str(component))
-        return ["%s does not have an upstream exon, downstream exon, or possibly both" % str(component)]
+        logging.debug("Error: %s does not have an upstream exon, downstream exon, or possibly both" % str(component))
+        return ["Error: %s does not have an upstream exon, downstream exon, or possibly both" % str(component)]
 
     # get sequence of upstream/target/downstream combo
     genome_chr = genome[sGraph.chr]  # chr object from pygr
