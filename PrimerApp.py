@@ -40,8 +40,9 @@ def handle_uncaught_exceptions(t, ex, tb):
 class PrimerFrame(wx.Frame):
     def __init__(self, *args, **kwds):
         # begin wxGlade: PrimerFrame.__init__
-        kwds["style"] = wx.DEFAULT_FRAME_STYLE
+        kwds["style"] = wx.DEFAULT_FRAME_STYLE ^ wx.MAXIMIZE_BOX
         wx.Frame.__init__(self, *args, **kwds)
+        self.SetSizeHints(10, 10, maxH=400)
 
         # Menu Bar
         self.primer_frame_menubar = wx.MenuBar()
