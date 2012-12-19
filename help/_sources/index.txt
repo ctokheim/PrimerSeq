@@ -25,6 +25,7 @@ External Documentation
 * `Getting Started <http://primerseq.sf.net/getting_started.html>`_
 * `User Tutorial <http://primerseq.sf.net/user_guide.html>`_
 * `GTF Documentation <http://primerseq.sf.net/gtf.html>`_
+* `FAQ <http://primerseq.sf.net/faq.html>`_
 
 User Documentation
 ==================
