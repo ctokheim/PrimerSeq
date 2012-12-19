@@ -73,3 +73,10 @@ The external libraries are listed below with their license version:
 * [Sam-JDK](http://picard.sourceforge.net/) handles BAM/SAM files ([Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0.html), [MIT](http://opensource.org/licenses/MIT))
 * [BigWig API](http://code.google.com/p/bigwig/) extracts regions from a BigWig file ([LGPL v2.1](http://www.gnu.org/licenses/lgpl-2.1.html))
 
+Problems?
+=========
+
+If you find issues with PrimerSeq first consider looking at the [FAQ page](http://primerseq.sf.net/faq.html).
+If that does not solve your problem, consider using GitHub's [issue submission](https://github.com/ctokheim/PrimerSeq/issues) since it will allow other users to see what has/is being fixed.
+If needed you may send an email to me at primerseq@gmail.com.
+
