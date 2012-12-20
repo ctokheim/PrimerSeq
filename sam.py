@@ -1,3 +1,19 @@
+#!/usr/bin/env python
+# Copyright (C) 2012  Collin Tokheim
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 '''
 File: sam.py
 Author: Collin Tokheim
@@ -86,10 +102,7 @@ class Sam(object):
 
     def __jct_to_dict(self, file_name, jct_dict={}):
         """Reads jct counts created from jctCounts.py"""
-        # with open(file_name, 'r') as test:
-        #    print test.read()
-
-        jct_dict={}
+        jct_dict = {}
         with open(file_name, 'r') as handle:
             for line in handle:
                 lineSplit = line.split('\t')
@@ -143,6 +156,3 @@ class Sam(object):
             logging.debug('Value: ' + str(v))
             logging.debug('Traceback:\n' + traceback.format_exc())
             raise
-
-
-

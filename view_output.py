@@ -1,3 +1,19 @@
+#!/usr/bin/env python
+# Copyright (C) 2012  Collin Tokheim
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import wx
 import  wx.lib.mixins.listctrl as listmix
 import sys
@@ -102,12 +118,9 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
             self.results = list(csv.reader(handle, delimiter='\t'))[1:]
 
         for i, data in enumerate(self.results):
-            # index = self.list.InsertImageStringItem(sys.maxint, data[0], self.idx1)
             index = self.list.InsertStringItem(sys.maxint, data[0])
             for col in range(1, len(data)):
                 self.list.SetStringItem(index, col, data[col])
-            # self.list.SetStringItem(index, 1, data[1])
-            # self.list.SetStringItem(index, 2, data[2])
             self.list.SetItemData(index, i)
 
         self.list.SetColumnWidth(0, wx.LIST_AUTOSIZE)
@@ -124,8 +137,6 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
 
     def GetListCtrl(self):
         return self.list
-
-    # Used by the ColumnSorterMixin, see wx/lib/mixins/listctrl.py
 
     def GetSortImages(self):
         return (self.sm_dn, self.sm_up)

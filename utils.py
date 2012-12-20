@@ -1,3 +1,20 @@
+#!/usr/bin/env python
+# Copyright (C) 2012  Collin Tokheim
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+
 def get_start_pos(coordinate):
     """
     get start from 'chr:start-stop'
@@ -111,4 +128,3 @@ class InSilicoPcrUrl(object):
         get_params = '?org=%s&db=%s&wp_target=%s&wp_f=%s&wp_r=%s&wp_size=%s&wp_perfect=%s&wp_good=%s&boolshad.wp_flipReverse=%s&Submit=submit' % (
                             self.genome, self.assembly, self.target, self.forward, self.reverse, str(self.max_size), str(self.perfect), str(self.good), str(self.flip))
         return self.base_url + get_params
-

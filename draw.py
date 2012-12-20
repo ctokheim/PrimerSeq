@@ -1,3 +1,19 @@
+#!/usr/bin/env python
+# Copyright (C) 2012  Collin Tokheim
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 '''
 Created on Feb 8, 2012
 
@@ -92,8 +108,8 @@ def scale_intron_length(exonShapes, scale):
     previousActual = None
     for index, exonRect in enumerate(exonShapes):
         if not firstFlag == True:
-            dist = exonRect.start - previousActual.stop # distance from the previous (non-modified) exon
-            tmpStart = int(dist/scale) + previous.stop # scale distance between exons and plot relative to last exon
+            dist = exonRect.start - previousActual.stop  # distance from the previous (non-modified) exon
+            tmpStart = int(dist/scale) + previous.stop  # scale distance between exons and plot relative to last exon
             dif = tmpStart - exonRect.start
             previousActual = ExonRectangle(start = exonRect.start, stop = exonRect.stop, mid = 0, height = 1)  # the actual coordinates of the exon
             exonRect.shift(dif)

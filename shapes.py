@@ -1,3 +1,19 @@
+#!/usr/bin/env python
+# Copyright (C) 2012  Collin Tokheim
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 '''
 Created on Feb 8, 2012
 Intended to significantly aid in the drawing of exon structure and text box positioning.
@@ -11,6 +27,7 @@ from collections import namedtuple
 from operator import *
 import itertools as it
 
+
 class Shape(object):
     """
     Top-level shape that basically only defines some basic
@@ -22,11 +39,11 @@ class Shape(object):
             self.stop = stop
             self.mid = mid
             self.height = height
-            self.top = mid + height/2.0
-            self.bottom = mid - height/2.0
+            self.top = mid + height / 2.0
+            self.bottom = mid - height / 2.0
 
         else:
-            raise ValueError("Some values were at or below zero: Start = %s, Stop = %s, Height = %s"%(start, stop, height))
+            raise ValueError("Some values were at or below zero: Start = %s, Stop = %s, Height = %s" % (start, stop, height))
 
 
 class ExonRectangle(Shape):
@@ -37,12 +54,12 @@ class ExonRectangle(Shape):
 
         # Declare derived attributes
         Coord = namedtuple('Coord', 'x y')  # makes it easy to access x, y coordinate data
-        self.top_left = Coord(x = self.start, y = self.top)
-        self.top_right = Coord(x = self.stop, y = self.top)
-        self.bottom_left = Coord(x = self.start, y = self.bottom)
-        self.bottom_right = Coord(x = self.stop, y = self.bottom)
-        self.left = Coord(x = self.start, y = 0)
-        self.right = Coord(x = self.stop, y = 0)
+        self.top_left = Coord(x=self.start, y=self.top)
+        self.top_right = Coord(x=self.stop, y=self.top)
+        self.bottom_left = Coord(x=self.start, y=self.bottom)
+        self.bottom_right = Coord(x=self.stop, y=self.bottom)
+        self.left = Coord(x=self.start, y=0)
+        self.right = Coord(x=self.stop, y=0)
         self.exon_start = self.start
         self.exon_stop = self.stop
 
@@ -63,19 +80,20 @@ class ExonRectangle(Shape):
         self.exon_start += dif
         self.exon_stop += dif
         Coord = namedtuple("Coord", "x y")
-        self.top_left = Coord(x = self.top_left.x + dif, y = self.top_left.y)
-        self.top_right = Coord(x = self.top_right.x + dif, y = self.top_right.y)
-        self.bottom_left = Coord(x = self.bottom_left.x + dif, y = self.bottom_left.y)
-        self.bottom_right = Coord(x = self.bottom_right.x + dif, y = self.bottom_right.y)
-        self.left = Coord(x = self.left.x + dif, y = self.left.y)
-        self.right = Coord(x = self.right.x + dif, y = self.right.y)
+        self.top_left = Coord(x=self.top_left.x + dif, y=self.top_left.y)
+        self.top_right = Coord(x=self.top_right.x + dif, y=self.top_right.y)
+        self.bottom_left = Coord(x=self.bottom_left.x + dif, y=self.bottom_left.y)
+        self.bottom_right = Coord(x=self.bottom_right.x + dif, y=self.bottom_right.y)
+        self.left = Coord(x=self.left.x + dif, y=self.left.y)
+        self.right = Coord(x=self.right.x + dif, y=self.right.y)
+
 
 class JunctionLine(object):
     """
     """
     def __init__(self, exon_list):
         self.exon_lines = []  # straight lines between exons
-        self.exon_list = sorted(exon_list, key = lambda x: (x.start, x.stop))
+        self.exon_list = sorted(exon_list, key=lambda x: (x.start, x.stop))
 
     def createExonLines(self):
         self.exon_lines = []
