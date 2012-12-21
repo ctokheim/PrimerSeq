@@ -143,6 +143,7 @@ def read_depth_plot(options):
     gray = (0.9, 0.9, 0.9)
 
     # iterate over subplots (bigwig files)
+    max_count_holder = 0
     if num_subplots == 1:
         # axes.set_title('Read Depth Plot on %s' % chr)
         iterable = [axes]
@@ -173,8 +174,10 @@ def read_depth_plot(options):
             line.set_color(gray)
 
         # set y-axis
-        ax.set_ylim(0, 1.5 * max_count)
-        ax.set_yticks([0, int( .375 * max_count ), int( .75 * max_count ), int( 1.125 * max_count ), int(1.5 * max_count)])
+        if max_count > max_count_holder:
+            ax.set_ylim(0, 1.5 * max_count)
+            ax.set_yticks([0, int( .375 * max_count ), int( .75 * max_count ), int( 1.125 * max_count ), int(1.5 * max_count)])
+            max_count_holder = max_count
 
         # set x-axis options
         ax.set_xlim(real_start, real_stop)     # set x limits
@@ -184,11 +187,6 @@ def read_depth_plot(options):
         ax.xaxis.set_ticklabels(map(addCommas, [real_start, real_stop]))   # make nice looking text for labels
         ax.get_xticklabels()[0].set_horizontalalignment('left')
         ax.get_xticklabels()[1].set_horizontalalignment('right')
-
-        # rotate x-axis tick labels
-        #labels = ax.get_xticklabels()
-        #for label in labels:
-        #    label.set_rotation(30)
 
         # adjust spacing between subplots
         fig.subplots_adjust(wspace=0.05, hspace=0.05)

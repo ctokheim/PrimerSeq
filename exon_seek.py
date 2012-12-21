@@ -300,14 +300,13 @@ class ExonSeek(object):
         # get tx path information
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
-        self.all_paths.set_all_path_lengths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()
 
         if self.upstream and self.downstream:
             # user defined flanking exon case
             if self.strand == '+':
-                self.psi_upstream = algs.estimae_psi(self.upstream, paths, counts)
+                self.psi_upstream = algs.estimate_psi(self.upstream, paths, counts)
                 self.psi_downstream = 1.0
             elif self.strand == '-':
                 self.psi_upstream = 1.0

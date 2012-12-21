@@ -253,8 +253,8 @@ def primer3(options, primer3_options):
                 flanking_info[z][ALL_PATHS].set_all_path_lengths(map(utils.get_pos, primer3_coords.split(';')))
                 skipping_size_list = flanking_info[z][ALL_PATHS].skip_lengths
                 inclusion_size_list = flanking_info[z][ALL_PATHS].inc_lengths
-                skipping_size = ';'.join(map(str, skipping_size_list))
-                inclusion_size = ';'.join(map(str, inclusion_size_list))
+                skipping_size = ';'.join(map(str, filter(lambda x: x>0, skipping_size_list)))
+                inclusion_size = ';'.join(map(str, filter(lambda x: x>0, inclusion_size_list)))
                 left_seq = Sequence(primer3_dict['PRIMER_LEFT_0_SEQUENCE'], 'left')
                 right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
                 asm_region = '%s:%d-%d' % (flanking_info[z][ALL_PATHS].chr,
