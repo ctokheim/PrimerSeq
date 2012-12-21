@@ -237,7 +237,7 @@ def read_count_em(bcc_paths, sub_graph):
         # E-step
         for i, row in enumerate(Y):
             try:
-                if np.sum(row) != 0:
+                if np.sum(row) != 0 and row.dot(p) != 0:
                     Y[i] = row * p / row.dot(p) * read_counts[i]
             except:
                 print counter
