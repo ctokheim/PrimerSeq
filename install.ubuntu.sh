@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # This script is designed install pre-requisites for PrimerSeq on linux
 # (Debian based distros with apt-get). The following is assumed when you run
@@ -7,18 +7,19 @@
 # You have root access
 # The default python version is 2.7.X
 
+tty -s; if [ $? -ne 0 ]; then konsole -e "su root - -c $0"; exit; fi
 EXPECTED_ARGS=0
-EXPECTED_ARGS=65
+E_BADARGS=65
 
-if [ $# -ne $EXPECTED_ARGS ]
+if [ $? -ne $EXPECTED_ARGS ]
 then
-	echo "This script is designed to install pre-requisites for PrimerSeq on linux (Debian based distros with apt-get). It is assumed you have the following:\n* super user access\n* Default Python version is 2.7"
+	echo "This script is designed to install pre-requisites for PrimerSeq on linux (Debian based distros with apt-get). It is assumed you have the following:\n* root access\n* Default Python version is 2.7"
 	exit $E_BADARGS
 fi
 
 # Get dependencies of pip
-sudo apt-get python-setuptools
-sudo apt-get python-pip
+sudo apt-get install python-setuptools
+sudo apt-get install python-pip
 
 # possible dependencies for matplotlib
 sudo apt-get install libtiff
@@ -31,11 +32,14 @@ sudo pip install pygr
 sudo pip install networkx
 
 # add wxwidgets to sources list
-deb http://apt.wxwidgets.org/ `lsb_releas -a | grep Codename | cut -f2`-wx main
-deb-src http://apt.wxwidgets.org/ `lsb_releas -a | grep Codename | cut -f2`-wx main
+sudo echo "deb http://apt.wxwidgets.org/ `lsb_release -a | grep Codename | cut -f2`-wx main
+deb-src http://apt.wxwidgets.org/ `lsb_release -a | grep Codename | cut -f2`-wx main" > /etc/apt/sources.list.d/wxwidgets.list
 
 # update so wxwidgets repo is found with apt-get
 sudo apt-get update
 
 # install wxPython
 sudo apt-get install python-wxgtk2.8 python-wxtools wx2.8-il8n libwxgtk2.8-dev libgtk2.0-dev
+
+echo "You may want to copy the installation results. Press enter when finished . . ."
+read -p "$done"
