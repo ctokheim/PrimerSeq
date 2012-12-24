@@ -20,28 +20,28 @@
 Splice Graph
 ------------
 
-The splice_graph.py deals with gene structure as a (weighted) directed
-acyclic graph (DAG) normally known as a splice graph. Like you would expect,
-the :class:`~splice_graph.SpliceGraph` class represents gene structure
-as a splice graph.
+The splice_graph.py deals with gene structure as a (weighted) directed acyclic
+graph (DAG) normally known as a splice graph. Like you would expect, the
+:class:`~splice_graph.SpliceGraph` class represents gene structure as a splice
+graph.
 
 Transcripts Overlapping Target
 ------------------------------
 
-:func:`~splice_graph.get_from_gtf_using_gene_name`
-returns the all transcripts from a gene if the gene overlaps the user's
-target. :func:`~splice_graph.get_weakly_connected_tx` returns all transcripts
-that are weakly connected to the user's target. This approach is used when
-gene IDs are not valid and thus can not be used.
+:func:`~splice_graph.get_from_gtf_using_gene_name` returns the all transcripts
+    from a gene if the gene overlaps the user's target.
+:func:`~splice_graph.get_weakly_connected_tx` returns all transcripts that are
+    weakly connected to the user's target. This approach is used when gene IDs
+    are not valid and thus can not be used.
 
 Flanking Exons
 --------------
 
 If read counts are used (psi < 1) then splice_graph uses the
-:func:`~splice_graph.get_sufficient_psi_exons` function to find
-flanking exons with at least a user defined inclusion level.
-If psi == 1 then flanking exons are only determined by the biconnected
-componenets algorithm using :func:`~splice_graph.get_flanking_biconnected_exons`.
+:func:`~splice_graph.get_sufficient_psi_exons` function to find flanking exons
+    with at least a user defined inclusion level. If psi == 1 then flanking
+    exons are only determined by the biconnected componenets algorithm using
+:func:`~splice_graph.get_flanking_biconnected_exons`.
 '''
 
 import networkx as nx
@@ -82,8 +82,9 @@ class SpliceGraph(object):
 
     def set_graph_as_annotation(self, annotation):
         """
-        Create a nx DiGraph from list of tx in gene. FILTER_FACTOR defines a cutoff for
-        using a tx of a gene. A tx must have x num of exon where x > MAX tx exon num / FILTER_FACTOR.
+        Create a nx DiGraph from list of tx in gene. FILTER_FACTOR defines a
+        cutoff for using a tx of a gene. A tx must have x num of exon where x
+        > MAX tx exon num / FILTER_FACTOR.
         """
         # filter low exon tx
         max_exons = max(map(len, annotation))  # figure out max num exons
@@ -98,9 +99,9 @@ class SpliceGraph(object):
 
     def set_annotation_edge_weights(self, weights):
         """
-        Only try to find weights for already existing edges in the graph.
-        This function is intended to add weight values to edges defined
-        in the gtf annotation.
+        Only try to find weights for already existing edges in the graph. This
+        function is intended to add weight values to edges defined in the gtf
+        annotation.
         """
         # add edge weights to edges from annotation
         for u, v in self.graph.edges():
@@ -117,8 +118,8 @@ class SpliceGraph(object):
 
     def set_graph_as_nodes_only(self, exons):
         """
-        Simple function that makes a DAG (nx.DiGraph) with only nodes and no edges.
-        Meant to be used to before add_all_possible_edge_weights.
+        Simple function that makes a DAG (nx.DiGraph) with only nodes and no
+        edges. Meant to be used to before add_all_possible_edge_weights.
         """
         G = nx.DiGraph()
         G.add_nodes_from(exons)
@@ -126,7 +127,8 @@ class SpliceGraph(object):
 
     def add_all_possible_edge_weights(self, weights):  # use to have exon_forms rather than chr
         """
-        Add edge/weights to graph if supported by atleast READ_THRESHOLD number of reads
+        Add edge/weights to graph if supported by atleast READ_THRESHOLD
+        number of reads
         """
         # add novel edges if well supported
         sorted_nodes = sorted(self.graph.nodes())
@@ -145,8 +147,9 @@ class SpliceGraph(object):
 
 def get_from_gtf_using_gene_name(gtf, strand, chr, start, end):
     '''
-    This function finds the first gene in the gtf that completely contains the target interval.
-    I should really think about checking for multiple genes instead of just returning.
+    This function finds the first gene in the gtf that completely contains the
+    target interval. I should really think about checking for multiple genes
+    instead of just returning.
     '''
     for gene_key in gtf[chr]:
         if gtf[chr][gene_key]['strand'] == strand and gtf[chr][gene_key]['start'] <= start and gtf[chr][gene_key]['end'] >= end:
@@ -161,8 +164,8 @@ def get_from_gtf_using_gene_name(gtf, strand, chr, start, end):
 def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000):
     '''
     This function is meant to handle tx annotations without gene ids.
-    Currently this is a function outside of the SpliceGraph class but it may be beneficial
-    to later include this as a method.
+    Currently this is a function outside of the SpliceGraph class but it may
+    be beneficial to later include this as a method.
     '''
     # compile all tx paths that are reasonably close
     tmp_tx = []
@@ -302,8 +305,9 @@ def calculate_target_psi(target, sg_list, component):
 
 def main(options, args_output='tmp/debug.json'):
     """
-    The gtf main function is the function designed to be called from other scripts. It iterates through each target
-    exons and returns the necessary information for primer design.
+    The gtf main function is the function designed to be called from other
+    scripts. It iterates through each target exons and returns the necessary
+    information for primer design.
     """
     genome, args_gtf, args_target = options['fasta'], options['gtf'], options['target']
 
@@ -327,8 +331,8 @@ def main(options, args_output='tmp/debug.json'):
             down_exon = None
 
         # This try block is to catch assertions made about the graph. If a
-        # PrimerSeqError is raised it only impacts a single target for primer design
-        # so complete exiting of the program is not warranted.
+        # PrimerSeqError is raised it only impacts a single target for primer
+        # design so complete exiting of the program is not warranted.
         try:
             # if the gtf doesn't have a valid gene_id attribute then use
             # the first method otherwise use the second method.

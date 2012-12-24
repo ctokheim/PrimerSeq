@@ -29,16 +29,17 @@ import utils
 
 class ExonSeek(object):
     '''
-    This class handles the finding exons with a psi value threshold.
-    That is, it finds flanking exons to place primers where the exon
-    inclusion level is above a user-defined value.
+    This class handles the finding exons with a psi value threshold. That is,
+    it finds flanking exons to place primers where the exon inclusion level is
+    above a user-defined value.
     '''
 
     def __init__(self, target, splice_graph, ID, cutoff, upstream=None, downstream=None):
         '''
-        As the purpose of ExonSeek is to flanking constitutive exons, it is necessary
-        to know what needs to be "flanked", the target, and have a splice graph representation
-        of gene structure (splice_graph). The ID variable is meant to prevent overwriting of files.
+        As the purpose of ExonSeek is to flanking constitutive exons, it is
+        necessary to know what needs to be "flanked", the target, and have a
+        splice graph representation of gene structure (splice_graph). The ID
+        variable is meant to prevent overwriting of files.
         '''
         self.id = ID  # id is to prevent overwriting files in self.save_path_info
         self.cutoff = cutoff
@@ -148,9 +149,9 @@ class ExonSeek(object):
 
     def no_biconnected_case(self):
         '''
-        Case where the target, upstream, and downstream exons are all constitutive.
-        Thus just return the immediate upstream and downstream exon along with original
-        target.
+        Case where the target, upstream, and downstream exons are all
+        constitutive. Thus just return the immediate upstream and downstream
+        exon along with original target.
         '''
         print 'no biconnected case'
         # add information to log file

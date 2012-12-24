@@ -25,9 +25,9 @@ oldsettings = np.seterr(all='raise')
 
 def get_biconnected(G):
     """
-    Wrapper arround the networkx biconnected_components function. To find out why the biconnected
-    components algorithm is useful for finding constitutive exons check the information section or
-    wikipedia.
+    Wrapper arround the networkx biconnected_components function. To find out
+    why the biconnected components algorithm is useful for finding
+    constitutive exons check the information section or wikipedia.
     """
 
     G_undirected = G.to_undirected()  # make sure undirected graph for biconnected components
@@ -41,9 +41,12 @@ def get_biconnected(G):
 
 def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
     """
-    Computes the longest path (most total weight) by only considering unexplained edges. That is weights of any edge already in an isoform
-    is set to zero. This function tries to minimize the number of isoforms that could possibly be generated based on novel edges.
-    Assumes topologically sorted with source node as first in topological sort. Topological sort version runs in O(n+m) instead of O(nm).
+    Computes the longest path (most total weight) by only considering
+    unexplained edges. That is weights of any edge already in an isoform is
+    set to zero. This function tries to minimize the number of isoforms that
+    could possibly be generated based on novel edges. Assumes topologically
+    sorted with source node as first in topological sort. Topological sort
+    version runs in O(n+m) instead of O(nm).
 
     input:
         G - a networkx DAG
