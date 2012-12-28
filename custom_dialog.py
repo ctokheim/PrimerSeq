@@ -289,13 +289,10 @@ class SortGtfDialog(wx.Dialog):
             dlg.Destroy()
 
     def sort_gtf(self, infile, outfile):
-        # try:
-        #    gtf.sort_gtf(infile, outfile)
-        # except MemoryError:
+        """Sort a GTF file using SortGtf.jar"""
         my_config = ConfigParser.ConfigParser()
         my_config.read('PrimerSeq.cfg')
         config_options = dict(my_config.items('memory'))
-
         cmd = 'java -jar -Xmx%sm "bin/SortGtf.jar" "%s" "%s"' % (config_options['sort'], infile, outfile)
         logging.debug('Sort GTF cmd: ' + cmd)
         subprocess.check_call(cmd, shell=True)

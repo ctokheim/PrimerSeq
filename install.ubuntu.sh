@@ -39,7 +39,7 @@ deb-src http://apt.wxwidgets.org/ `lsb_release -a | grep Codename | cut -f2`-wx 
 sudo apt-get update
 
 # install wxPython
-sudo apt-get install python-wxgtk2.8 python-wxtools wx2.8-il8n libwxgtk2.8-dev libgtk2.0-dev
+sudo apt-get install python-wxgtk2.8 python-wxtools wx2.8-i18n libwxgtk2.8-dev libgtk2.0-dev
 
 echo "You may want to copy the installation results. Press enter when finished . . ."
 read -p "$done"

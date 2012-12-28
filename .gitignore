@@ -77,3 +77,10 @@ myDir
 *bed
 *pureseq
 *seqlen
+### /home/ctokheim/.gitignore-boilerplates/Global/SublimeText.gitignore
+
+# SublimeText project files
+/*.sublime-project
+*.sublime-workspace
+
+
