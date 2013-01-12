@@ -275,8 +275,10 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_
             -upstream_seq, -target_seq, -downstream_seq
 
     return [sGraph.strand, name[1:], psi_target,
-            sGraph.chr + ':' + '-'.join(map(str, upstream)), psi_upstream,
-            sGraph.chr + ':' + '-'.join(map(str, downstream)), psi_downstream,
+            sGraph.chr + ':' + '-'.join(map(str, upstream)),  # upstream eg. +chr1:1000-2000
+            psi_upstream,
+            sGraph.chr + ':' + '-'.join(map(str, downstream)),  # downstream eg. +chr1:1000-2000
+            psi_downstream,
             all_paths, upstream_seq,
             target_seq, downstream_seq]
 
@@ -317,18 +319,18 @@ def main(options, args_output='tmp/debug.json'):
     # iterate through each target exon
     output = []  # output from program
     for line in args_target:  # was line in handle
-        name, line = line  # .strip().split('\t')
+        name, line = line  # bad style of reassignment
         tgt = line[0]
         strand = tgt[0]
         tmp_start, tmp_end = get_pos(tgt)
-        chr = get_chr(tgt[1:])
+        chr = get_chr(tgt[1:])  # [1:] since strand is first character
         USER_DEFINED_FLANKING_EXONS = True if len(line) == 3 else False
         if USER_DEFINED_FLANKING_EXONS:
-            up_exon = utils.get_pos(line[1])
-            down_exon = utils.get_pos(line[2])
+            up_exon = utils.get_pos(line[1])  # user's upstream exon
+            down_exon = utils.get_pos(line[2])  # user's downstream exon
         else:
-            up_exon = None
-            down_exon = None
+            up_exon = None  # user did not provide upstream exon
+            down_exon = None  # user did not provide downstream exon
 
         # This try block is to catch assertions made about the graph. If a
         # PrimerSeqError is raised it only impacts a single target for primer
@@ -341,7 +343,11 @@ def main(options, args_output='tmp/debug.json'):
             else:
                 gene_dict = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
 
+            # The following control statements determine how the splice graph is constructed.
+            # It depends on flags in the option variable. The splice graph can be either constructed
+            # from annotation junctions or RNA-Seq + annotation junctions.
             if options['both_flag']:
+                # use both RNA-Seq data and annotation to find splice junctions
                 splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
                                            chr=chr,
                                            strand=strand,
@@ -366,6 +372,7 @@ def main(options, args_output='tmp/debug.json'):
                     single_bam_splice_graphs.append(tmp_sg)
 
             elif options['annotation_flag']:
+                # Use only splice junctions from annotation
                 splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use annotation
                                            chr=chr,
                                            strand=strand,
@@ -387,6 +394,7 @@ def main(options, args_output='tmp/debug.json'):
                     tmp_sg.set_annotation_edge_weights(eweight)
                     single_bam_splice_graphs.append(tmp_sg)
             elif options['rnaseq_flag']:
+                # the RNA-Seq only method is DEPRECATED!!!!
                 splice_graph = SpliceGraph(annotation=None,  # set to None to not use annotation
                                            chr=chr,
                                            strand=strand,

@@ -44,6 +44,9 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         insilico_pcr_id = wx.NewId()
         toolbar.AddSimpleTool(insilico_pcr_id, self.get_bmp(wx.ART_EXECUTABLE_FILE),
                               "In Silico PCR", "Test primers with in silico PCR")
+        save_plot_id = wx.NewId()
+        toolbar.AddSimpleTool(save_plot_id, self.get_bmp(wx.ART_FILE_SAVE),
+                              "Save Plots", "Save each plot to an html file viewable in your browser")
         toolbar.AddSimpleTool(wx.ID_HELP, self.get_bmp(wx.ART_HELP),
                               "Help", "Help Information")
         toolbar.AddSeparator()
@@ -77,9 +80,14 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
 
         # bind toolbar icons
         self.Bind(wx.EVT_TOOL, self.on_insilico_pcr, id=insilico_pcr_id)
+        self.Bind(wx.EVT_TOOL, self.on_save_plots, id=save_plot_id)
         self.Bind(wx.EVT_TOOL, self.on_plot, id=plot_id)
         self.Bind(wx.EVT_TOOL, self.on_help, id=wx.ID_HELP)
         self.Bind(wx.EVT_TOOL, self.on_exit, id=wx.ID_EXIT)
+
+    def on_save_plots(self, event):
+        dlg = wx.MessageDialog(self, 'This is the save plots dialog!!!', style=wx.OK)
+        dlg.ShowModal()
 
     def on_help(self, event):
         dlg = wx.MessageDialog(self, 'Instructions:\n\nUse the tool bar to validate that the primer design was successful.\n\nPress the Create Plots button to view how your data supports the primer design results\n\nPress the In Silico Pcr button to validate primer products', style=wx.OK)
