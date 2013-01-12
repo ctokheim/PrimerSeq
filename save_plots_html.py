@@ -23,7 +23,8 @@ class SavePlotsHTML(object):
     """
     def __init__(self):
         self.html_content = ''
-        self.css_rules = ''
+        self.css_rules = ''  # initialize to empty string
+        self.set_css()  # set css
 
     class CssProperty(object):
         """CssProperty handles construction of a single id/class css string"""
@@ -37,15 +38,15 @@ class SavePlotsHTML(object):
             """Creates css for a single id/class"""
             self.css = '%s{' % self.name
             for prop_name, prop_value in self.properties:
-                self.css.append('%s:%s;' % (str(prop_name), str(prop_value)))
-            self.css.append('}\n')
+                self.css += '%s:%s;' % (str(prop_name), str(prop_value))
+            self.css += '}\n'
 
         def get_css(self):
             """Css string getter"""
             return self.css
 
         def __str__(self):
-            self.get_css()
+            return self.get_css()
 
     def set_css(self):
         """Construct the necessary css rules"""
@@ -56,16 +57,46 @@ class SavePlotsHTML(object):
             [['margin-left', 'auto'],
             ['margin-right', 'auto'],
             ['width', '800px']]))
+        self.css_rules += str(self.CssProperty('img',
+            [['margin-left', 'auto'],
+            ['margin-right', 'auto'],
+            ['display', 'block']]))
+
+    def add_heading(self, text, heading_type='h1'):
+        """Add a heading element"""
+        self.html_content += '<%s>%s</%s>\n' % (heading_type, text, heading_type)
+
+    def add_img(self, img):
+        """Add an image"""
+        self.html_content += '<img src="%s" />\n' % img
 
     def get_html(self):
-        return """<html>
+        """Returns html with all the necessary boilerplate"""
+        return """<!DOCTYPE html>
+<html>
 <head>
     <title>PrimerSeq v1.0.0 Output</title>
+    <style type="text/css">
+    %s
+    </style>
 </head>
 <body>
 <div class='container'>
 %s
 </div>
 </body>
-%s
-</html>""" % (self.html_content, self.css_rules)
+</html>""" % (self.css_rules, self.html_content)
+
+    def __str__(self):
+        """Convenience method for get_html"""
+        return self.get_html()
+
+    def __repr__(self):
+        """Convenience method for printing"""
+        return self.get_html()
+
+if __name__ == '__main__':
+    """Creates a Hello World html page. Also demonstrates the page style."""
+    myHtml = SavePlotsHTML()
+    myHtml.add_heading('Hello World!!!')
+    print myHtml
