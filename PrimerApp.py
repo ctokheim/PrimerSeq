@@ -524,7 +524,7 @@ class PrimerFrame(wx.Frame):
     def on_run_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
         """Event handler for the running PrimerSeq button"""
         # alert the user there is missing input
-        if self.gtf == [] or self.fasta is None or self.bam == [] or self.output == '':
+        if self.gtf == [] or self.fasta is None or self.output == '':
             dlg = wx.MessageDialog(self, 'Please fill in all of the required fields.', style=wx.OK)
             dlg.ShowModal()
             return

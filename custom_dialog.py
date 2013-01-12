@@ -546,8 +546,3 @@ class DisplayPlotDialog(wx.Dialog):
 
 
 
-
-
-
-
-
