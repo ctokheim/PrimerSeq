@@ -66,6 +66,18 @@ class SavePlotsHTML(object):
         """Add a heading element"""
         self.html_content += '<%s>%s</%s>\n' % (heading_type, text, heading_type)
 
+    def add_line_break(self):
+        """Add a br tag"""
+        self.html_content += '<br />\n'
+
+    def add_link(self, url, text):
+        """Add a hyperlink"""
+        self.html_content += '<a href="%s" >%s</a>' % (url, text)
+
+    def add_text(self, text):
+        """Just add verbatim text to html"""
+        self.html_content += text
+
     def add_img(self, img):
         """Add an image"""
         self.html_content += '<img src="%s" />\n' % img
