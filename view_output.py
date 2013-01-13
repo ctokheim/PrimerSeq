@@ -15,10 +15,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import wx
-import  wx.lib.mixins.listctrl as listmix
+import wx.lib.mixins.listctrl as listmix
 import sys
 import csv
 import custom_dialog as cd
+import traceback  # debugging import
 
 
 class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl):
@@ -30,10 +31,12 @@ class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl):
 
 
 class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
-    def __init__(self, parent, id, string, output_file_to_load):
+    def __init__(self, parent, id, string, opts):
         # wx.Dialog.__init__(self, parent, -1, style=wx.WANTS_CHARS)
         wx.Frame.__init__(self, parent, -1, string)
-        self.output_filename = output_file_to_load
+        # self.output_filename = output_file_to_load
+        self.options = opts
+        self.output_filename = opts['output']  # separate attribute for legacy reasons
 
         # ToolBar at the top of the window
         toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
@@ -68,7 +71,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         # self.list.SetImageList(self.il, wx.IMAGE_LIST_SMALL)
         sizer.Add(self.list, 1, wx.EXPAND)
 
-        self.read_output_file(output_file_to_load)
+        self.read_output_file(self.output_filename)
 
         # Now that the list exists we can init the other base class,
         # see wx/lib/mixins/listctrl.py
@@ -86,8 +89,11 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.Bind(wx.EVT_TOOL, self.on_exit, id=wx.ID_EXIT)
 
     def on_save_plots(self, event):
-        dlg = wx.MessageDialog(self, 'This is the save plots dialog!!!', style=wx.OK)
-        dlg.ShowModal()
+        try:
+            dlg = cd.SavePlotDialog(self, -1, "Generate HTML Report", self.options)
+            dlg.ShowModal()
+        except Exception, e:
+            print traceback.format_exc()
 
     def on_help(self, event):
         dlg = wx.MessageDialog(self, 'Instructions:\n\nUse the tool bar to validate that the primer design was successful.\n\nPress the Create Plots button to view how your data supports the primer design results\n\nPress the In Silico Pcr button to validate primer products', style=wx.OK)

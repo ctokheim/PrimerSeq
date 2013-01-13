@@ -380,7 +380,8 @@ class PrimerFrame(wx.Frame):
     def update_after_run(self, msg):
         self.load_progress.Destroy()
         self.enable_load_buttons()
-        view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", msg.data[0])
+        # view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", msg.data[0])
+        view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", self.options)
         view_output_frame.Show()
 
     def update_after_error(self, msg):
@@ -536,29 +537,29 @@ class PrimerFrame(wx.Frame):
         coordinates = map(lambda y: re.split('\s*,+\s*', y), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', coordinates_string))))  # ['(strand)(chr):(start)-(end)', ...]
 
         # options for primer.py
-        options = {}
-        options['target'] = zip(range(1, len(coordinates) + 1), coordinates)
-        options['gtf'] = self.gtf
-        options['fasta'] = self.fasta
-        options['rnaseq'] = self.bam
-        options['psi'] = float(self.psi_text_field.GetValue())
-        options['rnaseq_flag'] = False
-        options['annotation_flag'] = True if str(self.type_combo_box.GetValue()) == 'Annotation' else False
-        options['both_flag'] = True if str(self.type_combo_box.GetValue()) == 'RNA-Seq + Annotation' else False
-        options['output'] = self.output
-        options['read_threshold'] = int(self.read_threshold_text_field.GetValue())
-        options['keep_temp'] = False if str(self.temp_combo_box.GetValue()) == 'No' else True
-        options['big_bed'] = None
-        options['no_gene_id'] = False if str(self.gene_id_combo_box.GetValue()) == 'Valid' else True
-        options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
-        options['anchor_length'] = int(self.anchor_length_text_field.GetValue())
-        options['job_id'] = 'jobs_id'
+        self.options = {}
+        self.options['target'] = zip(range(1, len(coordinates) + 1), coordinates)
+        self.options['gtf'] = self.gtf
+        self.options['fasta'] = self.fasta
+        self.options['rnaseq'] = self.bam
+        self.options['psi'] = float(self.psi_text_field.GetValue())
+        self.options['rnaseq_flag'] = False
+        self.options['annotation_flag'] = True if str(self.type_combo_box.GetValue()) == 'Annotation' else False
+        self.options['both_flag'] = True if str(self.type_combo_box.GetValue()) == 'RNA-Seq + Annotation' else False
+        self.options['output'] = self.output
+        self.options['read_threshold'] = int(self.read_threshold_text_field.GetValue())
+        self.options['keep_temp'] = False if str(self.temp_combo_box.GetValue()) == 'No' else True
+        self.options['big_bed'] = None
+        self.options['no_gene_id'] = False if str(self.gene_id_combo_box.GetValue()) == 'Valid' else True
+        self.options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
+        self.options['anchor_length'] = int(self.anchor_length_text_field.GetValue())
+        self.options['job_id'] = 'jobs_id'
 
         self.load_progress = cd.CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
         self.load_progress.Update(0)
         self.disable_load_buttons()
         self.current_process = ct.RunPrimerSeqThread(target=primer.main,
-                                                     args=(options,))
+                                                     args=(self.options,))
 
         event.Skip()
 

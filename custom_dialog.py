@@ -544,5 +544,139 @@ class DisplayPlotDialog(wx.Dialog):
         self.Show()
 
 
+class SavePlotDialog(wx.Dialog):
+    def __init__(self, parent, id, title, opts, text=''):
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 160), style=wx.DEFAULT_DIALOG_STYLE)
 
+        self.options = opts
+        self.output_file = opts['output']
 
+        self.parent = parent
+        self.text = wx.StaticText(self, -1, text)
+
+        self.data_label = wx.StaticText(self, -1, "BAM,BigWig files:")
+        self.data_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.data_text_field = wx.TextCtrl(self, -1, "example1.bam,example1.bw\nexample2.bam,example2.bw", style=wx.TE_MULTILINE)
+        self.data_text_field.SetToolTip(wx.ToolTip("eg. mySample.bam,mySample.bw"))
+
+        # read in valid primer output
+        with open(self.output_file) as handle:
+            self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
+                                  csv.reader(handle, delimiter='\t'))[1:]
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.save_plot_button = wx.Button(self, -1, 'Generate Report')
+        self.cancel_button = wx.Button(self, -1, 'Cancel')
+        button_sizer.Add(self.save_plot_button, 0, wx.ALIGN_RIGHT)
+        button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddMany([(self.data_label, 0, wx.ALIGN_CENTER, 10),  # add label
+                       ((10, 10), 0),  # add spacer
+                       (self.data_text_field, 0, wx.EXPAND, 10),  # add text box
+                       ((10, 10), 0),  # add spacer
+                       (button_sizer, 0, wx.ALIGN_CENTER)])  # add button
+        sizer.SetMinSize((500, 100))
+
+        self.Bind(wx.EVT_BUTTON, self.on_save_plot, self.save_plot_button)
+        self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
+        self.SetSizer(sizer)
+        self.Show()
+
+        pub.subscribe(self.plot_update, "plot_update")
+        pub.subscribe(self.on_plot_error, "plot_error")
+
+    def on_save_plot(self):
+        pass
+
+    def on_plot_error(self, msg):
+        self.parent.update_after_error((None,))
+
+    def cancel_button_event(self, event):
+        self.Destroy()
+        event.Skip()
+
+    def choose_bigwig_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your BigWig files', defaultDir=os.getcwd(),
+                            wildcard='BigWig files (*.bw)|*.bw|BigWig files (*.bigWig)|*.bigWig', style=wx.FD_MULTIPLE)  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filenames = dlg.GetPaths()  # get the new filenames from the dialog
+            filenames_without_path = dlg.GetFilenames()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.bigwig = filenames
+            self.bigwig_choice_label.SetLabel(', '.join(filenames_without_path))
+        else:
+            dlg.Destroy()
+
+    def plot_button_event(self, event):
+        if not self.bigwig or not self.target_combo_box.GetValue():
+            dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            return
+
+        self.target_id = str(self.target_combo_box.GetValue().split(',')[0])
+        self.target_of_interest = str(self.target_combo_box.GetValue().split(', ')[1])
+
+        # get the line from the file that matches the user selection
+        for row in self.results:
+            if row[0] == self.target_id:
+                row_of_interest = row
+
+        # find where the plot should span
+        start, end = utils.get_pos(row_of_interest[-1])
+        chr = utils.get_chr(row_of_interest[-1])
+        plot_domain = utils.construct_coordinate(chr, start, end)
+
+        self.plot_button.SetLabel('Ploting . . .')
+        self.plot_button.Disable()
+
+        # draw isoforms
+        plot_thread = ct.PlotThread(target=self.generate_plots, args=(self.target_id, plot_domain, self.bigwig, self.output_file))
+
+    def generate_plots(self, tgt_id, plt_domain, bigwig, out_file):
+        # generate isoform drawing
+        opts = {'json': primer.config_options['tmp'] + '/isoforms/' + tgt_id + '.json',
+                'output': primer.config_options['tmp'] + '/' + 'draw/' + tgt_id + '.png',
+                'scale': 1,
+                'primer_file': out_file,
+                'id': tgt_id}
+        self.draw_isoforms(opts)
+
+        # generate read depth plot
+        opts = {'bigwig': ','.join(bigwig),
+                'position': plt_domain,
+                'gene': 'Not Used',
+                'size': 2.,
+                'step': 1,
+                'output': primer.config_options['tmp'] + '/depth_plot/' + tgt_id + '.png'}
+        self.depth_plot(opts)
+
+    def draw_isoforms(self, opts):
+        '''
+        Draw isoforms by using draw.py
+        '''
+        logging.debug('Drawing isoforms %s . . .' % str(opts))
+        # load json file that has information isoforms and their counts
+        with open(opts['json']) as handle:
+            my_json = json.load(handle)
+
+        coord = draw.read_primer_file(self.output_file, opts['id'])
+        draw.main(my_json['path'], my_json['counts'], coord, opts)
+        logging.debug('Finished drawing isoforms.')
+
+    def depth_plot(self, opts):
+        '''
+        Create a read depth plot by using depth_plot.py
+        '''
+        logging.debug('Creating read depth plot %s . . .' % str(opts))
+        depth_plot.read_depth_plot(opts)
+        logging.debug('Finished creating read depth plot.')
+
+    def plot_update(self, msg):
+        self.plot_button.SetLabel('Plot')
+        self.plot_button.Enable()
+        DisplayPlotDialog(self, -1, 'Primer Results for ' + self.target_of_interest,
+                          ['tmp/depth_plot/' + self.target_id + '.png',
+                           'tmp/draw/' + self.target_id + '.png'])

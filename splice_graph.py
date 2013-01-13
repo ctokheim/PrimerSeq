@@ -305,6 +305,40 @@ def calculate_target_psi(target, sg_list, component):
     return ';'.join(map(str, psi_list))
 
 
+def construct_splice_graph(sam_list, gene_dict, chr, strand, read_threshold, min_count,
+                           output_type='single', both=False):
+    """
+    Handles construction of SpliceGraph objects
+    """
+    splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
+                               chr=chr,
+                               strand=strand,
+                               read_threshold=read_threshold,
+                               min_count=min_count)
+    edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                         for sam_obj in sam_list]
+
+    if output_type == 'single':
+        # case where counts are pooled from all BAM files
+        edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
+        splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
+        if both: splice_graph.add_all_possible_edge_weights(edge_weights)  # also use junctions from RNA-Seq
+        return splice_graph
+    elif output_type == 'list':
+        # returns a list of splice graphs (one for each BAM file)
+        single_bam_splice_graphs = []
+        for eweight in edge_weights_list:
+            tmp_sg = SpliceGraph(annotation=gene_dict['graph'],
+                                 chr=chr,
+                                 strand=strand,
+                                 read_threshold=read_threshold,
+                                 min_count=min_count)
+            tmp_sg.set_annotation_edge_weights(eweight)
+            if both: tmp_sg.add_all_possible_edge_weights(eweight)
+            single_bam_splice_graphs.append(tmp_sg)
+        return single_bam_splice_graphs
+
+
 def main(options, args_output='tmp/debug.json'):
     """
     The gtf main function is the function designed to be called from other
@@ -348,62 +382,45 @@ def main(options, args_output='tmp/debug.json'):
             # from annotation junctions or RNA-Seq + annotation junctions.
             if options['both_flag']:
                 # use both RNA-Seq data and annotation to find splice junctions
-                splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
-                                           chr=chr,
-                                           strand=strand,
-                                           read_threshold=options['read_threshold'],
-                                           min_count=options['min_jct_count'])
-                edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
-                                     for sam_obj in sam_obj_list]
-                edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
-                splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
-                splice_graph.add_all_possible_edge_weights(edge_weights)  # also use junctions from RNA-Seq
-
-                # get psi value for target in each bam file
-                single_bam_splice_graphs = []
-                for eweight in edge_weights_list:
-                    tmp_sg = SpliceGraph(annotation=gene_dict['graph'],
-                                         chr=chr,
-                                         strand=strand,
-                                         read_threshold=options['read_threshold'],
-                                         min_count=options['min_jct_count'])
-                    tmp_sg.set_annotation_edge_weights(eweight)
-                    tmp_sg.add_all_possible_edge_weights(eweight)
-                    single_bam_splice_graphs.append(tmp_sg)
+                # First, get splice graph with pooled count data
+                splice_graph = construct_splice_graph(sam_obj_list,
+                                                      gene_dict,
+                                                      chr,
+                                                      strand,
+                                                      options['read_threshold'],
+                                                      options['min_jct_count'],
+                                                      output_type='single',
+                                                      both=True)
+                # Second, get a splice graph for each BAM file
+                single_bam_splice_graphs = construct_splice_graph(sam_obj_list,
+                                                                  gene_dict,
+                                                                  chr,
+                                                                  strand,
+                                                                  options['read_threshold'],
+                                                                  options['min_jct_count'],
+                                                                  output_type='list',
+                                                                  both=True)
 
             elif options['annotation_flag']:
                 # Use only splice junctions from annotation
-                splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use annotation
-                                           chr=chr,
-                                           strand=strand,
-                                           read_threshold=options['read_threshold'],
-                                           min_count=options['min_jct_count'])
-                edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
-                                     for sam_obj in sam_obj_list]
-                edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
-                splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
-
-                # get psi value for target in each bam file
-                single_bam_splice_graphs = []
-                for eweight in edge_weights_list:
-                    tmp_sg = SpliceGraph(annotation=gene_dict['graph'],
-                                         chr=chr,
-                                         strand=strand,
-                                         read_threshold=options['read_threshold'],
-                                         min_count=options['min_jct_count'])
-                    tmp_sg.set_annotation_edge_weights(eweight)
-                    single_bam_splice_graphs.append(tmp_sg)
-            elif options['rnaseq_flag']:
-                # the RNA-Seq only method is DEPRECATED!!!!
-                splice_graph = SpliceGraph(annotation=None,  # set to None to not use annotation
-                                           chr=chr,
-                                           strand=strand,
-                                           read_threshold=options['read_threshold'])
-                splice_graph.set_graph_as_nodes_only(list(gene_dict['exons']))
-                edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
-                                     for sam_obj in sam_obj_list]
-                edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
-                splice_graph.add_all_possible_edge_weights(edge_weights)  # add all edges supported by rna seq
+                # First, get splice graph with pooled count data
+                splice_graph = construct_splice_graph(sam_obj_list,
+                                                      gene_dict,
+                                                      chr,
+                                                      strand,
+                                                      options['read_threshold'],
+                                                      options['min_jct_count'],
+                                                      output_type='single',
+                                                      both=False)
+                # Second, get a splice graph for each BAM file
+                single_bam_splice_graphs = construct_splice_graph(sam_obj_list,
+                                                                  gene_dict,
+                                                                  chr,
+                                                                  strand,
+                                                                  options['read_threshold'],
+                                                                  options['min_jct_count'],
+                                                                  output_type='list',
+                                                                  both=False)
 
             # default case
             if options['psi'] > .9999:

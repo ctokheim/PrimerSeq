@@ -92,5 +92,3 @@ class RunPrimerSeqThread(threading.Thread):
             wx.CallAfter(pub.sendMessage, "update_after_run", (self.args[0]['output'],))  # need to make this call more elegant
         except:
             wx.CallAfter(pub.sendMessage, "update_after_error", (None,))  # need to make this call more elegant
-
-
