@@ -26,42 +26,6 @@ class SavePlotsHTML(object):
         self.css_rules = ''  # initialize to empty string
         self.set_css()  # set css
 
-    class CssProperty(object):
-        """CssProperty handles construction of a single id/class css string"""
-        def __init__(self, name, properties):
-            self.name = name  # .myClassName
-            self.properties = properties  # [['margin', 0], ...]
-            self.css = ''  # css contents to return
-            self.set_css_rules()
-
-        def set_css_rules(self):
-            """Creates css for a single id/class"""
-            self.css = '%s{' % self.name
-            for prop_name, prop_value in self.properties:
-                self.css += '%s:%s;' % (str(prop_name), str(prop_value))
-            self.css += '}\n'
-
-        def get_css(self):
-            """Css string getter"""
-            return self.css
-
-        def __str__(self):
-            return self.get_css()
-
-    def set_css(self):
-        """Construct the necessary css rules"""
-        self.css_rules += str(self.CssProperty('body, html',
-            [['margin', 0],
-            ['padding', 0]]))
-        self.css_rules += str(self.CssProperty('.container',
-            [['margin-left', 'auto'],
-            ['margin-right', 'auto'],
-            ['width', '800px']]))
-        self.css_rules += str(self.CssProperty('img',
-            [['margin-left', 'auto'],
-            ['margin-right', 'auto'],
-            ['display', 'block']]))
-
     def add_heading(self, text, heading_type='h1'):
         """Add a heading element"""
         self.html_content += '<%s>%s</%s>\n' % (heading_type, text, heading_type)
@@ -87,17 +51,15 @@ class SavePlotsHTML(object):
         return """<!DOCTYPE html>
 <html>
 <head>
+    <LINK href="style.css" rel="stylesheet" type="text/css">
     <title>PrimerSeq v1.0.0 Output</title>
-    <style type="text/css">
-    %s
-    </style>
 </head>
 <body>
 <div class='container'>
 %s
 </div>
 </body>
-</html>""" % (self.css_rules, self.html_content)
+</html>""" % (self.html_content)
 
     def __str__(self):
         """Convenience method for get_html"""

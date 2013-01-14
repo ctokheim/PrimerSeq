@@ -1,0 +1,3 @@
+body, html { margin:0; padding: 0; }
+.container { margin-left: auto; margin-right: auto; width: 800px; }
+img { margin-left: auto; margin-right: auto; display: block; }
