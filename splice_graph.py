@@ -305,21 +305,18 @@ def calculate_target_psi(target, sg_list, component):
     return ';'.join(map(str, psi_list))
 
 
-def construct_splice_graph(sam_list, gene_dict, chr, strand, read_threshold, min_count,
+def construct_splice_graph(edge_weights_list, gene_dict, chr, strand, read_threshold, min_count,
                            output_type='single', both=False):
     """
     Handles construction of SpliceGraph objects
     """
-    splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
-                               chr=chr,
-                               strand=strand,
-                               read_threshold=read_threshold,
-                               min_count=min_count)
-    edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
-                         for sam_obj in sam_list]
-
     if output_type == 'single':
         # case where counts are pooled from all BAM files
+        splice_graph = SpliceGraph(annotation=gene_dict['graph'],  # use junctions from annotation
+                                   chr=chr,
+                                   strand=strand,
+                                   read_threshold=read_threshold,
+                                   min_count=min_count)
         edge_weights = merge_list_of_dicts(edge_weights_list)  # merge all SAM/BAM read counts to a single dictionary
         splice_graph.set_annotation_edge_weights(edge_weights)  # set edge weights supported from annotation
         if both: splice_graph.add_all_possible_edge_weights(edge_weights)  # also use junctions from RNA-Seq
@@ -377,13 +374,17 @@ def main(options, args_output='tmp/debug.json'):
             else:
                 gene_dict = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
 
+            # extract all edge weights only once
+            edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                                 for sam_obj in sam_obj_list]
+
             # The following control statements determine how the splice graph is constructed.
             # It depends on flags in the option variable. The splice graph can be either constructed
             # from annotation junctions or RNA-Seq + annotation junctions.
             if options['both_flag']:
                 # use both RNA-Seq data and annotation to find splice junctions
                 # First, get splice graph with pooled count data
-                splice_graph = construct_splice_graph(sam_obj_list,
+                splice_graph = construct_splice_graph(edge_weights_list,
                                                       gene_dict,
                                                       chr,
                                                       strand,
@@ -392,7 +393,7 @@ def main(options, args_output='tmp/debug.json'):
                                                       output_type='single',
                                                       both=True)
                 # Second, get a splice graph for each BAM file
-                single_bam_splice_graphs = construct_splice_graph(sam_obj_list,
+                single_bam_splice_graphs = construct_splice_graph(edge_weights_list,
                                                                   gene_dict,
                                                                   chr,
                                                                   strand,
@@ -404,7 +405,7 @@ def main(options, args_output='tmp/debug.json'):
             elif options['annotation_flag']:
                 # Use only splice junctions from annotation
                 # First, get splice graph with pooled count data
-                splice_graph = construct_splice_graph(sam_obj_list,
+                splice_graph = construct_splice_graph(edge_weights_list,
                                                       gene_dict,
                                                       chr,
                                                       strand,
@@ -413,7 +414,7 @@ def main(options, args_output='tmp/debug.json'):
                                                       output_type='single',
                                                       both=False)
                 # Second, get a splice graph for each BAM file
-                single_bam_splice_graphs = construct_splice_graph(sam_obj_list,
+                single_bam_splice_graphs = construct_splice_graph(edge_weights_list,
                                                                   gene_dict,
                                                                   chr,
                                                                   strand,
@@ -422,7 +423,7 @@ def main(options, args_output='tmp/debug.json'):
                                                                   output_type='list',
                                                                   both=False)
 
-            # default case
+            # always included case
             if options['psi'] > .9999:
                 tmp = get_flanking_biconnected_exons(tgt, gene_dict['target'],
                                                      splice_graph,

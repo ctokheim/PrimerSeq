@@ -404,6 +404,7 @@ class PrimerFrame(wx.Frame):
         self.run_button.Enable()
 
     def process_bam(self, fnames, fnames_without_path, anc_len):
+        """This method is threaded by the set_bam method"""
         tmp_bam = []  # a list of sam.Sam obj to be returned
         for i, f in enumerate(fnames):
             wx.CallAfter(pub.sendMessage, "update", (int(float(i) / len(fnames) * 100), 'Reading %s . . .' % fnames_without_path[i]))

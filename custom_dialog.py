@@ -546,7 +546,7 @@ class DisplayPlotDialog(wx.Dialog):
 
 class SavePlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, opts, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(400, 160), style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 190), style=wx.DEFAULT_DIALOG_STYLE)
 
         self.options = opts
         self.output_file = opts['output']
@@ -564,29 +564,47 @@ class SavePlotDialog(wx.Dialog):
             self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
                                   csv.reader(handle, delimiter='\t'))[1:]
 
+        # widgets for handling choice of output directory
+        grid_sizer = wx.GridSizer(1, 3, 0, 0)
+        self.directory_label = wx.StaticText(self, -1, "Directory:")
+        self.directory_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.choose_directory_button = wx.Button(self, -1, "Choose . . .")
+        self.choose_directory_button.SetToolTip(wx.ToolTip('Choose your output directory'))
+        self.my_panel = wx.ScrolledWindow(self, -1, style=wx.TAB_TRAVERSAL, size=wx.Size(300, 20))
+        self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 20))
+        self.directory_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        grid_sizer.Add(self.directory_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
+        grid_sizer.Add(self.choose_directory_button, 0, wx.ALIGN_CENTER, 10)
+        grid_sizer.Add(self.my_panel, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 10)
+
+        # run and cancel buttons
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.save_plot_button = wx.Button(self, -1, 'Generate Report')
         self.cancel_button = wx.Button(self, -1, 'Cancel')
         button_sizer.Add(self.save_plot_button, 0, wx.ALIGN_RIGHT)
         button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
 
+        # set sizer information
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddMany([(self.data_label, 0, wx.ALIGN_CENTER, 10),  # add label
                        ((10, 10), 0),  # add spacer
                        (self.data_text_field, 0, wx.EXPAND, 10),  # add text box
+                       ((10, 10), 0),  # add spacer
+                       (grid_sizer, 0, wx.EXPAND, 10),  # add output directory choice
                        ((10, 10), 0),  # add spacer
                        (button_sizer, 0, wx.ALIGN_CENTER)])  # add button
         sizer.SetMinSize((500, 100))
 
         self.Bind(wx.EVT_BUTTON, self.on_save_plot, self.save_plot_button)
         self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
+        self.Bind(wx.EVT_BUTTON, self.on_directory_choice, self.choose_directory_button)
         self.SetSizer(sizer)
         self.Show()
 
         pub.subscribe(self.plot_update, "plot_update")
         pub.subscribe(self.on_plot_error, "plot_error")
 
-    def on_save_plot(self):
+    def on_save_plot(self, event):
         pass
 
     def on_plot_error(self, msg):
@@ -596,17 +614,13 @@ class SavePlotDialog(wx.Dialog):
         self.Destroy()
         event.Skip()
 
-    def choose_bigwig_event(self, event):
-        dlg = wx.FileDialog(self, message='Choose your BigWig files', defaultDir=os.getcwd(),
-                            wildcard='BigWig files (*.bw)|*.bw|BigWig files (*.bigWig)|*.bigWig', style=wx.FD_MULTIPLE)  # open file dialog
+    def on_directory_choice(self, event):
+        dlg = wx.DirDialog(self, message='Choose an output directory')
         # if they press ok
         if dlg.ShowModal() == wx.ID_OK:
-            filenames = dlg.GetPaths()  # get the new filenames from the dialog
-            filenames_without_path = dlg.GetFilenames()  # only grab the actual filenames and none of the path information
+            self.output_directory = dlg.GetPath()  # get the new filenames from the dialog
+            self.directory_choice_label.SetLabel(self.output_directory)
             dlg.Destroy()  # best to do this sooner
-
-            self.bigwig = filenames
-            self.bigwig_choice_label.SetLabel(', '.join(filenames_without_path))
         else:
             dlg.Destroy()
 
