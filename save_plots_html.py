@@ -23,8 +23,6 @@ class SavePlotsHTML(object):
     """
     def __init__(self):
         self.html_content = ''
-        self.css_rules = ''  # initialize to empty string
-        self.set_css()  # set css
 
     def add_heading(self, text, heading_type='h1'):
         """Add a heading element"""

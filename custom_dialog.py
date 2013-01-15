@@ -36,6 +36,8 @@ import ConfigParser
 import re
 import splice_graph as sg
 from exon_seek import ExonSeek
+from save_plots_html import SavePlotsHTML
+import shutil
 import algorithms as algs
 
 
@@ -616,11 +618,11 @@ class SavePlotDialog(wx.Dialog):
             return  # exit if user didn't specify an output
 
         bigwig_files = map(lambda y: re.split('\s*,+\s*', y)[1], map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', self.data_text_field.GetValue()))))
-        html_thread = ct.HtmlReportThread(self.generate_plots, args=(bigwig_files, self.output_file, self.output_directory))
+        html_thread = ct.HtmlReportThread(self.generate_plots, args=(self.options, bigwig_files, self.output_directory))
 
         # disable button so they cannot press it twice
-        self.choose_directory_button.SetLabel('Generating . . .')
-        self.choose_directory_button.Disable()
+        self.save_plot_button.SetLabel('Generating . . .')
+        self.save_plot_button.Disable()
 
     def on_plot_error(self, msg):
         self.parent.update_after_error((None,))
@@ -665,6 +667,11 @@ class SavePlotDialog(wx.Dialog):
         plot_thread = ct.PlotThread(target=self.generate_plots, args=(self.options, self.target_id, plot_domain, self.bigwig, self.output_file))
 
     def generate_plots(self, options, bigwigs, out_dir):
+        handle = open(options['output'], 'r')
+        handle.readline()
+        for line in csv.reader(handle, delimiter='\t'):
+            if len(line) <= 1: continue  # skip cases where no good output
+            print line
             ID = line[0]
             start, end = utils.get_pos(line[-1])
             chr = utils.get_chr(line[-1])
@@ -672,9 +679,16 @@ class SavePlotDialog(wx.Dialog):
             # only error msgs and blank lines do not have tabs
             if len(line) > 1:
                 tx_paths, counts = self.get_isforms_and_counts(line, options)
+                my_html = SavePlotsHTML()
                 for index in range(len(tx_paths)):
                     path, count = tx_paths[index], counts[index]
-                    self.create_plots(ID, plot_domain, path, count, bigwigs[index], options['output'], out_dir)
+                    self.create_plots(ID, index, plot_domain, path, count, [bigwigs[index]], options['output'], out_dir)
+                    my_html.add_img('%s.%d.depth.png' % (ID, index))
+                    my_html.add_img('%s.%d.isoforms.png' % (ID, index))
+                with open(os.path.join(out_dir, ID + '.html'), 'wb') as html_writer:
+                    html_writer.write(str(my_html))
+        handle.close()
+        shutil.copy('style.css', out_dir)  # copy css to folder
 
     def get_isforms_and_counts(self, line, options):
         # get information about each row
@@ -708,18 +722,18 @@ class SavePlotDialog(wx.Dialog):
         for my_splice_graph in bam_splice_graphs:
             # not the best use of the ExonSeek object, initially intended to finde appropriate flanking exons
             # but in this case ExonSeek is used to get the transcripts and associate counts
-            exon_seek_obj = ExonSeek(target_coordinate, my_splice_graph.get_graph(), ID, options['cutoff'], None, None)
+            exon_seek_obj = ExonSeek(utils.get_pos(target_coordinate), my_splice_graph, ID, options['psi'], None, None)
             all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
             paths_list.append(exon_seek_obj.paths)
             counts_list.append(exon_seek_obj.counts)
         return paths_list, counts_list  # return the tx paths and count information for a single AS event
 
-    def create_plots(self, tgt_id, plt_domain, path, counts, bigwig, out_file, output_directory):
+    def create_plots(self, tgt_id, bam_index, plt_domain, path, counts, bigwig, out_file, output_directory):
         """Create plots for a single BAM/BigWig pair"""
         # generate isoform drawing
         opts = {'path': path,
                 'counts': counts,
-                'output': os.path.join(output_directory, tgt_id + '.png'),
+                'output': os.path.join(output_directory, tgt_id + '.' + str(bam_index) + '.isoforms.png'),
                 'scale': 1,
                 'primer_file': out_file,
                 'id': tgt_id}
@@ -731,7 +745,7 @@ class SavePlotDialog(wx.Dialog):
                 'gene': 'Not Used',
                 'size': 2.,
                 'step': 1,
-                'output': os.path.join(output_directory, tgt_id + '.png')}
+                'output': os.path.join(output_directory, tgt_id + '.' + str(bam_index) + '.depth.png')}
         self.depth_plot(opts)
 
     def setup_splice_graph(self):
