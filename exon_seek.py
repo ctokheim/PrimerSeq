@@ -82,6 +82,7 @@ class ExonSeek(object):
         '''
         with open('tmp/isoforms/' + str(self.id) + '.json', 'w') as handle:
             json.dump({'path': p, 'counts': list(cts)}, handle, indent=4)  # output path information to tmp file
+        self.path, self.counts = p, cts  # store fore programatic access
 
     def find_closest_exon_above_cutoff(self, paths, counts, possible_exons):
         """

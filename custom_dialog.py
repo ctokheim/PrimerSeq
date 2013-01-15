@@ -33,6 +33,10 @@ import gtf
 import webbrowser
 import utils
 import ConfigParser
+import re
+import splice_graph as sg
+from exon_seek import ExonSeek
+import algorithms as algs
 
 
 class CustomDialog(wx.Dialog):
@@ -550,13 +554,14 @@ class SavePlotDialog(wx.Dialog):
 
         self.options = opts
         self.output_file = opts['output']
+        self.output_directory = None  # user needs to specify an output directory
 
         self.parent = parent
         self.text = wx.StaticText(self, -1, text)
 
         self.data_label = wx.StaticText(self, -1, "BAM,BigWig files:")
         self.data_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        self.data_text_field = wx.TextCtrl(self, -1, "example1.bam,example1.bw\nexample2.bam,example2.bw", style=wx.TE_MULTILINE)
+        self.data_text_field = wx.TextCtrl(self, -1, ',\n'.join([s.path for s in self.options['rnaseq']]), style=wx.TE_MULTILINE)
         self.data_text_field.SetToolTip(wx.ToolTip("eg. mySample.bam,mySample.bw"))
 
         # read in valid primer output
@@ -605,7 +610,17 @@ class SavePlotDialog(wx.Dialog):
         pub.subscribe(self.on_plot_error, "plot_error")
 
     def on_save_plot(self, event):
-        pass
+        if not self.output_directory:
+            dlg = wx.MessageDialog(self, 'Please enter an output director.', style=wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            return  # exit if user didn't specify an output
+
+        bigwig_files = map(lambda y: re.split('\s*,+\s*', y)[1], map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', self.data_text_field.GetValue()))))
+        html_thread = ct.HtmlReportThread(self.generate_plots, args=(bigwig_files, self.output_file, self.output_directory))
+
+        # disable button so they cannot press it twice
+        self.choose_directory_button.SetLabel('Generating . . .')
+        self.choose_directory_button.Disable()
 
     def on_plot_error(self, msg):
         self.parent.update_after_error((None,))
@@ -647,12 +662,64 @@ class SavePlotDialog(wx.Dialog):
         self.plot_button.Disable()
 
         # draw isoforms
-        plot_thread = ct.PlotThread(target=self.generate_plots, args=(self.target_id, plot_domain, self.bigwig, self.output_file))
+        plot_thread = ct.PlotThread(target=self.generate_plots, args=(self.options, self.target_id, plot_domain, self.bigwig, self.output_file))
 
-    def generate_plots(self, tgt_id, plt_domain, bigwig, out_file):
+    def generate_plots(self, options, bigwigs, out_dir):
+            ID = line[0]
+            start, end = utils.get_pos(line[-1])
+            chr = utils.get_chr(line[-1])
+            plot_domain = utils.construct_coordinate(chr, start, end)
+            # only error msgs and blank lines do not have tabs
+            if len(line) > 1:
+                tx_paths, counts = self.get_isforms_and_counts(line, options)
+                for index in range(len(tx_paths)):
+                    path, count = tx_paths[index], counts[index]
+                    self.create_plots(ID, plot_domain, path, count, bigwigs[index], options['output'], out_dir)
+
+    def get_isforms_and_counts(self, line, options):
+        # get information about each row
+        ID, target_coordinate = line[:2]
+        strand = target_coordinate[0]
+        chr = utils.get_chr(target_coordinate[1:])
+        tmp_start, tmp_end = utils.get_pos(target_coordinate)
+
+        # get information regarding the gene
+        if options['no_gene_id']:
+            gene_dict = sg.get_weakly_connected_tx(options['gtf'], strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
+        else:
+            gene_dict = sg.get_from_gtf_using_gene_name(options['gtf'], strand, chr, tmp_start, tmp_end)
+
+        # get edge weights
+        edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
+                             for sam_obj in options['rnaseq']]
+
+        # construct splice graph for each BAM file
+        bam_splice_graphs = sg.construct_splice_graph(edge_weights_list,
+                                                      gene_dict,
+                                                      chr,
+                                                      strand,
+                                                      options['read_threshold'],
+                                                      options['min_jct_count'],
+                                                      output_type='list',
+                                                      both=options['both_flag'])
+
+        paths_list = []
+        counts_list = []
+        for my_splice_graph in bam_splice_graphs:
+            # not the best use of the ExonSeek object, initially intended to finde appropriate flanking exons
+            # but in this case ExonSeek is used to get the transcripts and associate counts
+            exon_seek_obj = ExonSeek(target_coordinate, my_splice_graph.get_graph(), ID, options['cutoff'], None, None)
+            all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
+            paths_list.append(exon_seek_obj.paths)
+            counts_list.append(exon_seek_obj.counts)
+        return paths_list, counts_list  # return the tx paths and count information for a single AS event
+
+    def create_plots(self, tgt_id, plt_domain, path, counts, bigwig, out_file, output_directory):
+        """Create plots for a single BAM/BigWig pair"""
         # generate isoform drawing
-        opts = {'json': primer.config_options['tmp'] + '/isoforms/' + tgt_id + '.json',
-                'output': primer.config_options['tmp'] + '/' + 'draw/' + tgt_id + '.png',
+        opts = {'path': path,
+                'counts': counts,
+                'output': os.path.join(output_directory, tgt_id + '.png'),
                 'scale': 1,
                 'primer_file': out_file,
                 'id': tgt_id}
@@ -664,20 +731,19 @@ class SavePlotDialog(wx.Dialog):
                 'gene': 'Not Used',
                 'size': 2.,
                 'step': 1,
-                'output': primer.config_options['tmp'] + '/depth_plot/' + tgt_id + '.png'}
+                'output': os.path.join(output_directory, tgt_id + '.png')}
         self.depth_plot(opts)
+
+    def setup_splice_graph(self):
+        pass
 
     def draw_isoforms(self, opts):
         '''
         Draw isoforms by using draw.py
         '''
         logging.debug('Drawing isoforms %s . . .' % str(opts))
-        # load json file that has information isoforms and their counts
-        with open(opts['json']) as handle:
-            my_json = json.load(handle)
-
         coord = draw.read_primer_file(self.output_file, opts['id'])
-        draw.main(my_json['path'], my_json['counts'], coord, opts)
+        draw.main(opts['path'], opts['counts'], coord, opts)
         logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
