@@ -563,7 +563,7 @@ class SavePlotDialog(wx.Dialog):
 
         self.data_label = wx.StaticText(self, -1, "BAM,BigWig files:")
         self.data_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        self.data_text_field = wx.TextCtrl(self, -1, ',\n'.join([s.path for s in self.options['rnaseq']]), style=wx.TE_MULTILINE)
+        self.data_text_field = wx.TextCtrl(self, -1, ',\n'.join(['Title,' + s.path for s in self.options['rnaseq']]), style=wx.TE_MULTILINE)
         self.data_text_field.SetToolTip(wx.ToolTip("eg. mySample.bam,mySample.bw"))
 
         # read in valid primer output
@@ -608,24 +608,47 @@ class SavePlotDialog(wx.Dialog):
         self.SetSizer(sizer)
         self.Show()
 
-        pub.subscribe(self.plot_update, "plot_update")
-        pub.subscribe(self.on_plot_error, "plot_error")
+        pub.subscribe(self.on_finish, "plotting_finished")
+
+    def on_finish(self, msg):
+        dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.')
+        dlg.ShowModal()
+        self.save_plot_button.SetLabel('Generate Report')
+        self.save_plot_button.Enable()
+        webbrowser.open(os.path.join(self.output_directory, 'index.html'))
 
     def on_save_plot(self, event):
         if not self.output_directory:
-            dlg = wx.MessageDialog(self, 'Please enter an output director.', style=wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self, 'Please enter an output directory.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return  # exit if user didn't specify an output
+        self.generate_index_html()  # create the index.html web page
 
-        bigwig_files = map(lambda y: re.split('\s*,+\s*', y)[1], map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', self.data_text_field.GetValue()))))
-        html_thread = ct.HtmlReportThread(self.generate_plots, args=(self.options, bigwig_files, self.output_directory))
+        lines = map(lambda y: re.split('\s*,+\s*', y), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', self.data_text_field.GetValue()))))
+        bigwig_files = map(lambda x: x[2], lines)
+        titles = map(lambda x: x[0], lines)
+        html_thread = ct.HtmlReportThread(self.generate_plots, args=(self.options, bigwig_files, self.output_directory, titles))
 
         # disable button so they cannot press it twice
         self.save_plot_button.SetLabel('Generating . . .')
         self.save_plot_button.Disable()
 
-    def on_plot_error(self, msg):
-        self.parent.update_after_error((None,))
+    def generate_index_html(self):
+        # start creating a index.html web page
+        index_html = SavePlotsHTML()
+        index_html.add_heading('Alternative Splicing Events')
+
+        # add links to AS events with designed primers
+        for line in self.results:
+            print self.output_directory
+            print line
+            index_html.add_link(os.path.join(self.output_directory, line[0] + '.html'),
+                                line[1])
+
+        # write list of links to the index.html file
+        with open(os.path.join(self.output_directory, 'index.html'), 'w') as handle:
+            handle.write(str(index_html))
+
 
     def cancel_button_event(self, event):
         self.Destroy()
@@ -641,32 +664,7 @@ class SavePlotDialog(wx.Dialog):
         else:
             dlg.Destroy()
 
-    def plot_button_event(self, event):
-        if not self.bigwig or not self.target_combo_box.GetValue():
-            dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            return
-
-        self.target_id = str(self.target_combo_box.GetValue().split(',')[0])
-        self.target_of_interest = str(self.target_combo_box.GetValue().split(', ')[1])
-
-        # get the line from the file that matches the user selection
-        for row in self.results:
-            if row[0] == self.target_id:
-                row_of_interest = row
-
-        # find where the plot should span
-        start, end = utils.get_pos(row_of_interest[-1])
-        chr = utils.get_chr(row_of_interest[-1])
-        plot_domain = utils.construct_coordinate(chr, start, end)
-
-        self.plot_button.SetLabel('Ploting . . .')
-        self.plot_button.Disable()
-
-        # draw isoforms
-        plot_thread = ct.PlotThread(target=self.generate_plots, args=(self.options, self.target_id, plot_domain, self.bigwig, self.output_file))
-
-    def generate_plots(self, options, bigwigs, out_dir):
+    def generate_plots(self, options, bigwigs, out_dir, titles):
         handle = open(options['output'], 'r')
         handle.readline()
         for line in csv.reader(handle, delimiter='\t'):
@@ -683,8 +681,10 @@ class SavePlotDialog(wx.Dialog):
                 for index in range(len(tx_paths)):
                     path, count = tx_paths[index], counts[index]
                     self.create_plots(ID, index, plot_domain, path, count, [bigwigs[index]], options['output'], out_dir)
+                    my_html.add_heading(titles[index])
                     my_html.add_img('%s.%d.depth.png' % (ID, index))
                     my_html.add_img('%s.%d.isoforms.png' % (ID, index))
+                    my_html.add_line_break()
                 with open(os.path.join(out_dir, ID + '.html'), 'wb') as html_writer:
                     html_writer.write(str(my_html))
         handle.close()
@@ -747,9 +747,6 @@ class SavePlotDialog(wx.Dialog):
                 'step': 1,
                 'output': os.path.join(output_directory, tgt_id + '.' + str(bam_index) + '.depth.png')}
         self.depth_plot(opts)
-
-    def setup_splice_graph(self):
-        pass
 
     def draw_isoforms(self, opts):
         '''

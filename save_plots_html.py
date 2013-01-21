@@ -26,11 +26,15 @@ class SavePlotsHTML(object):
 
     def add_heading(self, text, heading_type='h1'):
         """Add a heading element"""
-        self.html_content += '<%s>%s</%s>\n' % (heading_type, text, heading_type)
+        self.html_content += '<center><%s>%s</%s></center>\n' % (heading_type, text, heading_type)
 
     def add_line_break(self):
         """Add a br tag"""
         self.html_content += '<br />\n'
+
+    def add_horizontal_line(self):
+        """Add a hr tag"""
+        self.html_content += '<hr />\n'
 
     def add_link(self, url, text):
         """Add a hyperlink"""

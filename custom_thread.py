@@ -105,10 +105,13 @@ class HtmlReportThread(threading.Thread):
         self.start()
 
     def run(self):
-        output = self.tar(*self.args)  # threaded call
+        try:
+            output = self.tar(*self.args)  # threaded call
 
-        # Only for loading files. Not for when running PrimerSeq.
-        if self.attr and self.label and self.label_text:
-            wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
-        else:
-            wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
+            # Only for loading files. Not for when running PrimerSeq.
+            if self.attr and self.label and self.label_text:
+                wx.CallAfter(pub.sendMessage, "plotting_finished", ((self.attr, output), (self.label, self.label_text)))
+            else:
+                wx.CallAfter(pub.sendMessage, "plotting_finished", (None,))  # need to make this call more elegant
+        except Exception, e:
+            print e
