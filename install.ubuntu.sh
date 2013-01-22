@@ -17,6 +17,14 @@ then
 	exit $E_BADARGS
 fi
 
+# build primer3 version 2.3.5 from source
+wget "https://sourceforge.net/projects/primer3/files/primer3/2.3.5/primer3-2.3.5.tar.gz/download" -O primer3.tgz
+tar xvzf primer3.tgz
+mv primer3-2.3.5 primer3
+cd primer3/src
+make all
+cd ../..
+
 # Get dependencies of pip
 sudo apt-get install python-setuptools
 sudo apt-get install python-pip
@@ -31,15 +39,17 @@ sudo pip install matplotlib
 sudo pip install pygr
 sudo pip install networkx
 
+### Code for installing on old versions of ubuntu ###
 # add wxwidgets to sources list
-sudo echo "deb http://apt.wxwidgets.org/ `lsb_release -a | grep Codename | cut -f2`-wx main
-deb-src http://apt.wxwidgets.org/ `lsb_release -a | grep Codename | cut -f2`-wx main" > /etc/apt/sources.list.d/wxwidgets.list
-
+# sudo echo "deb http://apt.wxwidgets.org/ `lsb_release -a | grep Codename | cut -f2`-wx main
+# deb-src http://apt.wxwidgets.org/ `lsb_release -a | grep Codename | cut -f2`-wx main" > /etc/apt/sources.list.d/wxwidgets.list
 # update so wxwidgets repo is found with apt-get
-sudo apt-get update
-
+# sudo apt-get update
 # install wxPython
-sudo apt-get install python-wxgtk2.8 python-wxtools wx2.8-i18n libwxgtk2.8-dev libgtk2.0-dev
+# sudo apt-get install python-wxgtk2.8 python-wxtools wx2.8-i18n libwxgtk2.8-dev libgtk2.0-dev
+
+# install wxPython for new ubuntu versions
+apt-get install python-wxgtk2.8
 
 echo "You may want to copy the installation results. Press enter when finished . . ."
 read -p "$done"
