@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2012  Collin Tokheim
+# Copyright (C) 2012-2013  Collin Tokheim
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -46,7 +46,11 @@ import datetime
 
 def handle_uncaught_exceptions(t, ex, tb):
     traceback.print_tb(tb)  # print traceback to stdout so I can debug
-    dlg = wx.MessageDialog(None, 'An uncaught error occured in PrimerSeq. Please check the log file (%s) for details. You may need to press File->Reset to continue.' % log_file, style=wx.OK | wx.ICON_ERROR)
+    dlg = wx.MessageDialog(None,
+                           'An uncaught error occured in PrimerSeq.'
+                           'Please check the log file (%s) for details.'
+                           ' You may need to press File->Reset to continue.' % log_file,
+                           style=wx.OK | wx.ICON_ERROR)
     dlg.ShowModal()
 
 
@@ -589,7 +593,7 @@ rather than using annotations that incorporate transcripts that are not expresse
 PrimerSeq redistributes primer3 which is licensed under GPLv2, the SAM-JDK which is licensed under Apache License V2.0, MIT, and the BigWig api which
 is licensed under LGPL v2.1. There is no source code modification to any of the previous work."""
 
-        licence = """Copyright (C) 2012  Collin Tokheim
+        licence = """Copyright (C) 2012-2013  Collin Tokheim
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -606,9 +610,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>."""
 
         info = wx.AboutDialogInfo()
         info.SetName('PrimerSeq')
-        info.SetVersion('1.0.0')
+        info.SetVersion('1.0.0.beta')
         info.SetDescription(description)
-        info.SetCopyright('(C) 2012 Collin Tokheim')
+        info.SetCopyright('(C) 2012-2013 Collin Tokheim')
         info.SetWebSite('http://primerseq.sf.net')
         info.SetLicence(licence)
         info.AddDeveloper('Collin Tokheim')

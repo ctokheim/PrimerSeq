@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2012  Collin Tokheim
+# Copyright (C) 2012-2013  Collin Tokheim
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Created on Feb 8, 2012
+Created on Feb 8, 2012-2013
 Intended to significantly aid in the drawing of exon structure and text box positioning.
 Shape objects are intended to store a lot of attributes about a shape so that changing a shapes
 position becomes easy when calling a method. The JunctionLine class acts to create lines and text
