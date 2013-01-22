@@ -561,10 +561,13 @@ class SavePlotDialog(wx.Dialog):
         self.parent = parent
         self.text = wx.StaticText(self, -1, text)
 
-        self.data_label = wx.StaticText(self, -1, "BAM,BigWig files:")
+        self.data_label = wx.StaticText(self, -1, "Title,BAM,BigWig:")
         self.data_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        self.data_text_field = wx.TextCtrl(self, -1, ',\n'.join(['Title,' + s.path for s in self.options['rnaseq']]), style=wx.TE_MULTILINE)
-        self.data_text_field.SetToolTip(wx.ToolTip("eg. mySample.bam,mySample.bw"))
+        self.data_text_field = wx.TextCtrl(self, -1, ''.join(map(lambda x: x + ',\n', ['Title for data,' + s.path for s in self.options['rnaseq']])), style=wx.TE_MULTILINE)
+        # self.data_text_field = wx.TextCtrl(self, -1, 'Title for example data,example/chr18_9546792_9614600.sorted.bam,example/example.bw', style=wx.TE_MULTILINE)
+        # self.data_text_field.SetSelection(-1, -1)  # select all the text so user can overide easily
+        self.data_text_field.SetToolTip(wx.ToolTip("eg. Title,mySample.bam,mySample.bw"))
+        self.data_text_field.SetFocus()  # set focus on text field
 
         # read in valid primer output
         with open(self.output_file) as handle:
@@ -577,12 +580,18 @@ class SavePlotDialog(wx.Dialog):
         self.directory_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.choose_directory_button = wx.Button(self, -1, "Choose . . .")
         self.choose_directory_button.SetToolTip(wx.ToolTip('Choose your output directory'))
-        self.my_panel = wx.ScrolledWindow(self, -1, style=wx.TAB_TRAVERSAL, size=wx.Size(300, 20))
-        self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 20))
-        self.directory_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.my_panel = wx.ScrolledWindow(self, -1, size=wx.Size(300, 40))
+        self.my_panel.SetScrollRate(20, 20)
+        self.my_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.my_panel.SetSizer(self.my_box_sizer)
+        # self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 20))
+        self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 40))
+        self.directory_choice_label.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.my_box_sizer.Add(self.directory_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer.Add(self.directory_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
         grid_sizer.Add(self.choose_directory_button, 0, wx.ALIGN_CENTER, 10)
-        grid_sizer.Add(self.my_panel, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 10)
+        # grid_sizer.Add(self.my_panel, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 10)
+        grid_sizer.Add(self.my_panel, 0, wx.EXPAND, 10)
 
         # run and cancel buttons
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -611,7 +620,7 @@ class SavePlotDialog(wx.Dialog):
         pub.subscribe(self.on_finish, "plotting_finished")
 
     def on_finish(self, msg):
-        dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.')
+        dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
         dlg.ShowModal()
         self.save_plot_button.SetLabel('Generate Report')
         self.save_plot_button.Enable()
@@ -648,7 +657,6 @@ class SavePlotDialog(wx.Dialog):
         # write list of links to the index.html file
         with open(os.path.join(self.output_directory, 'index.html'), 'w') as handle:
             handle.write(str(index_html))
-
 
     def cancel_button_event(self, event):
         self.Destroy()

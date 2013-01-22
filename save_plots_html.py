@@ -38,7 +38,7 @@ class SavePlotsHTML(object):
 
     def add_link(self, url, text):
         """Add a hyperlink"""
-        self.html_content += '<a href="%s" >%s</a>' % (url, text)
+        self.html_content += '<a href="%s" target="_blank">%s</a>' % (url, text)
 
     def add_text(self, text):
         """Just add verbatim text to html"""
