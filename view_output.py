@@ -96,7 +96,12 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
             print traceback.format_exc()
 
     def on_help(self, event):
-        dlg = wx.MessageDialog(self, 'Instructions:\n\nUse the tool bar to validate that the primer design was successful.\n\nPress the Create Plots button to view how your data supports the primer design results\n\nPress the In Silico Pcr button to validate primer products', style=wx.OK)
+        dlg = wx.MessageDialog(self, 'Instructions:\n\nUse the tool bar to validate '
+                                     'that the primer design was successful.\n\nPress '
+                                     'the Create Plots button to view how your data '
+                                     'supports the primer design results\n\nPress the '
+                                     'In Silico Pcr button to validate primer products\n\n'
+                                     'Press the save plots button to save plots as html', style=wx.OK)
         dlg.ShowModal()
 
     def on_exit(self, event):

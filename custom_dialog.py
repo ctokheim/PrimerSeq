@@ -649,10 +649,9 @@ class SavePlotDialog(wx.Dialog):
 
         # add links to AS events with designed primers
         for line in self.results:
-            print self.output_directory
-            print line
             index_html.add_link(os.path.join(self.output_directory, line[0] + '.html'),
-                                line[1])
+                                line[1])  # link to each AS event
+            index_html.add_line_break()  # make each link on separate line
 
         # write list of links to the index.html file
         with open(os.path.join(self.output_directory, 'index.html'), 'w') as handle:

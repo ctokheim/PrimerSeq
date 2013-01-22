@@ -302,7 +302,7 @@ def calculate_target_psi(target, sg_list, component):
         psi_list.append(tmp_inc_count / (tmp_inc_count + tmp_skip_count))
     logging.debug("Finished calculating psi for each bam file.")
 
-    return ';'.join(map(str, psi_list))
+    return ';'.join(map(lambda x: '%.4f' % x, psi_list))  # only report to four decimal places
 
 
 def construct_splice_graph(edge_weights_list, gene_dict, chr, strand, read_threshold, min_count,
