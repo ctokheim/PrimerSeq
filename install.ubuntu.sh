@@ -29,13 +29,18 @@ cd ../..
 sudo apt-get install python-setuptools
 sudo apt-get install python-pip
 
+# install python-dev for numpy installation
+sudo apt-get install python-dev
+
 # possible dependencies for matplotlib
 sudo apt-get install libtiff
 sudo apt-get install libpng
 
+# install matplotlib through apt-get
+sudo apt-get install matplotlib
+
 # install python dependencies
 sudo pip install numpy
-sudo pip install matplotlib
 sudo pip install pygr
 sudo pip install networkx
 
@@ -49,7 +54,4 @@ sudo pip install networkx
 # sudo apt-get install python-wxgtk2.8 python-wxtools wx2.8-i18n libwxgtk2.8-dev libgtk2.0-dev
 
 # install wxPython for new ubuntu versions
-apt-get install python-wxgtk2.8
-
-echo "You may want to copy the installation results. Press enter when finished . . ."
-read -p "$done"
+sudo apt-get install python-wxgtk2.8
