@@ -5,7 +5,7 @@ PrimerSeq
 
 http://primerseq.sf.net
 
-Design RT-PCR primers that evaluate the **P**ercent **S**pliced-**I**n (PSI) metric using RNA-Seq data.
+Design RT-PCR primers that evaluate the **P**ercent **S**pliced **I**n (PSI) metric using RNA-Seq data.
 Thus differential Alternative Splicing (AS) events can quickly be validated from programs like [MATS](http://rnaseq-mats.sourceforge.net/).
 Annotations often contain isoforms that only occur in
 certain tissues or cells. PrimerSeq tackles this issue by weighting
@@ -18,7 +18,12 @@ Installation
 ============
 
 You will need [Java](http://www.oracle.com/technetwork/java/javase/downloads/java-se-jre-7-download-432155.html)
-installed on your computer.
+installed on your computer regardless if you are on Windows or Linux.
+
+You can download an installer for Windows [here](http://sourceforge.net/projects/primerseq/files/PrimerSeq/). There is a step-by-step [installation guide](http://primerseq.sourceforge.net/windows.html) for Windows. Installation for linux will need to be from source. To install from source on Ubuntu follow the guide [here](http://primerseq.sourceforge.net/linux.html).
+
+Installation from Source
+------------------------
 
 You will need [python 2.7.X](http://www.python.org/download/releases/2.7/) to run PrimerSeq.
 If you are using Windows and are unfamiliar with python then I suggest you download the following
@@ -58,6 +63,8 @@ The external libraries are listed below with their license version:
 
 * [Sam-JDK](http://picard.sourceforge.net/) handles BAM/SAM files ([Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0.html), [MIT](http://opensource.org/licenses/MIT))
 * [BigWig API](http://code.google.com/p/bigwig/) extracts regions from a BigWig file ([LGPL v2.1](http://www.gnu.org/licenses/lgpl-2.1.html))
+
+If you only intend to run PrimerSeq then you do **NOT** need to obtain the external Java APIs since they are bundled with the jar files found in the bin directory.
 
 Problems?
 =========
