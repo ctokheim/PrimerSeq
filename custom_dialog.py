@@ -676,7 +676,6 @@ class SavePlotDialog(wx.Dialog):
         handle.readline()
         for line in csv.reader(handle, delimiter='\t'):
             if len(line) <= 1: continue  # skip cases where no good output
-            print line
             ID = line[0]
             start, end = utils.get_pos(line[-1])
             chr = utils.get_chr(line[-1])
