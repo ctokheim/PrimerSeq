@@ -5,9 +5,10 @@ PrimerSeq
 
 http://primerseq.sf.net
 
-Design RT-PCR primers using RNA-Seq data. 
-Annotations often contain isoforms that only occur in 
-certain tissues or cells. PrimerSeq tackles this issue by weighting 
+Design RT-PCR primers that evaluate the **P**ercent **S**pliced-**I**n (PSI) metric using RNA-Seq data.
+Thus differential Alternative Splicing (AS) events can quickly be validated from programs like [MATS](http://rnaseq-mats.sourceforge.net/).
+Annotations often contain isoforms that only occur in
+certain tissues or cells. PrimerSeq tackles this issue by weighting
 isoforms supported in your RNA-Seq data when finding
 flanking constitutive exons to place primers around a target.
 
@@ -33,24 +34,9 @@ You will also need to install the latest version of [pygr](http://code.google.co
 Python Modules (Advanced)
 =========================
 
-If you are more familiar with python than you can install the python modules by using pip.  
-
-```bash
-$ pip install numpy
-$ pip install matplotlib
-$ pip install networkx
-$ pip install pygr
-```
+View the [install.ubuntu.sh](https://github.com/ctokheim/PrimerSeq/blob/master/install.ubuntu.sh) script for actual commands necessary to install PrimerSeq on ubuntu. The *install.ubuntu.sh* script should install everything required except Java.
 
 Make sure networkx is version 1.7.0 otherwise PrimerSeq will not work.
-If you wish to use the GUI you will also need wxPython.
-
-```bash
-$ pip install wxpython
-```
-
-wxPython may be a pain to install so you could additionally try using
-`apt-get` if you use Ubuntu. 
 
 Primer3
 =======
