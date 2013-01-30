@@ -23,9 +23,12 @@ installed on your computer regardless if you are on Windows or Linux.
 You can download an installer for Windows [here](http://sourceforge.net/projects/primerseq/files/PrimerSeq/). There is a step-by-step [installation guide](http://primerseq.sourceforge.net/windows.html) for Windows. Installation for linux will need to be from source. To install from source on Ubuntu follow the guide [here](http://primerseq.sourceforge.net/linux.html).
 
 Installation from Source
-------------------------
+========================
 
-You will need [python 2.7.X](http://www.python.org/download/releases/2.7/) to run PrimerSeq.
+If you are using Ubuntu (>=12.04) or Linux Mint 13, please follow the [linux installation guide](http://primerseq.sourceforge.net/linux.html) otherwise you will need to perform installation your self.
+
+You will need [python 2.7.X](http://www.python.org/download/releases/2.7/) to run PrimerSeq. For linux
+users, you can install python 2.7.3 (also with numpy/scipy) in your ```~/local/bin``` folder by using this [script](https://gist.github.com/4507404).
 If you are using Windows and are unfamiliar with python then I suggest you download the following
 unofficial packages from [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/):
 
