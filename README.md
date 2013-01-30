@@ -1,7 +1,7 @@
 PrimerSeq
 =========
 
-(c) 2012 Collin Tokheim GPLv3
+(c) 2012-2013 Collin Tokheim GPLv3
 
 http://primerseq.sf.net
 

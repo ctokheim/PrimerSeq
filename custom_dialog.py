@@ -567,6 +567,7 @@ class SavePlotDialog(wx.Dialog):
         # self.data_text_field = wx.TextCtrl(self, -1, 'Title for example data,example/chr18_9546792_9614600.sorted.bam,example/example.bw', style=wx.TE_MULTILINE)
         # self.data_text_field.SetSelection(-1, -1)  # select all the text so user can overide easily
         self.data_text_field.SetToolTip(wx.ToolTip("eg. Title,mySample.bam,mySample.bw"))
+        self.data_text_field.SetMinSize((396, 60))
         self.data_text_field.SetFocus()  # set focus on text field
 
         # read in valid primer output
