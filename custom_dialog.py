@@ -650,7 +650,7 @@ class SavePlotDialog(wx.Dialog):
 
         # add links to AS events with designed primers
         for line in self.results:
-            index_html.add_link(os.path.join(self.output_directory, line[0] + '.html'),
+            index_html.add_link(line[0] + '.html',
                                 line[1])  # link to each AS event
             index_html.add_line_break()  # make each link on separate line
 
@@ -727,7 +727,7 @@ class SavePlotDialog(wx.Dialog):
         paths_list = []
         counts_list = []
         for my_splice_graph in bam_splice_graphs:
-            # not the best use of the ExonSeek object, initially intended to finde appropriate flanking exons
+            # not the best use of the ExonSeek object, initially intended to find appropriate flanking exons
             # but in this case ExonSeek is used to get the transcripts and associate counts
             exon_seek_obj = ExonSeek(utils.get_pos(target_coordinate), my_splice_graph, ID, options['psi'], None, None)
             all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()

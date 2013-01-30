@@ -415,7 +415,7 @@ def main(options, args_output='tmp/debug.json'):
                                                name,
                                                options['psi'],
                                                up_exon,
-                                               down_exon)
+                                               down_exon)  # note, this function utilizes edge wieghts
 
             # Error msgs are of length one, so only do psi calculations for
             # non-error msgs

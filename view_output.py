@@ -175,5 +175,3 @@ class TestViewOutputApp(wx.App):
 if __name__ == '__main__':
     ViewOutputApp = TestViewOutputApp(0)
     ViewOutputApp.MainLoop()
-
-
