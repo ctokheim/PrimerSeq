@@ -20,7 +20,7 @@ Installation
 You will need [Java](http://www.oracle.com/technetwork/java/javase/downloads/java-se-jre-7-download-432155.html)
 installed on your computer regardless if you are on Windows or Linux.
 
-You can download an installer for Windows [here](http://sourceforge.net/projects/primerseq/files/PrimerSeq/). There is a step-by-step [installation guide](http://primerseq.sourceforge.net/windows.html) for Windows. Installation for linux will need to be from source. To install from source on Ubuntu follow the guide [here](http://primerseq.sourceforge.net/linux.html).
+You can download an installer for Windows [here](http://sourceforge.net/projects/primerseq/files/PrimerSeq/). There is a step-by-step [installation guide](http://primerseq.sourceforge.net/windows.html) for Windows. Installation for linux will need to be from source. To install from source on Ubuntu (>=12.04) or Linux Mint 13 follow the guide [here](http://primerseq.sourceforge.net/linux.html).
 
 Installation from Source
 ========================
