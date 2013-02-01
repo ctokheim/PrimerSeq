@@ -235,7 +235,7 @@ def get_flanking_biconnected_exons(name, target, sGraph, genome):
             # get possible lengths
             all_paths = algs.AllPaths(sGraph, component, target,
                                       chr=sGraph.chr, strand=sGraph.strand)
-            all_paths.set_all_path_lengths()
+            # all_paths.set_all_path_lengths()  # should no longer need this since it is done in primer.py
             all_paths.set_all_path_coordinates()
 
             # get sequence of upstream/target/downstream combo
