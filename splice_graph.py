@@ -271,8 +271,7 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_
     genome_chr = genome[sGraph.chr]  # chr object from pygr
     upstream_seq, target_seq, downstream_seq = genome_chr[upstream[0]:upstream[1]], genome_chr[target[0]:target[1]], genome_chr[downstream[0]:downstream[1]]
     if sGraph.strand == '-':
-        upstream_seq, target_seq, downstream_seq =  \
-            -upstream_seq, -target_seq, -downstream_seq
+        upstream_seq, target_seq, downstream_seq = -upstream_seq, -target_seq, -downstream_seq
 
     return [sGraph.strand, name[1:], psi_target,
             sGraph.chr + ':' + '-'.join(map(str, upstream)),  # upstream eg. +chr1:1000-2000

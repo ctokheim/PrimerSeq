@@ -158,13 +158,14 @@ def primer_coordinates(p3_output, strand, tar, up, down):
         tmp = right_primer_offset - (upstream_end - upstream_start) - (target_end - target_start) + downstream_start
         # second = (tmp, tmp + right_primer_length)
         second = (tmp - right_primer_length + 1, tmp + 1)
-    else:
+    elif strand == '-':
         tmp = upstream_end - left_primer_offset - left_primer_length
         second = (tmp, tmp + left_primer_length)
         tmp = right_primer_offset - (upstream_end - upstream_start) - (target_end - target_start)
         tmp = downstream_end - tmp - 1  # - right_primer_length
         first = (tmp, tmp + right_primer_length)
-
+    tmp_first, tmp_second = first, second
+    first, second = sorted([first, second], key=lambda x: (x[0], x[1]))  # make sure primer coordinates are sorted by position
     return utils.construct_coordinate(my_chr, first[0], first[1]) + ';' + utils.construct_coordinate(my_chr, second[0], second[1])
 
 
@@ -182,7 +183,7 @@ def primer3(options, primer3_options):
     # find flanking exons
     logging.debug('Calling splice_graph.main to find flanking exons')
     flanking_info = splice_graph.main(options)
-    logging.debug('Finished gtf.main')
+    logging.debug('Finished splice_graph.main')
 
     # iterate over all target sequences
     STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, ALL_PATHS, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ = range(11)
@@ -255,28 +256,32 @@ def primer3(options, primer3_options):
                 inclusion_size_list = flanking_info[z][ALL_PATHS].inc_lengths
                 skipping_size = ';'.join(map(str, filter(lambda x: x>0, skipping_size_list)))
                 inclusion_size = ';'.join(map(str, filter(lambda x: x>0, inclusion_size_list)))
-                left_seq = Sequence(primer3_dict['PRIMER_LEFT_0_SEQUENCE'], 'left')
-                right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
+                # left_seq = Sequence(primer3_dict['PRIMER_LEFT_0_SEQUENCE'], 'left')
+                # right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
+                # forward_seq, reverse_seq = (-right_seq, -left_seq) if str(flanking_info[z][STRAND]) == '-' else (left_seq, right_seq)   # reverse complement sequence
+                genome_chr = options['fasta'][flanking_info[z][ALL_PATHS].chr]
+                my_strand = flanking_info[z][STRAND]
+                forward_pos, reverse_pos = map(utils.get_pos, primer3_coords.split(';')) if flanking_info[z][STRAND] == '+' else map(utils.get_pos, reversed(primer3_coords.split(';')))
+                forward_seq = genome_chr[forward_pos[0]:forward_pos[1]] if my_strand == '+' else -genome_chr[forward_pos[0]:forward_pos[1]]
+                reverse_seq = -genome_chr[reverse_pos[0]:reverse_pos[1]] if my_strand == '+' else genome_chr[reverse_pos[0]:reverse_pos[1]]
                 asm_region = '%s:%d-%d' % (flanking_info[z][ALL_PATHS].chr,
                                            flanking_info[z][ALL_PATHS].asm_component[0][0],
                                            flanking_info[z][ALL_PATHS].asm_component[-1][1])
 
                 # append results to output_list
-                tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], str(left_seq).upper(), str(right_seq).upper(),
+                tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], str(forward_seq).upper(), str(reverse_seq).upper(),
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
                        flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET],
                        flanking_info[z][PSI_DOWNSTREAM], asm_region]
                 output_list.append(tmp)
 
     # write output information
-    # with open(config_options['tmp'] + '/' + jobs_ID + '.txt', 'wb') as outputfile_tab:
     with open(options['output'], 'wb') as outputfile_tab:
         # define csv header
-        header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'upstream primer', 'downstream primer', 'average TM',
+        header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'forward primer', 'reverse primer', 'average TM',
                   'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream', 'ASM Region']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, dialect='excel', delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
-    # shutil.copy(config_options['tmp'] + '/' + jobs_ID + '.txt', options['output'])  # copy file to output destination
 
 
 def main(options):

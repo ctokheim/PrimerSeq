@@ -122,7 +122,8 @@ class PlotDialog(wx.Dialog):
         pub.subscribe(self.on_plot_error, "plot_error")
 
     def on_plot_error(self, msg):
-        self.parent.update_after_error((None,))
+        # self.parent.update_after_error((None,))
+        pass  # prevent error on trying to call method
 
     def cancel_button_event(self, event):
         self.Destroy()
@@ -581,14 +582,14 @@ class SavePlotDialog(wx.Dialog):
         self.directory_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.choose_directory_button = wx.Button(self, -1, "Choose . . .")
         self.choose_directory_button.SetToolTip(wx.ToolTip('Choose your output directory'))
-        self.my_panel = wx.ScrolledWindow(self, -1, size=wx.Size(300, 40))
+        self.my_panel = wx.ScrolledWindow(self, -1, size=wx.Size(500, 100))
         self.my_panel.SetScrollRate(20, 20)
         self.my_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.my_panel.SetSizer(self.my_box_sizer)
         # self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 20))
-        self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 40))
+        self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(500, 100))
         self.directory_choice_label.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        self.my_box_sizer.Add(self.directory_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+        self.my_box_sizer.Add(self.directory_choice_label, 0, wx.ALIGN_TOP, 0)
         grid_sizer.Add(self.directory_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
         grid_sizer.Add(self.choose_directory_button, 0, wx.ALIGN_CENTER, 10)
         # grid_sizer.Add(self.my_panel, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 10)

@@ -27,6 +27,7 @@ import os
 import subprocess
 import re
 import sys
+import shutil
 from pygr.seqdb import SequenceFileDB
 import sam
 import primer
@@ -310,7 +311,12 @@ class PrimerFrame(wx.Frame):
         self.gtf_choice_label.SetLabel('None')
         self.output_choice_label.SetLabel('None')
         self.coordinates_text_field.SetValue('')
+        self.delete_tmp_directory()
         self.enable_load_buttons()  # enable buttons
+
+    def delete_tmp_directory(self):
+        """Remove all temporary files"""
+        shutil.rmtree(primer.config_options['tmp'])
 
     def on_help(self, event):
         """Open documentation in default webbrowser"""

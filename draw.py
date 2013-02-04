@@ -215,13 +215,15 @@ def read_primer_file(primer_file, ID):
     with open(primer_file) as handle:
         for line in csv.reader(handle, delimiter='\t'):
             if line[0] == ID:
-                return map(utils.get_pos, line[2].split(';'))
+                return sorted(map(utils.get_pos, line[2].split(';')),
+                              key=lambda x: (x[0], x[1]))  # make sure primer is in numerical order
 
 
 def calc_product_length(path, primer_coord):
     """
     Calculate product length based on the primer coordinates
     """
+    primer_coord.sort(key=lambda x: (x[0], x[1]))  # make sure primers are sorted by position
     # calculate length between primers
     tmp_len = 0
     first_exon_primer, second_exon_primer = False, False  # flag for telling if a primer was contained within an exon
