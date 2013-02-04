@@ -81,10 +81,11 @@ class PlotDialog(wx.Dialog):
         self.bigwig = []
         self.panel_3 = wx.Panel(self, -1)
         self.bigwig_choice_label = wx.StaticText(self, -1, "None")
+        self.bigwig_choice_label = wx.TextCtrl(self, -1, "None", style=wx.TE_READONLY)
         bigwig_sizer = wx.GridSizer(1, 3, 0, 0)
         bigwig_sizer.Add(self.bigwig_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         bigwig_sizer.Add(self.choose_bigwig_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
-        bigwig_sizer.Add(self.bigwig_choice_label, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
+        bigwig_sizer.Add(self.bigwig_choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
 
         # read in valid primer output
         with open(self.output_file) as handle:
@@ -139,7 +140,8 @@ class PlotDialog(wx.Dialog):
             dlg.Destroy()  # best to do this sooner
 
             self.bigwig = filenames
-            self.bigwig_choice_label.SetLabel(', '.join(filenames_without_path))
+            # self.bigwig_choice_label.SetLabel(', '.join(filenames_without_path))
+            self.bigwig_choice_label.SetValue(', '.join(filenames_without_path))
         else:
             dlg.Destroy()
 
@@ -582,18 +584,20 @@ class SavePlotDialog(wx.Dialog):
         self.directory_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.choose_directory_button = wx.Button(self, -1, "Choose . . .")
         self.choose_directory_button.SetToolTip(wx.ToolTip('Choose your output directory'))
-        self.my_panel = wx.ScrolledWindow(self, -1, size=wx.Size(500, 100))
-        self.my_panel.SetScrollRate(20, 20)
-        self.my_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.my_panel.SetSizer(self.my_box_sizer)
+        # self.my_panel = wx.ScrolledWindow(self, -1, size=wx.Size(500, 100))
+        # self.my_panel.SetScrollRate(20, 20)
+        # self.my_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # self.my_panel.SetSizer(self.my_box_sizer)
         # self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 20))
-        self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(500, 100))
+        # self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(500, 100))
+        self.directory_choice_label = wx.TextCtrl(self, -1, "None", style=wx.TE_READONLY)
         self.directory_choice_label.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        self.my_box_sizer.Add(self.directory_choice_label, 0, wx.ALIGN_TOP, 0)
+        # self.my_box_sizer.Add(self.directory_choice_label, 0, wx.ALIGN_TOP, 0)
         grid_sizer.Add(self.directory_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
         grid_sizer.Add(self.choose_directory_button, 0, wx.ALIGN_CENTER, 10)
         # grid_sizer.Add(self.my_panel, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 10)
-        grid_sizer.Add(self.my_panel, 0, wx.EXPAND, 10)
+        # grid_sizer.Add(self.my_panel, 0, wx.EXPAND, 10)
+        grid_sizer.Add(self.directory_choice_label, 0, wx.EXPAND, 10)
 
         # run and cancel buttons
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -668,7 +672,8 @@ class SavePlotDialog(wx.Dialog):
         # if they press ok
         if dlg.ShowModal() == wx.ID_OK:
             self.output_directory = dlg.GetPath()  # get the new filenames from the dialog
-            self.directory_choice_label.SetLabel(self.output_directory)
+            # self.directory_choice_label.SetLabel(self.output_directory)
+            self.directory_choice_label.SetValue(self.output_directory)
             dlg.Destroy()  # best to do this sooner
         else:
             dlg.Destroy()

@@ -97,18 +97,21 @@ class PrimerFrame(wx.Frame):
         self.fasta_label = wx.StaticText(self.primer_notebook_pane_1, -1, "FASTA:")
         self.choose_fasta_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_fasta_button.SetToolTip(wx.ToolTip('Select your genome sequence\nin FASTA format'))
-        self.panel_1 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)
-        self.fasta_choice_label = wx.StaticText(self.panel_1, -1, "None")
+        # self.panel_1 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)
+        # self.fasta_choice_label = wx.StaticText(self.panel_1, -1, "None")
+        self.fasta_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
         self.gtf_label = wx.StaticText(self.primer_notebook_pane_1, -1, "GTF:")
         self.choose_gtf_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_gtf_button.SetToolTip(wx.ToolTip('Select your gene annotation\nin a sorted GTF format'))
-        self.panel_2 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)
-        self.gtf_choice_label = wx.StaticText(self.panel_2, -1, "None")
+        # self.panel_2 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)
+        # self.gtf_choice_label = wx.StaticText(self.panel_2, -1, "None")
+        self.gtf_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
         self.bam_label = wx.StaticText(self.primer_notebook_pane_1, -1, "SAM/BAM(s):")
         self.choose_bam_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_bam_button.SetToolTip(wx.ToolTip('Select one or multiple SAM or BAM file(s).\nWhen selecting, hold ctrl to select multiple'))
-        self.panel_3 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)  # self.panel_3 = wx.Panel(self.primer_notebook_pane_1, -1)
-        self.bam_choice_label = wx.StaticText(self.panel_3, -1, "None")
+        # self.panel_3 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)  # self.panel_3 = wx.Panel(self.primer_notebook_pane_1, -1)
+        # self.bam_choice_label = wx.StaticText(self.panel_3, -1, "None")
+        self.bam_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
         self.sizer_4_staticbox = wx.StaticBox(self.primer_notebook_pane_1, -1, "Load Files")
         self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Coordinates:")
         self.coordinates_text_field = wx.TextCtrl(self.primer_notebook_pane_1, -1, "", style=wx.TE_MULTILINE)
@@ -117,7 +120,9 @@ class PrimerFrame(wx.Frame):
         self.choose_output_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_output_button.SetToolTip(wx.ToolTip('Select the output file'))
         self.panel_4 = wx.Panel(self.primer_notebook_pane_1, -1)
-        self.output_choice_label = wx.StaticText(self.panel_4, -1, "None")
+        # self.output_choice_label = wx.StaticText(self.panel_4, -1, "None")
+        # self.output_choice_label = wx.TextCtrl(self.panel_4, -1, "None", style=wx.TE_READONLY)
+        self.output_choice_label = wx.TextCtrl(self.panel_4, -1, "None", style=wx.TE_READONLY)
         self.run_button = wx.Button(self.primer_notebook_pane_1, -1, "Run PrimerSeq")
         self.run_button.SetToolTip(wx.ToolTip('Run PrimerSeq'))
         self.primer_notebook_pane_2 = wx.Panel(self.primer_notebook, -1)
@@ -184,11 +189,11 @@ class PrimerFrame(wx.Frame):
             self.primer_frame_statusbar.SetStatusText(primer_frame_statusbar_fields[i], i)
         self.fasta_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.fasta_choice_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        self.panel_1.SetScrollRate(10, 10)
+        # self.panel_1.SetScrollRate(10, 10)
         self.gtf_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.gtf_choice_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        self.panel_2.SetScrollRate(10, 10)
-        self.panel_3.SetScrollRate(10, 10)  # EDIT
+        # self.panel_2.SetScrollRate(10, 10)
+        # self.panel_3.SetScrollRate(10, 10)  # EDIT
         self.bam_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.bam_choice_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.coordinates_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
@@ -227,31 +232,34 @@ class PrimerFrame(wx.Frame):
         self.sizer_4_staticbox.Lower()
         sizer_4 = wx.StaticBoxSizer(self.sizer_4_staticbox, wx.VERTICAL)
         grid_sizer_1 = wx.GridSizer(3, 3, 0, 0)
-        sizer_7 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_6 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_5 = wx.BoxSizer(wx.HORIZONTAL)
+        # sizer_7 = wx.BoxSizer(wx.HORIZONTAL)
+        # sizer_6 = wx.BoxSizer(wx.HORIZONTAL)
+        # sizer_5 = wx.BoxSizer(wx.HORIZONTAL)
         grid_sizer_1.Add(self.fasta_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.choose_fasta_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        sizer_5.Add(self.fasta_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        self.panel_1.SetSizer(sizer_5)
-        grid_sizer_1.Add(self.panel_1, 1, wx.EXPAND, 0)
+        grid_sizer_1.Add(self.fasta_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)  # NEW LINE
+        # sizer_5.Add(self.fasta_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+        # self.panel_1.SetSizer(sizer_5)
+        # grid_sizer_1.Add(self.panel_1, 1, wx.EXPAND, 0)
         grid_sizer_1.Add(self.gtf_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.choose_gtf_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        sizer_6.Add(self.gtf_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        self.panel_2.SetSizer(sizer_6)
-        grid_sizer_1.Add(self.panel_2, 1, wx.EXPAND, 0)
+        # sizer_6.Add(self.gtf_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+        # self.panel_2.SetSizer(sizer_6)
+        # grid_sizer_1.Add(self.panel_2, 1, wx.EXPAND, 0)
+        grid_sizer_1.Add(self.gtf_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)  # NEW LINE
         grid_sizer_1.Add(self.bam_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.choose_bam_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        sizer_7.Add(self.bam_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        self.panel_3.SetSizer(sizer_7)
-        grid_sizer_1.Add(self.panel_3, 1, wx.EXPAND, 0)
+        grid_sizer_1.Add(self.bam_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)  # NEW LINE
+        # sizer_7.Add(self.bam_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+        # self.panel_3.SetSizer(sizer_7)
+        # grid_sizer_1.Add(self.panel_3, 1, wx.EXPAND, 0)
         sizer_4.Add(grid_sizer_1, 1, wx.EXPAND, 0)
         sizer_3.Add(sizer_4, 1, wx.EXPAND, 0)
         sizer_8.Add(self.coordinates_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         sizer_8.Add(self.coordinates_text_field, 0, wx.EXPAND, 0)
         grid_sizer_2.Add(self.output_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_2.Add(self.choose_output_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        sizer_9.Add(self.output_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_9.Add(self.output_choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
         self.panel_4.SetSizer(sizer_9)
         grid_sizer_2.Add(self.panel_4, 1, wx.EXPAND, 0)
         sizer_8.Add(grid_sizer_2, 1, wx.EXPAND, 0)
@@ -367,7 +375,8 @@ class PrimerFrame(wx.Frame):
             else:
                 for obj, value in msg.data:
                     if isinstance(value, str):
-                        getattr(self, obj).SetLabel(value)
+                        # getattr(self, obj).SetLabel(value)
+                        getattr(self, obj).SetValue(value)
                     else:
                         setattr(self, obj, value)
                 self.enable_load_buttons()
@@ -382,7 +391,8 @@ class PrimerFrame(wx.Frame):
         else:
             for obj, value in msg.data:
                 if isinstance(value, str):
-                    getattr(self, obj).SetLabel(value)
+                    # getattr(self, obj).SetLabel(value)
+                    getattr(self, obj).SetValue(value)
                 else:
                     setattr(self, obj, value)
             self.load_progress.Update(100)
@@ -440,7 +450,8 @@ class PrimerFrame(wx.Frame):
     def set_output(self, path, filename):
         """Set the output file location for PrimerSeq"""
         self.output = path
-        self.output_choice_label.SetLabel(filename)
+        # self.output_choice_label.SetLabel(filename)
+        self.output_choice_label.SetValue(filename)
 
     def on_choose_fasta_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
         """FASTA button event handler"""
