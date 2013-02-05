@@ -23,6 +23,9 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredText   # import anc
 import itertools as it
 import argparse
 import os
+from matplotlib.offsetbox import AnchoredOffsetbox, TextArea, DrawingArea, HPacker  # import for offset text box
+
+import traceback  # debugging import
 
 # important packages
 # import numpy as np
@@ -47,6 +50,25 @@ class NoFormatter(ticker.ScalarFormatter):
     """
     def __call__(self, x, pos=None):
         return ''
+
+
+def offset_text(ax, txt, loc, bbox_to_anchor=(-.03, .65), text_props={"color": "k", "size": "13"}):
+    """This function is a copy of the one in draw.py"""
+    box1 = TextArea(txt, textprops=text_props)
+
+    box = HPacker(children=[box1],
+                  align="center",
+                  pad=2, sep=5)
+
+    anchored_box = AnchoredOffsetbox(loc=loc,
+                                     child=box, pad=0.,
+                                     frameon=False,
+                                     prop=dict(size=5),
+                                     bbox_to_anchor=bbox_to_anchor,
+                                     bbox_transform=ax.transAxes,
+                                     borderpad=0.1,
+                                     )
+    ax.add_artist(anchored_box)
 
 
 def draw_text(ax, txt):
@@ -187,6 +209,9 @@ def read_depth_plot(options):
         ax.xaxis.set_ticklabels(map(addCommas, [real_start, real_stop]))   # make nice looking text for labels
         ax.get_xticklabels()[0].set_horizontalalignment('left')
         ax.get_xticklabels()[1].set_horizontalalignment('right')
+
+        # make text box to display chromosome information
+        offset_text(ax, '%s:' % chr, 3, (-.15, -.16))
 
         # adjust spacing between subplots
         fig.subplots_adjust(wspace=0.05, hspace=0.05)
