@@ -80,7 +80,7 @@ class PlotDialog(wx.Dialog):
         self.choose_bigwig_button = wx.Button(self, -1, "Choose . . .")
         self.bigwig = []
         self.panel_3 = wx.Panel(self, -1)
-        self.bigwig_choice_label = wx.StaticText(self, -1, "None")
+        # self.bigwig_choice_label = wx.StaticText(self, -1, "None")
         self.bigwig_choice_label = wx.TextCtrl(self, -1, "None", style=wx.TE_READONLY)
         bigwig_sizer = wx.GridSizer(1, 3, 0, 0)
         bigwig_sizer.Add(self.bigwig_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
