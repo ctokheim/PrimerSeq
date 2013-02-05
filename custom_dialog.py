@@ -40,6 +40,7 @@ from save_plots_html import SavePlotsHTML
 import shutil
 import algorithms as algs
 
+import traceback  # debugging import
 
 class CustomDialog(wx.Dialog):
     def __init__(self, parent, id, title, text=''):
@@ -91,7 +92,7 @@ class PlotDialog(wx.Dialog):
         with open(self.output_file) as handle:
             self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
                                   csv.reader(handle, delimiter='\t'))[1:]
-            select_results = [', '.join(r[:2]) for r in self.results]
+            select_results = [', '.join([r[0], r[-1], r[1]]) for r in self.results]
 
         # target selection widgets
         target_sizer = wx.GridSizer(1, 2, 0, 0)
@@ -160,17 +161,23 @@ class PlotDialog(wx.Dialog):
                 row_of_interest = row
 
         # find where the plot should span
-        start, end = utils.get_pos(row_of_interest[-1])
-        chr = utils.get_chr(row_of_interest[-1])
+        start, end = utils.get_pos(row_of_interest[-2])
+        chr = utils.get_chr(row_of_interest[-2])
         plot_domain = utils.construct_coordinate(chr, start, end)
+        gene_name = row_of_interest[-1]  # currently gene name is last column but likely will change
 
         self.plot_button.SetLabel('Ploting . . .')
         self.plot_button.Disable()
 
         # draw isoforms
-        plot_thread = ct.PlotThread(target=self.generate_plots, args=(self.target_id, plot_domain, self.bigwig, self.output_file))
+        plot_thread = ct.PlotThread(target=self.generate_plots,
+                                    args=(self.target_id,
+                                          plot_domain,
+                                          self.bigwig,
+                                          self.output_file,
+                                          gene_name))
 
-    def generate_plots(self, tgt_id, plt_domain, bigwig, out_file):
+    def generate_plots(self, tgt_id, plt_domain, bigwig, out_file, gene_name):
         # generate isoform drawing
         opts = {'json': primer.config_options['tmp'] + '/isoforms/' + tgt_id + '.json',
                 'output': primer.config_options['tmp'] + '/' + 'draw/' + tgt_id + '.png',
@@ -182,7 +189,7 @@ class PlotDialog(wx.Dialog):
         # generate read depth plot
         opts = {'bigwig': ','.join(bigwig),
                 'position': plt_domain,
-                'gene': 'Not Used',
+                'gene': gene_name,
                 'size': 2.,
                 'step': 1,
                 'output': primer.config_options['tmp'] + '/depth_plot/' + tgt_id + '.png'}
@@ -679,29 +686,32 @@ class SavePlotDialog(wx.Dialog):
             dlg.Destroy()
 
     def generate_plots(self, options, bigwigs, out_dir, titles):
-        handle = open(options['output'], 'r')
-        handle.readline()
-        for line in csv.reader(handle, delimiter='\t'):
-            if len(line) <= 1: continue  # skip cases where no good output
-            ID = line[0]
-            start, end = utils.get_pos(line[-1])
-            chr = utils.get_chr(line[-1])
-            plot_domain = utils.construct_coordinate(chr, start, end)
-            # only error msgs and blank lines do not have tabs
-            if len(line) > 1:
-                tx_paths, counts = self.get_isforms_and_counts(line, options)
-                my_html = SavePlotsHTML()
-                for index in range(len(tx_paths)):
-                    path, count = tx_paths[index], counts[index]
-                    self.create_plots(ID, index, plot_domain, path, count, [bigwigs[index]], options['output'], out_dir)
-                    my_html.add_heading(titles[index])
-                    my_html.add_img('%s.%d.depth.png' % (ID, index))
-                    my_html.add_img('%s.%d.isoforms.png' % (ID, index))
-                    my_html.add_line_break()
-                with open(os.path.join(out_dir, ID + '.html'), 'wb') as html_writer:
-                    html_writer.write(str(my_html))
-        handle.close()
-        shutil.copy('style.css', out_dir)  # copy css to folder
+        try:
+            handle = open(options['output'], 'r')
+            handle.readline()
+            for line in csv.reader(handle, delimiter='\t'):
+                if len(line) <= 1: continue  # skip cases where no good output
+                ID = line[0]
+                start, end = utils.get_pos(line[-2])  # ASM region column
+                chr = utils.get_chr(line[-2])  # ASM region column
+                plot_domain = utils.construct_coordinate(chr, start, end)
+                # only error msgs and blank lines do not have tabs
+                if len(line) > 1:
+                    tx_paths, counts, gene = self.get_isforms_and_counts(line, options)
+                    my_html = SavePlotsHTML()
+                    for index in range(len(tx_paths)):
+                        path, count = tx_paths[index], counts[index]
+                        self.create_plots(ID, index, plot_domain, path, count, [bigwigs[index]], gene, options['output'], out_dir)
+                        my_html.add_heading(titles[index])
+                        my_html.add_img('%s.%d.depth.png' % (ID, index))
+                        my_html.add_img('%s.%d.isoforms.png' % (ID, index))
+                        my_html.add_line_break()
+                    with open(os.path.join(out_dir, ID + '.html'), 'wb') as html_writer:
+                        html_writer.write(str(my_html))
+            handle.close()
+            shutil.copy('style.css', out_dir)  # copy css to folder
+        except:
+            print traceback.format_exc()
 
     def get_isforms_and_counts(self, line, options):
         # get information about each row
@@ -712,9 +722,9 @@ class SavePlotDialog(wx.Dialog):
 
         # get information regarding the gene
         if options['no_gene_id']:
-            gene_dict = sg.get_weakly_connected_tx(options['gtf'], strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
+            gene_dict, gene_name = sg.get_weakly_connected_tx(options['gtf'], strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
         else:
-            gene_dict = sg.get_from_gtf_using_gene_name(options['gtf'], strand, chr, tmp_start, tmp_end)
+            gene_dict, gene_name = sg.get_from_gtf_using_gene_name(options['gtf'], strand, chr, tmp_start, tmp_end)
 
         # get edge weights
         edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
@@ -739,9 +749,9 @@ class SavePlotDialog(wx.Dialog):
             all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
             paths_list.append(exon_seek_obj.paths)
             counts_list.append(exon_seek_obj.counts)
-        return paths_list, counts_list  # return the tx paths and count information for a single AS event
+        return paths_list, counts_list, gene_name  # return the tx paths and count information for a single AS event
 
-    def create_plots(self, tgt_id, bam_index, plt_domain, path, counts, bigwig, out_file, output_directory):
+    def create_plots(self, tgt_id, bam_index, plt_domain, path, counts, bigwig, gene, out_file, output_directory):
         """Create plots for a single BAM/BigWig pair"""
         # generate isoform drawing
         opts = {'path': path,
@@ -755,7 +765,7 @@ class SavePlotDialog(wx.Dialog):
         # generate read depth plot
         opts = {'bigwig': ','.join(bigwig),
                 'position': plt_domain,
-                'gene': 'Not Used',
+                'gene': gene,
                 'size': 2.,
                 'step': 1,
                 'output': os.path.join(output_directory, tgt_id + '.' + str(bam_index) + '.depth.png')}

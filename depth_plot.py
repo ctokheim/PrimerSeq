@@ -182,7 +182,7 @@ def read_depth_plot(options):
 
         # plot/label
         max_count, real_start, real_stop = generate_plot(ax, bigwigs[i], chr, start, stop, options)
-        draw_text(ax, os.path.splitext(os.path.basename(bigwigs[i]))[0])
+        draw_text(ax, '%s -- ' % options['gene'] + os.path.splitext(os.path.basename(bigwigs[i]))[0])
 
         # format options
         ax.xaxis.grid(color='white', linestyle='--', linewidth=1.5)
@@ -211,7 +211,8 @@ def read_depth_plot(options):
         ax.get_xticklabels()[1].set_horizontalalignment('right')
 
         # make text box to display chromosome information
-        offset_text(ax, '%s:' % chr, 3, (-.15, -.16))
+        if i == num_subplots - 1:
+            offset_text(ax, '%s:' % chr, 3, (-.15, -.16))
 
         # adjust spacing between subplots
         fig.subplots_adjust(wspace=0.05, hspace=0.05)

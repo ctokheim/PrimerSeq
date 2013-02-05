@@ -3,7 +3,7 @@
 # below primer3 options. If an option is left
 # empty, then PrimerSeq relies on primer3's
 # default values. Note, the GUI changes options
-# by saving the options to this config file. 
+# by saving the options to this config file.
 # Do not add additional parameters!!!!
 ###########################################
 PRIMER_PRODUCT_SIZE_RANGE=100-400

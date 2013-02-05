@@ -150,7 +150,6 @@ def primer_coordinates(p3_output, strand, tar, up, down):
     upstream_start, upstream_end = utils.get_pos(up)
     downstream_start, downstream_end = utils.get_pos(down)
     my_chr = utils.get_chr(tar)
-
     # get position of primers
     if strand == '+':
         tmp = upstream_start + left_primer_offset
@@ -186,7 +185,7 @@ def primer3(options, primer3_options):
     logging.debug('Finished splice_graph.main')
 
     # iterate over all target sequences
-    STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, ALL_PATHS, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ = range(11)
+    STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, ALL_PATHS, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ, GENE_NAME = range(12)
     output_list = []
     for z in range(len(flanking_info)):
         # no flanking exon information case
@@ -272,14 +271,15 @@ def primer3(options, primer3_options):
                 tmp = [tar_id, tar, primer3_coords, flanking_info[z][PSI_TARGET], str(forward_seq).upper(), str(reverse_seq).upper(),
                        str((float(primer3_dict['PRIMER_LEFT_0_TM']) + float(primer3_dict['PRIMER_RIGHT_0_TM'])) / 2), skipping_size, inclusion_size,
                        flanking_info[z][UPSTREAM_TARGET], flanking_info[z][PSI_UPSTREAM], flanking_info[z][DOWNSTREAM_TARGET],
-                       flanking_info[z][PSI_DOWNSTREAM], asm_region]
+                       flanking_info[z][PSI_DOWNSTREAM], asm_region, flanking_info[z][GENE_NAME]]
                 output_list.append(tmp)
 
     # write output information
     with open(options['output'], 'wb') as outputfile_tab:
         # define csv header
         header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'forward primer', 'reverse primer', 'average TM',
-                  'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream', 'downstream exon coordinate', 'PSI downstream', 'ASM Region']
+                  'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream',
+                  'downstream exon coordinate', 'PSI downstream', 'ASM Region', 'Gene']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, dialect='excel', delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
 

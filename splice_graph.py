@@ -157,7 +157,7 @@ def get_from_gtf_using_gene_name(gtf, strand, chr, start, end):
                 # if start >= ex[0] and end <= ex[1]:
                 if start == ex[0] and end == ex[1]:
                     gtf[chr][gene_key]['target'] = ex  # this line needed for compatability reasons
-                    return gtf[chr][gene_key]
+                    return gtf[chr][gene_key], gene_key
     raise utils.PrimerSeqError("Error: Did not find an appropriate gtf annotation")
 
 
@@ -210,7 +210,7 @@ def get_weakly_connected_tx(gtf, strand, chr, start, end, plus_or_minus=1000000)
     g_dict['graph'] = filtered_tmp_tx
     g_dict['target'] = (start, end)
 
-    return g_dict
+    return g_dict, 'Invalid'
 
 
 def get_flanking_biconnected_exons(name, target, sGraph, genome):
@@ -369,9 +369,9 @@ def main(options, args_output='tmp/debug.json'):
             # if the gtf doesn't have a valid gene_id attribute then use
             # the first method otherwise use the second method.
             if options['no_gene_id']:
-                gene_dict = get_weakly_connected_tx(args_gtf, strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
+                gene_dict, gene_name = get_weakly_connected_tx(args_gtf, strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
             else:
-                gene_dict = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
+                gene_dict, gene_name = get_from_gtf_using_gene_name(args_gtf, strand, chr, tmp_start, tmp_end)
 
             # extract all edge weights only once
             edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
@@ -422,6 +422,7 @@ def main(options, args_output='tmp/debug.json'):
                 # edit target psi value
                 tmp_all_paths = tmp[-4]  # CAREFUL the index for the AllPaths object may change
                 tmp[2] = calculate_target_psi(gene_dict['target'], single_bam_splice_graphs, tmp_all_paths.component)  # CAREFUL index for psi_target may change
+                tmp.append(gene_name)
 
             # append result to output list
             output.append(tmp)
