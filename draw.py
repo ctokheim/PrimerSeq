@@ -133,7 +133,7 @@ def editAxis(ax, include=[], notInclude=[]):
             raise ValueError('unknown spine location: %s' % loc)
 
 
-def exonDrawSubplot(ax, exons, pct, options, prod_length=False):  # exons was coords
+def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # exons was coords
     # move/remove axis
     includedAxes = ["bottom"]
     notIncludedAxes = ["left", "right", "top"]
@@ -166,7 +166,8 @@ def exonDrawSubplot(ax, exons, pct, options, prod_length=False):  # exons was co
     collection = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=1)
 
     # make color scheme size match the number of exons
-    color_scheme = [[0, 0, 0]] * len(exons)
+    color_scheme = [[.6, 0, 0] if tuple(e) == tgt_exon else [0, 0, 0] for e in exons]
+    # color_scheme = [[0, 0, 0]] * len(exons)
 
     # plot exons
     collection.set_facecolor(color_scheme)
@@ -251,7 +252,7 @@ def calc_product_length(path, primer_coord):
     return final_len
 
 
-def main(tx_paths, counts, primer_coord, options):
+def main(tx_paths, target_exon, counts, primer_coord, options):
     # configurations
     matplotlib.rcParams['font.size'] = 16  # edit font size of title
     matplotlib.rcParams['xtick.labelsize'] = 13
@@ -273,11 +274,11 @@ def main(tx_paths, counts, primer_coord, options):
         # exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
 
         if i == 0:
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, 'primers', options)
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, None, 'primers', options)
         else:
             i -= 1
             prod_length = calc_product_length(tx_paths[i], primer_coord)
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i], options, prod_length)
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], target_exon, percent_estimate[i], options, prod_length)
 
         if i == (num_of_txs - 1):
             first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]

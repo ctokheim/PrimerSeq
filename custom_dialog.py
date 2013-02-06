@@ -165,6 +165,7 @@ class PlotDialog(wx.Dialog):
         chr = utils.get_chr(row_of_interest[-2])
         plot_domain = utils.construct_coordinate(chr, start, end)
         gene_name = row_of_interest[-1]  # currently gene name is last column but likely will change
+        self.target_pos = utils.get_pos(row_of_interest[1])
 
         self.plot_button.SetLabel('Ploting . . .')
         self.plot_button.Disable()
@@ -172,15 +173,17 @@ class PlotDialog(wx.Dialog):
         # draw isoforms
         plot_thread = ct.PlotThread(target=self.generate_plots,
                                     args=(self.target_id,
+                                          self.target_pos,
                                           plot_domain,
                                           self.bigwig,
                                           self.output_file,
                                           gene_name))
 
-    def generate_plots(self, tgt_id, plt_domain, bigwig, out_file, gene_name):
+    def generate_plots(self, tgt_id, target_pos, plt_domain, bigwig, out_file, gene_name):
         # generate isoform drawing
         opts = {'json': primer.config_options['tmp'] + '/isoforms/' + tgt_id + '.json',
                 'output': primer.config_options['tmp'] + '/' + 'draw/' + tgt_id + '.png',
+                'target_exon': target_pos,
                 'scale': 1,
                 'primer_file': out_file,
                 'id': tgt_id}
@@ -205,7 +208,7 @@ class PlotDialog(wx.Dialog):
             my_json = json.load(handle)
 
         coord = draw.read_primer_file(self.output_file, opts['id'])
-        draw.main(my_json['path'], my_json['counts'], coord, opts)
+        draw.main(my_json['path'], opts['target_exon'], my_json['counts'], coord, opts)
         logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
@@ -694,6 +697,7 @@ class SavePlotDialog(wx.Dialog):
                 ID = line[0]
                 start, end = utils.get_pos(line[-2])  # ASM region column
                 chr = utils.get_chr(line[-2])  # ASM region column
+                tgt_pos = utils.get_pos(line[1])
                 plot_domain = utils.construct_coordinate(chr, start, end)
                 # only error msgs and blank lines do not have tabs
                 if len(line) > 1:
@@ -701,7 +705,7 @@ class SavePlotDialog(wx.Dialog):
                     my_html = SavePlotsHTML()
                     for index in range(len(tx_paths)):
                         path, count = tx_paths[index], counts[index]
-                        self.create_plots(ID, index, plot_domain, path, count, [bigwigs[index]], gene, options['output'], out_dir)
+                        self.create_plots(ID, index, plot_domain, path, tgt_pos, count, [bigwigs[index]], gene, options['output'], out_dir)
                         my_html.add_heading(titles[index])
                         my_html.add_img('%s.%d.depth.png' % (ID, index))
                         my_html.add_img('%s.%d.isoforms.png' % (ID, index))
@@ -751,10 +755,11 @@ class SavePlotDialog(wx.Dialog):
             counts_list.append(exon_seek_obj.counts)
         return paths_list, counts_list, gene_name  # return the tx paths and count information for a single AS event
 
-    def create_plots(self, tgt_id, bam_index, plt_domain, path, counts, bigwig, gene, out_file, output_directory):
+    def create_plots(self, tgt_id, bam_index, plt_domain, path, tgt_exon, counts, bigwig, gene, out_file, output_directory):
         """Create plots for a single BAM/BigWig pair"""
         # generate isoform drawing
         opts = {'path': path,
+                'target_exon': tgt_exon,
                 'counts': counts,
                 'output': os.path.join(output_directory, tgt_id + '.' + str(bam_index) + '.isoforms.png'),
                 'scale': 1,
@@ -777,7 +782,7 @@ class SavePlotDialog(wx.Dialog):
         '''
         logging.debug('Drawing isoforms %s . . .' % str(opts))
         coord = draw.read_primer_file(self.output_file, opts['id'])
-        draw.main(opts['path'], opts['counts'], coord, opts)
+        draw.main(opts['path'], opts['target_exon'], opts['counts'], coord, opts)
         logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
