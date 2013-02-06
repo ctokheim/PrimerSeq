@@ -627,7 +627,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>."""
 
         info = wx.AboutDialogInfo()
         info.SetName('PrimerSeq')
-        info.SetVersion('1.0.0.beta')
+        info.SetVersion('1.0.1.beta')
         info.SetDescription(description)
         info.SetCopyright('(C) 2012-2013 Collin Tokheim')
         info.SetWebSite('http://primerseq.sf.net')
