@@ -122,12 +122,24 @@ You can also mix several GTF files into a single input GTF file for PrimerSeq! F
 2.3 Mapped reads (SAM/BAM(s))
 +++++++++++++++++++++++++++++
 
-You can specify one or multiple SAM or BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a .sorted.bam extension so PrimerSeq does not try to re-sort the file.
+You can specify none, one or multiple SAM/BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a .sorted.bam extension so PrimerSeq does not try to re-sort the file.
 
 2.4 Target exon(s)
 ++++++++++++++++++
 
 Enter target coordinates as (strand)chr:start-end. The first nucleotide on a chromosome is at position 0. The end position is not inclusive.
+
+If you wish PrimerSeq to automatically find flanking exons then only specify a list of target exons where each exon is specified on a different line.
+
+-chr18:9562919-9563044
+
+However, you may also specify the flanking exons for primer design. Follow the following convention to do this:
+
+targetExon1,upstreamExon1,downstreamExon1
+targetExon2,upstreamExon2,downstreamExon2
+
+The target exon is followed by upstream flanking exon and then by the downstream flanking exon (separated by a comma).
+Remember to follow the same coordinate format for just the target exon case.
 
 2.5 Output file
 +++++++++++++++

@@ -153,11 +153,18 @@ links:</p>
 </div>
 <div class="section" id="mapped-reads-sam-bam-s">
 <h3>2.3 Mapped reads (SAM/BAM(s))<a class="headerlink" href="#mapped-reads-sam-bam-s" title="Permalink to this headline">¶</a></h3>
-<p>You can specify one or multiple SAM or BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a .sorted.bam extension so PrimerSeq does not try to re-sort the file.</p>
+<p>You can specify none, one or multiple SAM/BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a .sorted.bam extension so PrimerSeq does not try to re-sort the file.</p>
 </div>
 <div class="section" id="target-exon-s">
 <h3>2.4 Target exon(s)<a class="headerlink" href="#target-exon-s" title="Permalink to this headline">¶</a></h3>
 <p>Enter target coordinates as (strand)chr:start-end. The first nucleotide on a chromosome is at position 0. The end position is not inclusive.</p>
+<p>If you wish PrimerSeq to automatically find flanking exons then only specify a list of target exons where each exon is specified on a different line.</p>
+<p>-chr18:9562919-9563044</p>
+<p>However, you may also specify the flanking exons for primer design. Follow the following convention to do this:</p>
+<p>targetExon1,upstreamExon1,downstreamExon1
+targetExon2,upstreamExon2,downstreamExon2</p>
+<p>The target exon is followed by upstream flanking exon and then by the downstream flanking exon (separated by a comma).
+Remember to follow the same coordinate format for just the target exon case.</p>
 </div>
 <div class="section" id="output-file">
 <h3>2.5 Output file<a class="headerlink" href="#output-file" title="Permalink to this headline">¶</a></h3>
