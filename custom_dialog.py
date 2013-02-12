@@ -39,6 +39,7 @@ from save_plots_html import SavePlotsHTML
 import shutil
 import algorithms as algs
 
+import datetime  # import for marking html output with date
 import traceback  # debugging import
 
 class CustomDialog(wx.Dialog):
@@ -672,9 +673,15 @@ class SavePlotDialog(wx.Dialog):
 
         # add links to AS events with designed primers
         for line in self.results:
+            index_html.add_text(line[0] + ', ')
             index_html.add_link(line[0] + '.html',
                                 line[1])  # link to each AS event
+            index_html.add_text(', <i>' + line[-1] + '</i>')  # italicized gene name
             index_html.add_line_break()  # make each link on separate line
+
+        # Create time stamp
+        index_html.add_line_break()
+        index_html.add_text('Timestamp: ' + str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
 
         # write list of links to the index.html file
         with open(os.path.join(self.output_directory, 'index.html'), 'w') as handle:
