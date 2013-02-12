@@ -31,7 +31,6 @@ import depth_plot
 import subprocess
 import gtf
 import webbrowser
-import utils
 import ConfigParser
 import re
 import splice_graph as sg
@@ -585,8 +584,8 @@ class SavePlotDialog(wx.Dialog):
 
         # read in valid primer output
         with open(self.output_file) as handle:
-            self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
-                                  csv.reader(handle, delimiter='\t'))[1:]
+            self.total_results = list(csv.reader(handle, delimiter='\t'))[1:]  # contains designed primers and failed cases
+            self.results = filter(lambda x: len(x) > 1,  self.total_results)  # if there is no tabs then it represents an error msg in the output
 
         # widgets for handling choice of output directory
         grid_sizer = wx.GridSizer(1, 3, 0, 0)
@@ -662,6 +661,14 @@ class SavePlotDialog(wx.Dialog):
         # start creating a index.html web page
         index_html = SavePlotsHTML()
         index_html.add_heading('Alternative Splicing Events')
+        index_html.add_text('%d/%d primer designs are successful! ' % (len(self.results), len(self.total_results)))
+
+        # add text file to directory and link from html to it
+        shutil.copy(self.output_file, os.path.join(self.output_directory, 'output.txt'))  # copy the text file
+        index_html.add_text('You can view the entire results ')
+        index_html.add_link('output.txt', 'here')  # add link to text file with results
+        index_html.add_line_break()
+        index_html.add_line_break()
 
         # add links to AS events with designed primers
         for line in self.results:
