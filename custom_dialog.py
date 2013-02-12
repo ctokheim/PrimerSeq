@@ -677,6 +677,16 @@ class SavePlotDialog(wx.Dialog):
             index_html.add_link(line[0] + '.html',
                                 line[1])  # link to each AS event
             index_html.add_text(', <i>' + line[-1] + '</i>')  # italicized gene name
+
+            # construct url
+            index_html.add_text(' -- ')
+            ucsc_url = utils.InSilicoPcrUrl(genome='Human',
+                                            assembly='hg19',
+                                            forward=line[4],
+                                            reverse=line[5],
+                                            target='UCSC Genes',
+                                            max_size=4000)
+            index_html.add_link(ucsc_url.get_url(), '<i>In-Silico</i> PCR')  # open url in webbrowser
             index_html.add_line_break()  # make each link on separate line
 
         # Create time stamp
