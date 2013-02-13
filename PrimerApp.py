@@ -41,8 +41,6 @@ import traceback
 import logging
 import datetime
 
-# begin wxGlade: extracode
-# end wxGlade
 
 def handle_uncaught_exceptions(t, ex, tb):
     traceback.print_tb(tb)  # print traceback to stdout so I can debug

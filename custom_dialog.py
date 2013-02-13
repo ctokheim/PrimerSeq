@@ -565,7 +565,7 @@ class DisplayPlotDialog(wx.Dialog):
 
 class SavePlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, opts, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(400, 190), style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 270), style=wx.DEFAULT_DIALOG_STYLE)
 
         self.options = opts
         self.output_file = opts['output']
@@ -594,20 +594,29 @@ class SavePlotDialog(wx.Dialog):
         self.directory_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.choose_directory_button = wx.Button(self, -1, "Choose . . .")
         self.choose_directory_button.SetToolTip(wx.ToolTip('Choose your output directory'))
-        # self.my_panel = wx.ScrolledWindow(self, -1, size=wx.Size(500, 100))
-        # self.my_panel.SetScrollRate(20, 20)
-        # self.my_box_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # self.my_panel.SetSizer(self.my_box_sizer)
-        # self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(300, 20))
-        # self.directory_choice_label = wx.StaticText(self.my_panel, -1, "None", size=wx.Size(500, 100))
         self.directory_choice_label = wx.TextCtrl(self, -1, "None", style=wx.TE_READONLY)
-        self.directory_choice_label.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        # self.my_box_sizer.Add(self.directory_choice_label, 0, wx.ALIGN_TOP, 0)
+        self.directory_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         grid_sizer.Add(self.directory_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
         grid_sizer.Add(self.choose_directory_button, 0, wx.ALIGN_CENTER, 10)
-        # grid_sizer.Add(self.my_panel, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 10)
-        # grid_sizer.Add(self.my_panel, 0, wx.EXPAND, 10)
         grid_sizer.Add(self.directory_choice_label, 0, wx.EXPAND, 10)
+
+        # create genome widgets
+        grid_sizer_genome = wx.GridSizer(1, 2, 0, 0)
+        self.genome_label = wx.StaticText(self, -1, "Genome:  ")
+        self.genome_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.genome_choice_label = wx.TextCtrl(self, -1, "Human", style=wx.TE_READONLY)
+        self.genome_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        grid_sizer_genome.Add(self.genome_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
+        grid_sizer_genome.Add(self.genome_choice_label, 0, wx.EXPAND, 10)
+
+        # create genome assembly widgets
+        grid_sizer_assembly = wx.GridSizer(1, 2, 0, 0)
+        self.assembly_label = wx.StaticText(self, -1, "Assembly:  ")
+        self.assembly_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.assembly_choice_label = wx.TextCtrl(self, -1, "hg19", style=wx.TE_READONLY)
+        self.assembly_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        grid_sizer_assembly.Add(self.assembly_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
+        grid_sizer_assembly.Add(self.assembly_choice_label, 0, wx.EXPAND, 10)
 
         # run and cancel buttons
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -621,6 +630,10 @@ class SavePlotDialog(wx.Dialog):
         sizer.AddMany([(self.data_label, 0, wx.ALIGN_CENTER, 10),  # add label
                        ((10, 10), 0),  # add spacer
                        (self.data_text_field, 0, wx.EXPAND, 10),  # add text box
+                       ((10, 10), 0),  # add spacer
+                       (grid_sizer_genome, 0, wx.EXPAND, 10),
+                       ((10, 10), 0),  # add spacer
+                       (grid_sizer_assembly, 0, wx.EXPAND, 10),
                        ((10, 10), 0),  # add spacer
                        (grid_sizer, 0, wx.EXPAND, 10),  # add output directory choice
                        ((10, 10), 0),  # add spacer
@@ -680,8 +693,8 @@ class SavePlotDialog(wx.Dialog):
 
             # construct url
             index_html.add_text(' -- ')
-            ucsc_url = utils.InSilicoPcrUrl(genome='Human',
-                                            assembly='hg19',
+            ucsc_url = utils.InSilicoPcrUrl(genome=str(self.genome_choice_label.GetValue()),
+                                            assembly=str(self.assembly_choice_label.GetValue()),
                                             forward=line[4],
                                             reverse=line[5],
                                             target='UCSC Genes',
