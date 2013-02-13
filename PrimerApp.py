@@ -111,7 +111,7 @@ class PrimerFrame(wx.Frame):
         self.bam_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
         self.sizer_4_staticbox = wx.StaticBox(self.primer_notebook_pane_1, -1, "Load Files")
         self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Coordinates:")
-        self.coordinates_text_field = wx.TextCtrl(self.primer_notebook_pane_1, -1, "", style=wx.TE_MULTILINE)
+        self.coordinates_text_field = wx.TextCtrl(self.primer_notebook_pane_1, -1, "", style=wx.TE_MULTILINE | wx.HSCROLL)
         self.coordinates_text_field.SetToolTip(wx.ToolTip("(strand)chr:start-end\n0-based start, 1-based end"))
         self.output_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Output:")
         self.choose_output_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
