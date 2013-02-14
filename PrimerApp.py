@@ -94,20 +94,14 @@ class PrimerFrame(wx.Frame):
         self.fasta_label = wx.StaticText(self.primer_notebook_pane_1, -1, "FASTA:")
         self.choose_fasta_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_fasta_button.SetToolTip(wx.ToolTip('Select your genome sequence\nin FASTA format'))
-        # self.panel_1 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)
-        # self.fasta_choice_label = wx.StaticText(self.panel_1, -1, "None")
         self.fasta_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
         self.gtf_label = wx.StaticText(self.primer_notebook_pane_1, -1, "GTF:")
         self.choose_gtf_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_gtf_button.SetToolTip(wx.ToolTip('Select your gene annotation\nin a sorted GTF format'))
-        # self.panel_2 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)
-        # self.gtf_choice_label = wx.StaticText(self.panel_2, -1, "None")
         self.gtf_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
         self.bam_label = wx.StaticText(self.primer_notebook_pane_1, -1, "SAM/BAM(s):")
         self.choose_bam_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_bam_button.SetToolTip(wx.ToolTip('Select one or multiple SAM or BAM file(s).\nWhen selecting, hold ctrl to select multiple'))
-        # self.panel_3 = wx.ScrolledWindow(self.primer_notebook_pane_1, -1, style=wx.TAB_TRAVERSAL)  # self.panel_3 = wx.Panel(self.primer_notebook_pane_1, -1)
-        # self.bam_choice_label = wx.StaticText(self.panel_3, -1, "None")
         self.bam_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
         self.sizer_4_staticbox = wx.StaticBox(self.primer_notebook_pane_1, -1, "Load Files")
         self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Coordinates:")
@@ -117,8 +111,6 @@ class PrimerFrame(wx.Frame):
         self.choose_output_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_output_button.SetToolTip(wx.ToolTip('Select the output file'))
         self.panel_4 = wx.Panel(self.primer_notebook_pane_1, -1)
-        # self.output_choice_label = wx.StaticText(self.panel_4, -1, "None")
-        # self.output_choice_label = wx.TextCtrl(self.panel_4, -1, "None", style=wx.TE_READONLY)
         self.output_choice_label = wx.TextCtrl(self.panel_4, -1, "None", style=wx.TE_READONLY)
         self.run_button = wx.Button(self.primer_notebook_pane_1, -1, "Run PrimerSeq")
         self.run_button.SetToolTip(wx.ToolTip('Run PrimerSeq'))
@@ -127,11 +119,11 @@ class PrimerFrame(wx.Frame):
         self.psi_text_field = wx.TextCtrl(self.primer_notebook_pane_2, -1, ".95")
         self.psi_text_field.SetToolTip(wx.ToolTip("Valid: 0 < PSI <= 1"))
         self.type_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Splice Junction:")
-        self.type_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'Annotation', choices=["Annotation", "RNA-Seq + Annotation"], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
+        self.type_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'Annotation', choices=["Annotation", "RNA-Seq + Annotation"], style=wx.CB_DROPDOWN | wx.TE_READONLY)
         self.gene_id_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Gene ID:")
-        self.gene_id_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'Valid', choices=["Valid", "Not Valid"], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
+        self.gene_id_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'Valid', choices=["Valid", "Not Valid"], style=wx.CB_DROPDOWN | wx.TE_READONLY)
         self.temp_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Keep Temporary:")
-        self.temp_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'No', choices=["No", "Yes"], style=wx.CB_DROPDOWN | wx.CB_DROPDOWN)
+        self.temp_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'No', choices=["No", "Yes"], style=wx.CB_DROPDOWN | wx.TE_READONLY)
         self.temp_combo_box.SetToolTip(wx.ToolTip('Keep intermediate files'))
         self.read_threshold_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Read Threshold:")
         self.read_threshold_text_field = wx.TextCtrl(self.primer_notebook_pane_2, -1, "5")
@@ -650,7 +642,7 @@ if __name__ == "__main__":
 
     # define logging file before using logging.debug
     if not os.path.exists(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
-    log_file = primer.config_options['log'] + '/log.PrimerApp.' + str(datetime.datetime.now()).replace(':', '.')
+    log_file = primer.config_options['log'] + '/log.PrimerApp.' + str(datetime.datetime.now()).replace(':', '.') + '.txt'
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(message)s',
                         filename=log_file,
