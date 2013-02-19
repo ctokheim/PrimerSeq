@@ -59,9 +59,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.SetToolBar(toolbar)
 
         tID = wx.NewId()
-
         sizer = wx.BoxSizer(wx.VERTICAL)
-
         self.list = MyListCtrl(self, tID,
                                style=wx.LC_REPORT
                                | wx.LC_SORT_ASCENDING

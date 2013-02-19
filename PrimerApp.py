@@ -219,27 +219,15 @@ class PrimerFrame(wx.Frame):
         self.sizer_4_staticbox.Lower()
         sizer_4 = wx.StaticBoxSizer(self.sizer_4_staticbox, wx.VERTICAL)
         grid_sizer_1 = wx.GridSizer(3, 3, 0, 0)
-        # sizer_7 = wx.BoxSizer(wx.HORIZONTAL)
-        # sizer_6 = wx.BoxSizer(wx.HORIZONTAL)
-        # sizer_5 = wx.BoxSizer(wx.HORIZONTAL)
         grid_sizer_1.Add(self.fasta_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.choose_fasta_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.fasta_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)  # NEW LINE
-        # sizer_5.Add(self.fasta_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        # self.panel_1.SetSizer(sizer_5)
-        # grid_sizer_1.Add(self.panel_1, 1, wx.EXPAND, 0)
         grid_sizer_1.Add(self.gtf_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.choose_gtf_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
-        # sizer_6.Add(self.gtf_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        # self.panel_2.SetSizer(sizer_6)
-        # grid_sizer_1.Add(self.panel_2, 1, wx.EXPAND, 0)
         grid_sizer_1.Add(self.gtf_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)  # NEW LINE
         grid_sizer_1.Add(self.bam_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.choose_bam_button, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(self.bam_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)  # NEW LINE
-        # sizer_7.Add(self.bam_choice_label, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        # self.panel_3.SetSizer(sizer_7)
-        # grid_sizer_1.Add(self.panel_3, 1, wx.EXPAND, 0)
         sizer_4.Add(grid_sizer_1, 1, wx.EXPAND, 0)
         sizer_3.Add(sizer_4, 1, wx.EXPAND, 0)
         sizer_8.Add(self.coordinates_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
@@ -570,7 +558,6 @@ class PrimerFrame(wx.Frame):
         self.disable_load_buttons()
         self.current_process = ct.RunPrimerSeqThread(target=primer.main,
                                                      args=(self.options,))
-
         event.Skip()
 
     def on_plot(self, event):  # wxGlade: PrimerFrame.<event_handler>

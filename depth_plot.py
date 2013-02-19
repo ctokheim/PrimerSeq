@@ -134,6 +134,9 @@ def scale_depth(depth_dictionary, start, stop, step):
 
 ## Plot generating functions ##
 def generate_plot(ax, bw, chr, start, stop, options):
+    """
+    Calls the matplotlib hist method to create the histogram.
+    """
     #depth_counts, max_count = sam.get_depth(bam, chr, start, stop)
     wig_obj = wig.Wig(bw, ext='wig')
     tmp_start, tmp_stop = (start[0], stop[-1]) if type(start) == type(tuple()) else (start, stop)
@@ -144,11 +147,12 @@ def generate_plot(ax, bw, chr, start, stop, options):
     max_count = max(depth_dict.itervalues()) if len(list(depth_dict.itervalues())) > 0 else 1
     # depth_counts = list(it.chain.from_iterable([key] * depth_dict[key] for key in depth_dict)) if depth_dict else [0]
     # ax.hist(depth_counts, range(tmp_start, tmp_stop + 1), facecolor='k')
-    ax.hist(map(lambda x: (x[0] + x[1]) / 2., depth_dict.keys()),
-            # range(tmp_start, tmp_stop + 1),
-            wig_obj.bins,
-            weights=depth_dict.values(),
-            facecolor='k')
+    if max_count > 1:
+        ax.hist(map(lambda x: (x[0] + x[1]) / 2., depth_dict.keys()),
+                # range(tmp_start, tmp_stop + 1),
+                wig_obj.bins,
+                weights=depth_dict.values(),
+                facecolor='k')
     return max_count, tmp_start, tmp_stop
 
 
@@ -175,13 +179,14 @@ def read_depth_plot(options):
     for i, ax in enumerate(iterable):
         #ax.locator_params(nbins=2)
         ax.yaxis.set_label_text('')
+
         # set bg
         ax.patch.set_facecolor(gray)
         ax.patch.set_edgecolor(gray)
         ax.grid()
 
         # plot/label
-        max_count, real_start, real_stop = generate_plot(ax, bigwigs[i], chr, start, stop, options)
+        max_count, real_start, real_stop = generate_plot(ax, bigwigs[i], chr, start, stop, options)  # does the actual work
         draw_text(ax, '%s -- ' % options['gene'] + os.path.splitext(os.path.basename(bigwigs[i]))[0])
 
         # format options
@@ -203,8 +208,6 @@ def read_depth_plot(options):
 
         # set x-axis options
         ax.set_xlim(real_start, real_stop)     # set x limits
-        #my_length = stop - start
-        #after_start, before_stop = int(my_length * 1/3) + start, start + int(2/3 * my_length)
         ax.set_xticks([real_start, real_stop])   # explicitly set ticks
         ax.xaxis.set_ticklabels(map(addCommas, [real_start, real_stop]))   # make nice looking text for labels
         ax.get_xticklabels()[0].set_horizontalalignment('left')
