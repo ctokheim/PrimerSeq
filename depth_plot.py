@@ -137,9 +137,11 @@ def generate_plot(ax, bw, chr, start, stop, options):
     """
     Calls the matplotlib hist method to create the histogram.
     """
-    #depth_counts, max_count = sam.get_depth(bam, chr, start, stop)
-    wig_obj = wig.Wig(bw, ext='wig')
     tmp_start, tmp_stop = (start[0], stop[-1]) if type(start) == type(tuple()) else (start, stop)
+    if bw == '':
+        # if user doesn't specify a bigwig file then just return
+        return 1, tmp_start, tmp_stop
+    wig_obj = wig.Wig(bw, ext='wig')
     wig_obj.extractBigRegion(chr, tmp_start, tmp_stop)
     wig_obj.load_wig_file()
     depth_dict = wig_obj.get_annotation()

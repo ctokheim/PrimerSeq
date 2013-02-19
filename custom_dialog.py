@@ -147,7 +147,7 @@ class PlotDialog(wx.Dialog):
             dlg.Destroy()
 
     def plot_button_event(self, event):
-        if not self.bigwig or not self.target_combo_box.GetValue():
+        if not self.target_combo_box.GetValue():
             dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return
