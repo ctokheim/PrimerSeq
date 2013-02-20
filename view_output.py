@@ -19,15 +19,8 @@ import wx.lib.mixins.listctrl as listmix
 import sys
 import csv
 import custom_dialog as cd
+import utils
 import traceback  # debugging import
-
-
-class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl):
-    def __init__(self, p, my_id, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=0):
-        wx.ListCtrl.__init__(self, p, my_id,
-                             pos, size, style)
-        listmix.ListCtrlAutoWidthMixin.__init__(self)
 
 
 class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
@@ -50,6 +43,9 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         save_plot_id = wx.NewId()
         toolbar.AddSimpleTool(save_plot_id, self.get_bmp(wx.ART_FILE_SAVE),
                               "Save Plots", "Save each plot to an html file viewable in your browser")
+        reset_id = wx.NewId()
+        toolbar.AddSimpleTool(reset_id, self.get_bmp(wx.ART_UNDO),
+                              "Reset Values", "Reset Information")
         toolbar.AddSimpleTool(wx.ID_HELP, self.get_bmp(wx.ART_HELP),
                               "Help", "Help Information")
         toolbar.AddSeparator()
@@ -60,16 +56,32 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
 
         tID = wx.NewId()
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.list = MyListCtrl(self, tID,
-                               style=wx.LC_REPORT
-                               | wx.LC_SORT_ASCENDING
-                               | wx.LC_EDIT_LABELS
-                               | wx.BORDER_NONE)
+        self.list = utils.MyListCtrl(self, tID,
+                                     style=wx.LC_REPORT
+                                     | wx.LC_SORT_ASCENDING
+                                     | wx.LC_EDIT_LABELS
+                                     | wx.BORDER_NONE)
 
         # self.list.SetImageList(self.il, wx.IMAGE_LIST_SMALL)
         sizer.Add(self.list, 1, wx.EXPAND)
 
-        self.read_output_file(self.output_filename)
+        # define the columns
+        self.list.InsertColumn(0, 'ID')
+        self.list.InsertColumn(1, 'Target Coordinate')
+        self.list.InsertColumn(2, 'Primer Coordinates')
+        self.list.InsertColumn(3, 'Psi Target')
+        self.list.InsertColumn(4, 'Upstream Primer')
+        self.list.InsertColumn(5, 'Downstream Primer')
+        self.list.InsertColumn(6, 'Average TM')
+        self.list.InsertColumn(7, 'Skipping Prod. Size')
+        self.list.InsertColumn(8, 'Inc. Prod. Sized')
+        self.list.InsertColumn(9, 'Upstream Exon Coord.')
+        self.list.InsertColumn(10, 'Upstream Psi')
+        self.list.InsertColumn(11, 'Downstream Exon Coord.')
+        self.list.InsertColumn(12, 'Downstream Psi')
+        self.list.InsertColumn(13, 'ASM Region')
+        self.list.InsertColumn(14, 'Gene')
+        self.read_output_file(self.output_filename)  # read in contents from file
 
         # Now that the list exists we can init the other base class,
         # see wx/lib/mixins/listctrl.py
@@ -84,7 +96,14 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.Bind(wx.EVT_TOOL, self.on_save_plots, id=save_plot_id)
         self.Bind(wx.EVT_TOOL, self.on_plot, id=plot_id)
         self.Bind(wx.EVT_TOOL, self.on_help, id=wx.ID_HELP)
+        self.Bind(wx.EVT_TOOL, self.on_reset, id=reset_id)
         self.Bind(wx.EVT_TOOL, self.on_exit, id=wx.ID_EXIT)
+
+    def on_reset(self, event):
+        """Refreshes the content of the listctrl in case the user edits it and wants
+        the original data back."""
+        self.list.DeleteAllItems()
+        self.read_output_file(self.output_filename)
 
     def on_save_plots(self, event):
         try:
@@ -114,23 +133,6 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         cd.PlotDialog(self, -1, 'Plot Results', self.output_filename)
 
     def read_output_file(self, output_file):
-        # define the columns
-        self.list.InsertColumn(0, 'ID')
-        self.list.InsertColumn(1, 'Target Coordinate')
-        self.list.InsertColumn(2, 'Primer Coordinates')
-        self.list.InsertColumn(3, 'Psi Target')
-        self.list.InsertColumn(4, 'Upstream Primer')
-        self.list.InsertColumn(5, 'Downstream Primer')
-        self.list.InsertColumn(6, 'Average TM')
-        self.list.InsertColumn(7, 'Skipping Prod. Size')
-        self.list.InsertColumn(8, 'Inc. Prod. Sized')
-        self.list.InsertColumn(9, 'Upstream Exon Coord.')
-        self.list.InsertColumn(10, 'Upstream Psi')
-        self.list.InsertColumn(11, 'Downstream Exon Coord.')
-        self.list.InsertColumn(12, 'Downstream Psi')
-        self.list.InsertColumn(13, 'ASM Region')
-        self.list.InsertColumn(14, 'Gene')
-
         # get information from results file
         with open(output_file) as handle:
             self.results = list(csv.reader(handle, delimiter='\t'))[1:]
@@ -140,6 +142,9 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
             for col in range(1, len(data)):
                 self.list.SetStringItem(index, col, data[col])
             self.list.SetItemData(index, i)
+            if i % 2:
+                # zebra stiped color pattern
+                self.list.SetItemBackgroundColour(i, "lightgray")
 
         self.list.SetColumnWidth(0, wx.LIST_AUTOSIZE)
         self.list.SetColumnWidth(1, wx.LIST_AUTOSIZE)
