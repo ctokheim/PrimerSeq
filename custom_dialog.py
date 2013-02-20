@@ -590,7 +590,7 @@ class SavePlotDialog(wx.Dialog):
                              | wx.BORDER_NONE)
         # define the columns
         self.list.InsertColumn(0, 'Title')
-        self.list.InsertColumn(1, 'Mapped Reads (BAM)')
+        self.list.InsertColumn(1, 'BAM')
         self.list.InsertColumn(2, 'BigWig')
         self.set_list(self.options['rnaseq'])  # populate the list ctrl with data
 
