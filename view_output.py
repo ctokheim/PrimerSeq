@@ -118,7 +118,9 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
                                      'the Create Plots button to view how your data '
                                      'supports the primer design results\n\nPress the '
                                      'In Silico Pcr button to validate primer products\n\n'
-                                     'Press the save plots button to save plots as html', style=wx.OK)
+                                     'Press the save plots button to save plots as html\n\n'
+                                     'Press the Reset Values button to undo changes made'
+                                     ' to cells.', style=wx.OK)
         dlg.ShowModal()
 
     def on_exit(self, event):
