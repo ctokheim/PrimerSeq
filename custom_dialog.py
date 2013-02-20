@@ -23,6 +23,7 @@ import custom_thread as ct
 import csv
 import os
 import utils
+import sys
 import primer
 import logging
 import json
@@ -574,12 +575,24 @@ class SavePlotDialog(wx.Dialog):
         self.parent = parent
         self.text = wx.StaticText(self, -1, text)
 
-        self.data_label = wx.StaticText(self, -1, "Title,BAM,BigWig:")
-        self.data_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        self.data_text_field = wx.TextCtrl(self, -1, ''.join(map(lambda x: x + ',\n', ['Title for data,' + s.path for s in self.options['rnaseq']])), style=wx.TE_MULTILINE | wx.HSCROLL)
-        self.data_text_field.SetToolTip(wx.ToolTip("eg. Title,mySample.bam,mySample.bw"))
-        self.data_text_field.SetMinSize((396, 60))
-        self.data_text_field.SetFocus()  # set focus on text field
+        # self.data_label = wx.StaticText(self, -1, "Title,BAM,BigWig:")
+        # self.data_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        # self.data_text_field = wx.TextCtrl(self, -1, ''.join(map(lambda x: x + ',\n', ['Title for data,' + s.path for s in self.options['rnaseq']])), style=wx.TE_MULTILINE | wx.HSCROLL)
+        # self.data_text_field.SetToolTip(wx.ToolTip("eg. Title,mySample.bam,mySample.bw"))
+        # self.data_text_field.SetMinSize((396, 60))
+        # self.data_text_field.SetFocus()  # set focus on text field
+
+        tID = wx.NewId()
+        self.list = utils.MyListCtrl(self, tID,
+                             style=wx.LC_REPORT
+                             | wx.LC_SORT_ASCENDING
+                             | wx.LC_EDIT_LABELS
+                             | wx.BORDER_NONE)
+        # define the columns
+        self.list.InsertColumn(0, 'Title')
+        self.list.InsertColumn(1, 'Mapped Reads (BAM)')
+        self.list.InsertColumn(2, 'BigWig')
+        self.set_list(self.options['rnaseq'])  # populate the list ctrl with data
 
         # read in valid primer output
         with open(self.output_file) as handle:
@@ -625,9 +638,10 @@ class SavePlotDialog(wx.Dialog):
 
         # set sizer information
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddMany([(self.data_label, 0, wx.ALIGN_CENTER, 10),  # add label
-                       ((10, 10), 0),  # add spacer
-                       (self.data_text_field, 0, wx.EXPAND, 10),  # add text box
+        sizer.AddMany([(self.list, 0, wx.EXPAND, 10),
+                       # (self.data_label, 0, wx.ALIGN_CENTER, 10),  # add label
+                       # ((10, 10), 0),  # add spacer
+                       # (self.data_text_field, 0, wx.EXPAND, 10),  # add text box
                        ((10, 10), 0),  # add spacer
                        (grid_sizer_genome, 0, wx.EXPAND, 10),
                        ((10, 10), 0),  # add spacer
@@ -646,6 +660,15 @@ class SavePlotDialog(wx.Dialog):
 
         pub.subscribe(self.on_finish, "plotting_finished")
 
+    def set_list(self, bam_list):
+        """Add bam information to listctrl"""
+        for i, bam in enumerate(bam_list):
+            index = self.list.InsertStringItem(sys.maxint, bam.path)
+            self.list.SetStringItem(index, 0, 'Title for Data')
+            self.list.SetStringItem(index, 1, bam.path)
+            self.list.SetStringItem(index, 2, '')
+            self.list.SetItemData(index, i)
+
     def on_finish(self, msg):
         dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
         dlg.ShowModal()
@@ -658,12 +681,34 @@ class SavePlotDialog(wx.Dialog):
             dlg = wx.MessageDialog(self, 'Please enter an output directory.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return  # exit if user didn't specify an output
+
+        # get information from listctrl and make sure user specified data
+        counts = self.list.GetItemCount()
+        missing_bigwig_flag = False  # flag for absent bigwig file
+        titles, bigwigs = [], []
+        for row in xrange(counts):
+            title = self.list.GetItem(itemId=row, col=0).GetText()
+            bigwig = self.list.GetItem(itemId=row, col=2).GetText()
+            titles.append(title)
+            bigwigs.append(bigwig)
+            if not bigwig:
+                missing_bigwig_flag = True
+        if missing_bigwig_flag:
+            dlg = wx.MessageDialog(self, 'One or more BigWig files were not specified. If you intended to'
+                                   ' not plot read depth then press OK. If you want to plot read depth then'
+                                   ' press CANCEL and then type the file paths for the BigWig files corresponding'
+                                   ' to the BAM file.', 'Confirm BigWig', wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+            result = dlg.ShowModal()
+            dlg.Destroy()
+            if result == wx.ID_CANCEL:
+                return  # exit if user wanted to specify bigwig files
+
         self.generate_index_html()  # create the index.html web page
 
-        lines = map(lambda y: re.split('\s*,+\s*', y), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', self.data_text_field.GetValue()))))
-        bigwig_files = map(lambda x: x[2], lines)
-        titles = map(lambda x: x[0], lines)
-        html_thread = ct.HtmlReportThread(self.generate_plots, args=(self.options, bigwig_files, self.output_directory, titles))
+        # lines = map(lambda y: re.split('\s*,+\s*', y), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', self.data_text_field.GetValue()))))
+        # bigwig_files = map(lambda x: x[2], lines)
+        # titles = map(lambda x: x[0], lines)
+        html_thread = ct.HtmlReportThread(self.generate_plots, args=(self.options, bigwigs, self.output_directory, titles))
 
         # disable button so they cannot press it twice
         self.save_plot_button.SetLabel('Generating . . .')

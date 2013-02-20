@@ -146,10 +146,6 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
                 # zebra stiped color pattern
                 self.list.SetItemBackgroundColour(i, "lightgray")
 
-        self.list.SetColumnWidth(0, wx.LIST_AUTOSIZE)
-        self.list.SetColumnWidth(1, wx.LIST_AUTOSIZE)
-        self.list.SetColumnWidth(2, 100)
-
         # show how to select an item
         self.list.SetItemState(5, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
 
