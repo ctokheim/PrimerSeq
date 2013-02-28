@@ -85,7 +85,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
 
         # Now that the list exists we can init the other base class,
         # see wx/lib/mixins/listctrl.py
-        listmix.ColumnSorterMixin.__init__(self, 3)
+        # listmix.ColumnSorterMixin.__init__(self, 3)
         #self.SortListItems(0, True)
 
         self.SetSizer(sizer)
