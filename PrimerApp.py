@@ -43,7 +43,8 @@ import datetime
 
 
 def handle_uncaught_exceptions(t, ex, tb):
-    traceback.print_tb(tb)  # print traceback to stdout so I can debug
+    # traceback.print_tb(tb)  # print traceback to stdout so I can debug
+    logging.debug('Traceback:\n' + ''.join(traceback.format_list(traceback.extract_tb(tb))))
     dlg = wx.MessageDialog(None,
                            'An uncaught error occured in PrimerSeq.'
                            'Please check the log file (%s) for details.'

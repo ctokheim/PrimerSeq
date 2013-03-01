@@ -17,6 +17,8 @@
 import wx
 from wx.lib.pubsub import pub
 import threading
+import logging
+import traceback
 
 # handle uncaught exception imports
 import sys
@@ -50,6 +52,7 @@ class UpdateThread(threading.Thread):
             output = self.tar(*self.args)  # threaded call
             wx.CallAfter(pub.sendMessage, self.update, ())
         except:
+            logging.debug('Traceback:\n' + traceback.format_exc())
             wx.CallAfter(pub.sendMessage, "update_after_error", (None,))
 
 
@@ -73,6 +76,7 @@ class RunThread(threading.Thread):
             else:
                 wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
         except:
+            logging.debug('Traceback:\n' + traceback.format_exc())
             wx.CallAfter(pub.sendMessage, "update_after_error", (None,))  # need to make this call more elegant
 
 
@@ -91,6 +95,7 @@ class RunPrimerSeqThread(threading.Thread):
             output = self.tar(*self.args)  # threaded call
             wx.CallAfter(pub.sendMessage, "update_after_run", (self.args[0]['output'],))  # need to make this call more elegant
         except:
+            logging.debug('Traceback:\n' + traceback.format_exc())
             wx.CallAfter(pub.sendMessage, "update_after_error", (None,))  # need to make this call more elegant
 
 
@@ -115,3 +120,4 @@ class HtmlReportThread(threading.Thread):
                 wx.CallAfter(pub.sendMessage, "plotting_finished", (None,))  # need to make this call more elegant
         except Exception, e:
             print e
+            logging.debug('Traceback:\n' + traceback.format_exc())
