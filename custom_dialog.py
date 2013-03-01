@@ -43,6 +43,7 @@ import algorithms as algs
 import datetime  # import for marking html output with date
 import traceback  # debugging import
 
+
 class CustomDialog(wx.Dialog):
     def __init__(self, parent, id, title, text=''):
         wx.Dialog.__init__(self, parent, id, title, size=(300, 100))
@@ -670,11 +671,18 @@ class SavePlotDialog(wx.Dialog):
             self.list.SetItemData(index, i)
 
     def on_finish(self, msg):
-        dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
-        dlg.ShowModal()
-        self.save_plot_button.SetLabel('Generate Report')
-        self.save_plot_button.Enable()
-        webbrowser.open(os.path.join(self.output_directory, 'index.html'))
+        try:
+            # testing showed this message dialog threw an exception sometimes on windows vista
+            dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
+            dlg.ShowModal()
+        except:
+            # wierd behaviour has some times cause the dialog to fail to display
+            logging.debug('Traceback:\n' + traceback.format_exc())
+        finally:
+            # always reset buttons and open browser
+            self.save_plot_button.SetLabel('Generate Report')
+            self.save_plot_button.Enable()
+            webbrowser.open(os.path.join(self.output_directory, 'index.html'))
 
     def on_save_plot(self, event):
         if not self.output_directory:
