@@ -156,6 +156,10 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.on_run_button, self.run_button)
         # end wxGlade
 
+        self.my_icon = wx.EmptyIcon()
+        self.my_icon.CopyFromBitmap(wx.Bitmap("my_transparent_awesome.ico", wx.BITMAP_TYPE_ANY))
+        self.SetIcon(self.my_icon)
+
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
         pub.subscribe(self.update_after_dialog, "update")
         pub.subscribe(self.update_after_run, "update_after_run")
@@ -609,7 +613,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>."""
         info.SetLicence(licence)
         info.AddDeveloper('Collin Tokheim')
         info.AddDocWriter('Collin Tokheim')
-
+        info.SetIcon(self.my_icon)
         wx.AboutBox(info)
 
 
