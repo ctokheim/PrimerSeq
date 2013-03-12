@@ -247,7 +247,7 @@ def read_count_em(bcc_paths, sub_graph):
                 print row
                 print p
                 print row.dot(p)
-                raise
+                raise utils.PrimerSeqError('Numerical error in EM algorithm (likely under/overflow error).')
 
         # M-step
         p_new = np.sum(Y, axis=0) / total_counts
