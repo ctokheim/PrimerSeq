@@ -115,7 +115,7 @@ class ExonSeek(object):
         after_all_paths.trim_tx_paths()
         after_paths, after_counts = after_all_paths.estimate_counts()
 
-        if self.upstream and self.downsteam:
+        if self.upstream and self.downstream:
             if self.strand == '+':
                 self.psi_upstream = algs.estimate_psi(self.upstream, before_paths, before_counts)
                 self.psi_downstream = algs.estimate_psi(self.downstream, after_paths, after_counts)
