@@ -539,7 +539,7 @@ class PrimerFrame(wx.Frame):
         coordinates_string = self.coordinates_text_field.GetValue()  # a string
         coordinates = map(lambda y: re.split('\s*,+\s*', y), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', coordinates_string))))  # ['(strand)(chr):(start)-(end)', ...]
 
-        # options for primer.py
+        # options for primer.py's main function
         self.options = {}
         self.options['target'] = zip(range(1, len(coordinates) + 1), coordinates)
         self.options['gtf'] = self.gtf
@@ -558,17 +558,18 @@ class PrimerFrame(wx.Frame):
         self.options['anchor_length'] = int(self.anchor_length_text_field.GetValue())
         self.options['job_id'] = 'jobs_id'
 
+        # display dialog and disable buttons while designing primers
         self.load_progress = cd.CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
         self.load_progress.Update(0)
         self.disable_load_buttons()
-        self.current_process = ct.RunPrimerSeqThread(target=primer.main,
+
+        # Design primers using a thread otherwise the GUI will lock up
+        self.current_process = ct.RunPrimerSeqThread(target=primer.main,  # run primer design by calling primer.py's main function
                                                      args=(self.options,))
         event.Skip()
 
     def on_plot(self, event):  # wxGlade: PrimerFrame.<event_handler>
-        '''
-        This method is deprecated since plotting is now done in the view output frame
-        '''
+        '''This method is deprecated since plotting is now done in the view output frame'''
         try:
             if self.output:
                 cd.PlotDialog(self, -1, 'Plot Results', self.output)
@@ -580,6 +581,7 @@ class PrimerFrame(wx.Frame):
             dlg.ShowModal()
 
     def on_about(self, event):
+        """Displays the About dialog box which explains details about PrimerSeq to the user"""
 
         description = """PrimerSeq aims to design primers on flanking constitutive exons around your target position of interest.
 The advantage of PrimerSeq is it handles the ambiguity of where to place primers by incorporating RNA-Seq data.

@@ -585,10 +585,10 @@ class SavePlotDialog(wx.Dialog):
 
         tID = wx.NewId()
         self.list = utils.MyListCtrl(self, tID,
-                             style=wx.LC_REPORT
-                             | wx.LC_SORT_ASCENDING
-                             | wx.LC_EDIT_LABELS
-                             | wx.BORDER_NONE)
+                                     style=wx.LC_REPORT
+                                     | wx.LC_SORT_ASCENDING
+                                     | wx.LC_EDIT_LABELS
+                                     | wx.BORDER_NONE)
         # define the columns
         self.list.InsertColumn(0, 'Title')
         self.list.InsertColumn(1, 'BAM')

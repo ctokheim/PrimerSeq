@@ -24,6 +24,10 @@ import traceback  # debugging import
 
 
 class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
+    """
+    ViewOutputFrame displays the results of primer design within the GUI itself
+    rather than relying on the user to open the saved text file.
+    """
     def __init__(self, parent, id, string, opts):
         # wx.Dialog.__init__(self, parent, -1, style=wx.WANTS_CHARS)
         wx.Frame.__init__(self, parent, -1, string)
@@ -90,6 +94,11 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
 
         self.SetSizer(sizer)
         self.SetAutoLayout(True)
+
+        # use icon for new frame
+        self.my_icon = wx.EmptyIcon()
+        self.my_icon.CopyFromBitmap(wx.Bitmap("my_transparent_awesome.ico", wx.BITMAP_TYPE_ANY))
+        self.SetIcon(self.my_icon)
 
         # bind toolbar icons
         self.Bind(wx.EVT_TOOL, self.on_insilico_pcr, id=insilico_pcr_id)
