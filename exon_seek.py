@@ -146,7 +146,7 @@ class ExonSeek(object):
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_coordinates()
         paths, counts = self.all_paths.estimate_counts()  # used to be self.before_all_paths
-        self.save_path_info(paths, counts)
+        utils.save_path_info(self.id, paths, counts)
 
     def no_biconnected_case(self):
         '''
@@ -189,7 +189,7 @@ class ExonSeek(object):
 
         # only one isoform, so read counts do not really matter
         paths, counts = self.all_paths.estimate_counts()
-        self.save_path_info(paths, counts)
+        utils.save_path_info(self.id, paths, counts)
 
         # since the upstream, target, and downstream exon are constitutive then
         # they all have inclusion of 1.0
@@ -247,7 +247,7 @@ class ExonSeek(object):
             self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
                                                                                        counts,
                                                                                        self.component[index + 1:])
-        self.save_path_info(paths, counts)
+        utils.save_path_info(self.id, paths, counts)
         self.psi_target = algs.estimate_psi(self.target, paths, counts)
 
     def first_exon_case(self):
@@ -279,13 +279,13 @@ class ExonSeek(object):
             self.psi_upstream = 1.0  # defined by biconnected component alg as constitutive
             self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
                                                                                        counts, self.component[1:])
-            self.save_path_info([[self.upstream] + p for p in paths], counts)  # add const. upstream exon to all paths
+            utils.save_path_info(self.id, [[self.upstream] + p for p in paths], counts)  # add const. upstream exon to all paths
         else:
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
                                                                                    counts, self.component[1:])
             self.downstream = self.graph.predecessors(self.target)[0]
             self.psi_downstream = 1.0
-            self.save_path_info([p + [self.downstream] for p in paths], counts)  # add const. downstream exon to all paths
+            utils.save_path_info(self.id, [p + [self.downstream] for p in paths], counts)  # add const. downstream exon to all paths
         self.psi_target = 1.0
 
     def last_exon_case(self):
@@ -318,11 +318,11 @@ class ExonSeek(object):
                                                                                    counts, possible_const)
             self.downstream = self.graph.successors(self.target)[0]
             self.psi_downstream = 1.0
-            self.save_path_info([p + [self.downstream] for p in paths], counts)  # add const. downstream exon to all paths
+            utils.save_path_info(self.id, [p + [self.downstream] for p in paths], counts)  # add const. downstream exon to all paths
         else:
             self.upstream = self.graph.successors(self.target)[0]
             self.psi_upstream = 1.0
             self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
                                                                                        counts, possible_const)
-            self.save_path_info([[self.upstream] + p for p in paths], counts)  # add const. upstream exon to all paths
+            utils.save_path_info(self.id, [[self.upstream] + p for p in paths], counts)  # add const. upstream exon to all paths
         self.psi_target = 1.0  # the target is constitutive in this case
