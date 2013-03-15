@@ -16,6 +16,7 @@
 
 import wx
 import wx.lib.mixins.listctrl as listmix
+import json
 
 
 def get_start_pos(coordinate):
@@ -140,3 +141,12 @@ class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl, listmix.TextEditMi
                              pos, size, style)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
         listmix.TextEditMixin.__init__(self)
+
+
+def save_path_info(self, file_basename, p, cts):
+    '''
+    Save information about isoforms and their read counts into a json file.
+    '''
+    with open('tmp/isoforms/' + str(file_basename) + '.json', 'w') as handle:
+        json.dump({'path': p, 'counts': list(cts)}, handle, indent=4)  # output path information to tmp file
+    self.paths, self.counts = p, cts  # store for programatic access

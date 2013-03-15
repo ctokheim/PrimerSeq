@@ -282,6 +282,41 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_
             target_seq, downstream_seq]
 
 
+def predefined_exons_case(target, sGraph, genome, upstream_exon, downstream_exon):
+    """
+    Strategy:
+    1. Use All Paths (then trim)
+    2. Save counts/paths to file
+    3. get sequence information
+    """
+    # get possible exons for primer amplification
+    tmp = sorted(lambda x: (x[0], x[1]), sGraph.get_graph().nodes())
+    if sGraph.chr == '+':
+        my_exons = tmp[tmp.index(upstream_exon):tmp.index(downstream_exon)]
+    else:
+        my_exons = tmp[tmp.index(downstream_exon):tmp.index(upstream_exon)]
+
+    # Use correct tx's and estimate counts/psi
+    all_paths = algs.AllPaths(sGraph, my_exons, target, chr=sGraph.chr, strand=sGraph.strand)
+    all_paths.trim_tx_paths()
+    paths, counts = all_paths.estimate_counts()  # run EM algorithm
+    psi_target = algs.estimate_psi(target, paths, counts)
+
+    # get sequence of upstream/target/downstream combo
+    genome_chr = genome[sGraph.chr]  # chr object from pygr
+    upstream_seq, target_seq, downstream_seq = genome_chr[upstream_exon[0]:upstream_exon[1]], genome_chr[target[0]:target[1]], genome_chr[downstream_exon[0]:downstream_exon[1]]  # get sequence using pygr
+    if sGraph.strand == '-':
+        upstream_seq, target_seq, downstream_seq = -upstream_seq, -target_seq, -downstream_seq  # get reverse-complement if necessary
+
+    return [sGraph.strand, '%s:%d-%d' % (sGraph.chr, target[0], target[1]), psi_target,
+            sGraph.chr + ':' + '-'.join(map(str, upstream_exon)),  # upstream eg. +chr1:1000-2000
+            -1,  # user defined exon, don't estimate psi
+            sGraph.chr + ':' + '-'.join(map(str, downstream_exon)),  # downstream eg. +chr1:1000-2000
+            -1,  # user defined exon, don't estimate psi
+            all_paths, upstream_seq,
+            target_seq, downstream_seq]
+
+
 def calculate_target_psi(target, sg_list, component):
     """
     Calculate psi for the target exon for each bam file. Sometimes there are
