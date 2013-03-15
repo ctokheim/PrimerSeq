@@ -54,7 +54,7 @@ class SavePlotsHTML(object):
 <html>
 <head>
     <LINK href="style.css" rel="stylesheet" type="text/css">
-    <title>PrimerSeq v1.0.3.beta Output</title>
+    <title>PrimerSeq v1.0.4.beta Output</title>
 </head>
 <body>
 <div class='container'>
