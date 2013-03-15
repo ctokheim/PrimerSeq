@@ -275,7 +275,10 @@ def estimate_psi(exon_of_interest, paths, counts):
             inc_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
         else:
             skip_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
-    psi = float(inc_count) / (inc_count + skip_count)
+    if not inc_count and not skip_count:
+        psi = -1  # -1 indicates a divide by zero error
+    else:
+        psi = float(inc_count) / (inc_count + skip_count)
     return psi
 
 

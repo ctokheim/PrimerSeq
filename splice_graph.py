@@ -65,7 +65,7 @@ class SpliceGraph(object):
     of splice graphs for a single gene.
     '''
 
-    def __init__(self, annotation, chr, strand, read_threshold=5, filter_factor=2, min_count=1):
+    def __init__(self, annotation, chr, strand, read_threshold=5, filter_factor=50, min_count=1):
         self.chr = chr
         self.strand = strand
         self.READ_THRESHOLD = read_threshold
@@ -149,7 +149,7 @@ def get_from_gtf_using_gene_name(gtf, strand, chr, start, end):
     '''
     This function finds the first gene in the gtf that completely contains the
     target interval. I should really think about checking for multiple genes
-    instead of just returning.
+    instead of just returning the first one found.
     '''
     for gene_key in gtf[chr]:
         if gtf[chr][gene_key]['strand'] == strand and gtf[chr][gene_key]['start'] <= start and gtf[chr][gene_key]['end'] >= end:
@@ -269,9 +269,9 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_
 
     # get sequence of upstream/target/downstream combo
     genome_chr = genome[sGraph.chr]  # chr object from pygr
-    upstream_seq, target_seq, downstream_seq = genome_chr[upstream[0]:upstream[1]], genome_chr[target[0]:target[1]], genome_chr[downstream[0]:downstream[1]]
+    upstream_seq, target_seq, downstream_seq = genome_chr[upstream[0]:upstream[1]], genome_chr[target[0]:target[1]], genome_chr[downstream[0]:downstream[1]]  # get sequence using pygr
     if sGraph.strand == '-':
-        upstream_seq, target_seq, downstream_seq = -upstream_seq, -target_seq, -downstream_seq
+        upstream_seq, target_seq, downstream_seq = -upstream_seq, -target_seq, -downstream_seq  # get reverse-complement if necessary
 
     return [sGraph.strand, name[1:], psi_target,
             sGraph.chr + ':' + '-'.join(map(str, upstream)),  # upstream eg. +chr1:1000-2000
@@ -284,7 +284,9 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_
 
 def calculate_target_psi(target, sg_list, component):
     """
-    Calculate psi for the target exon for each bam file.
+    Calculate psi for the target exon for each bam file. Sometimes there are
+    no inc and no skip counts so there will be a divide by zero error. In such
+    cases PSI takes the value of -1.
     """
     logging.debug("Calculating psi for each bam file  . . .")
     psi_list = []
@@ -298,7 +300,11 @@ def calculate_target_psi(target, sg_list, component):
                 tmp_inc_count += counts[i] / (len(p) - 1)  # need to normaliz inc counts by number of jcts
             else:
                 tmp_skip_count += counts[i] / (len(p) - 1)  # need to normalize skip counts by number of jcts
-        psi_list.append(tmp_inc_count / (tmp_inc_count + tmp_skip_count))
+        if not tmp_inc_count and not tmp_skip_count:
+            tmp_psi = -1  # -1 indicates divide by zero error
+        else:
+            tmp_psi = tmp_inc_count / (tmp_inc_count + tmp_skip_count)
+        psi_list.append(tmp_psi)
     logging.debug("Finished calculating psi for each bam file.")
 
     return ';'.join(map(lambda x: '%.4f' % x, psi_list))  # only report to four decimal places
