@@ -282,7 +282,7 @@ def get_sufficient_psi_exons(name, target, sGraph, genome, ID, cutoff, upstream_
             target_seq, downstream_seq]
 
 
-def predefined_exons_case(target, sGraph, genome, upstream_exon, downstream_exon):
+def predefined_exons_case(id, target, sGraph, genome, upstream_exon, downstream_exon):
     """
     Strategy:
     1. Use All Paths (then trim)
@@ -290,17 +290,20 @@ def predefined_exons_case(target, sGraph, genome, upstream_exon, downstream_exon
     3. get sequence information
     """
     # get possible exons for primer amplification
-    tmp = sorted(lambda x: (x[0], x[1]), sGraph.get_graph().nodes())
-    if sGraph.chr == '+':
-        my_exons = tmp[tmp.index(upstream_exon):tmp.index(downstream_exon)]
+    tmp = sorted(sGraph.get_graph().nodes(), key=lambda x: (x[0], x[1]))
+    if sGraph.strand == '+':
+        my_exons = tmp[tmp.index(upstream_exon):tmp.index(downstream_exon) + 1]
     else:
-        my_exons = tmp[tmp.index(downstream_exon):tmp.index(upstream_exon)]
+        my_exons = tmp[tmp.index(downstream_exon):tmp.index(upstream_exon) + 1]
 
     # Use correct tx's and estimate counts/psi
     all_paths = algs.AllPaths(sGraph, my_exons, target, chr=sGraph.chr, strand=sGraph.strand)
     all_paths.trim_tx_paths()
+    all_paths.set_all_path_coordinates()
+    # all_paths.keep_weakly_connected()  # hack to prevent extraneous exons causing problems in EM alg
     paths, counts = all_paths.estimate_counts()  # run EM algorithm
     psi_target = algs.estimate_psi(target, paths, counts)
+    utils.save_path_info(id, paths, counts)  # save paths/counts in tmp/isoforms/id.json
 
     # get sequence of upstream/target/downstream combo
     genome_chr = genome[sGraph.chr]  # chr object from pygr
@@ -328,6 +331,7 @@ def calculate_target_psi(target, sg_list, component):
     for sg in sg_list:
         ap = algs.AllPaths(sg, component, target, chr=sg.chr)
         ap.trim_tx_paths()
+        # ap.keep_weakly_connected()  # hack to avoid problems with user specified flanking exons
         paths, counts = ap.estimate_counts()
         tmp_inc_count, tmp_skip_count = 0., 0.
         for i, p in enumerate(paths):
@@ -442,11 +446,27 @@ def main(options, args_output='tmp/debug.json'):
                                                               output_type='list',
                                                               both=options['both_flag'])
 
+            ### Logic for choosing methodology of primer design ###
+            # user-defined flanking exon case
+            if up_exon and down_exon:
+                if gene_dict['target'] not in gene_dict['exons']:
+                    raise utils.PrimerSeqError('Error: target exon was not found in gtf annotation')
+                elif up_exon not in gene_dict['exons']:
+                    raise utils.PrimerSeqError('Error: upstream exon not in gtf annotation')
+                elif down_exon not in gene_dict['exons']:
+                    raise utils.PrimerSeqError('Error: downstream exon not in gtf annotation')
+                tmp = predefined_exons_case(name,  # ID for exon (need to save as json)
+                                            gene_dict['target'],  # target exon tuple (start, end)
+                                            splice_graph,  # SpliceGraph object
+                                            genome,  # pygr genome variable
+                                            up_exon,  # upstream flanking exon
+                                            down_exon)  # downstream flanking exon
             # always included case
-            if options['psi'] > .9999:
+            elif options['psi'] > .9999:
+                # note this function ignores edge weights
                 tmp = get_flanking_biconnected_exons(tgt, gene_dict['target'],
                                                      splice_graph,
-                                                     genome)  # note this function ignores edge weights
+                                                     genome)
             # user specified a sufficient psi value to call constitutive exons
             else:
                 tmp = get_sufficient_psi_exons(tgt, gene_dict['target'],
@@ -456,6 +476,7 @@ def main(options, args_output='tmp/debug.json'):
                                                options['psi'],
                                                up_exon,
                                                down_exon)  # note, this function utilizes edge wieghts
+            ### End methodology specific primer design ###
 
             # Error msgs are of length one, so only do psi calculations for
             # non-error msgs

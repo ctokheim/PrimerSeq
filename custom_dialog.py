@@ -835,12 +835,37 @@ class SavePlotDialog(wx.Dialog):
         paths_list = []
         counts_list = []
         for my_splice_graph in bam_splice_graphs:
-            # not the best use of the ExonSeek object, initially intended to find appropriate flanking exons
-            # but in this case ExonSeek is used to get the transcripts and associate counts
-            exon_seek_obj = ExonSeek(utils.get_pos(target_coordinate), my_splice_graph, ID, options['psi'], None, None)
-            all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
-            paths_list.append(exon_seek_obj.paths)
-            counts_list.append(exon_seek_obj.counts)
+            # this case is meant for user-defined flanking exons
+            if line[10] == '-1' and line[12] == '-1':
+                # get user-defined flanking exons
+                upstream_exon, downstream_exon = utils.get_pos(line[9]), utils.get_pos(line[11])
+
+                # get possible exons for primer amplification
+                tmp = sorted(my_splice_graph.get_graph().nodes(), key=lambda x: (x[0], x[1]))
+                if my_splice_graph.strand == '+':
+                    my_exons = tmp[tmp.index(upstream_exon):tmp.index(downstream_exon) + 1]
+                else:
+                    my_exons = tmp[tmp.index(downstream_exon):tmp.index(upstream_exon) + 1]
+
+                # Use correct tx's and estimate counts/psi
+                all_paths = algs.AllPaths(my_splice_graph,
+                                          my_exons,
+                                          utils.get_pos(target_coordinate),  # tuple (start, end)
+                                          chr=chr,
+                                          strand=strand)
+                all_paths.trim_tx_paths()
+                all_paths.set_all_path_coordinates()
+                paths, counts = all_paths.estimate_counts()  # run EM algorithm
+                paths_list.append(paths)
+                counts_list.append(counts)
+            # this case is meant for automatic choice of flanking exons
+            else:
+                # not the best use of the ExonSeek object, initially intended to find appropriate flanking exons
+                # but in this case ExonSeek is used to get the transcripts and associate counts
+                exon_seek_obj = ExonSeek(utils.get_pos(target_coordinate), my_splice_graph, ID, options['psi'], None, None)
+                all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
+                paths_list.append(exon_seek_obj.paths)
+                counts_list.append(exon_seek_obj.counts)
         return paths_list, counts_list, gene_name  # return the tx paths and count information for a single AS event
 
     def create_plots(self, tgt_id, bam_index, plt_domain, path, tgt_exon, counts, bigwig, gene, out_file, output_directory):

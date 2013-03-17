@@ -99,15 +99,11 @@ class AllPaths(object):
         self.strand = strand
 
     def set_chr(self, chr):
-        '''
-        Chromosome setter
-        '''
+        '''Chromosome setter'''
         self.chr = chr
 
     def set_strand(self, strand):
-        '''
-        Strand setter
-        '''
+        '''Strand setter'''
         if strand == '+' or strand == '-':
             self.strand = strand
         else:
@@ -152,15 +148,26 @@ class AllPaths(object):
                     p[p.index(self.component[0]):p.index(self.component[-1]) + 1]))  # make sure there is no redundant paths
         self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
 
+    def keep_weakly_connected(self):
+        '''This method filters out exons (nodes) not involved in AS events'''
+        # find weakly connected subgraphs
+        weakly_connected_list = nx.weakly_connected_component_subgraphs(self.sub_graph)
+
+        # iterate to find which subgraph has the target exon
+        for subgraph in weakly_connected_list:
+            if self.target in subgraph.nodes():
+                self.sub_graph = subgraph  # assign subgraph that actually connects to target exon
+
     def estimate_counts(self):
         '''
         Estimates read counts by using :func:`~algorithms.read_count_em`
         and then returns the transcript paths and read counts for those
         paths.
         '''
-        # check the connectivity of the graph
-        if not nx.is_weakly_connected(self.sub_graph): raise utils.PrimerSeqError('Error: SpliceGraph should be connected')
-        # assert nx.is_biconnected(self.sub_graph.to_undirected()), 'Yikes! expected a biconnected component'
+        # check the connectivity of the graph -- deprecated checking
+        # if not nx.is_weakly_connected(self.sub_graph): raise utils.PrimerSeqError('Error: SpliceGraph should be connected')
+        # make sure graph (self.sub_graph) is weakly connected
+        self.keep_weakly_connected()
 
         # AFE/ALE testing
         num_first_exons = len(filter(lambda x: len(self.sub_graph.predecessors(x)) == 0, self.sub_graph.nodes()))
