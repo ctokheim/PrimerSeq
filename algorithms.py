@@ -148,6 +148,40 @@ class AllPaths(object):
                     p[p.index(self.component[0]):p.index(self.component[-1]) + 1]))  # make sure there is no redundant paths
         self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
 
+    def trim_tx_paths_using_flanking_exons(self, strand, up_exon, down_exon):
+        tmp = set()
+        for p in self.tx_paths:
+            # make sure this tx path has the biconnected component
+            if up_exon in p and down_exon in p:
+                if strand == '+':
+                    first_index, second_index = p.index(up_exon), p.index(down_exon)
+                elif strand == '-':
+                    first_index, second_index = p.index(down_exon), p.index(up_exon)
+                tmp.add(tuple(
+                    p[first_index:second_index + 1]))  # make sure there is no redundant paths
+        self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+
+    def trim_tx_paths_using_flanking_exons2(self, strand, up_exon, down_exon):
+        """Keep TXs with appropriate flanking exons"""
+        tmp = set()
+        for p in self.tx_paths:
+            tmp_starts, tmp_ends = zip(*p)  # get starts and ends
+            if strand == "+":
+                my_flag = up_exon[1] in tmp_ends and down_exon[0] in tmp_starts
+            elif strand == '-':
+                my_flag = up_exon[0] in tmp_starts and down_exon[1] in tmp_ends
+            if my_flag:
+                if strand == '+':
+                    first_index = tmp_ends.index(up_exon[1])
+                    second_index = tmp_starts.index(down_exon[0])
+                elif strand == '-':
+                    first_index = tmp_ends.index(down_exon[1])
+                    second_index = tmp_starts.index(up_exon[0])
+                tmp.add(tuple(
+                    p[first_index:second_index + 1]))  # make sure there is no redundant paths
+            my_flag = False
+        self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+
     def keep_weakly_connected(self):
         '''This method filters out exons (nodes) not involved in AS events'''
         # find weakly connected subgraphs

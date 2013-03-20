@@ -298,7 +298,8 @@ def predefined_exons_case(id, target, sGraph, genome, upstream_exon, downstream_
 
     # Use correct tx's and estimate counts/psi
     all_paths = algs.AllPaths(sGraph, my_exons, target, chr=sGraph.chr, strand=sGraph.strand)
-    all_paths.trim_tx_paths()
+    # all_paths.trim_tx_paths()
+    all_paths.trim_tx_paths_using_flanking_exons(sGraph.strand, upstream_exon, downstream_exon)
     all_paths.set_all_path_coordinates()
     # all_paths.keep_weakly_connected()  # hack to prevent extraneous exons causing problems in EM alg
     paths, counts = all_paths.estimate_counts()  # run EM algorithm
