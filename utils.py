@@ -138,7 +138,7 @@ class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl, listmix.TextEditMi
     def __init__(self, p, my_id, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=0):
         wx.ListCtrl.__init__(self, p, my_id,
-                             pos, size, style)
+                             pos, (-1, 125), style)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
         listmix.TextEditMixin.__init__(self)
 

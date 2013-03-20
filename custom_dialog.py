@@ -567,7 +567,7 @@ class DisplayPlotDialog(wx.Dialog):
 
 class SavePlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, opts, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(400, 270), style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 300), style=wx.DEFAULT_DIALOG_STYLE)
 
         self.options = opts
         self.output_file = opts['output']
@@ -575,13 +575,6 @@ class SavePlotDialog(wx.Dialog):
 
         self.parent = parent
         self.text = wx.StaticText(self, -1, text)
-
-        # self.data_label = wx.StaticText(self, -1, "Title,BAM,BigWig:")
-        # self.data_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        # self.data_text_field = wx.TextCtrl(self, -1, ''.join(map(lambda x: x + ',\n', ['Title for data,' + s.path for s in self.options['rnaseq']])), style=wx.TE_MULTILINE | wx.HSCROLL)
-        # self.data_text_field.SetToolTip(wx.ToolTip("eg. Title,mySample.bam,mySample.bw"))
-        # self.data_text_field.SetMinSize((396, 60))
-        # self.data_text_field.SetFocus()  # set focus on text field
 
         tID = wx.NewId()
         self.list = utils.MyListCtrl(self, tID,
