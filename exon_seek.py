@@ -145,8 +145,8 @@ class ExonSeek(object):
         self.all_paths = algs.AllPaths(self.splice_graph, self.total_components[tmp_start_ix:tmp_end_ix], self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_coordinates()
-        paths, counts = self.all_paths.estimate_counts()  # used to be self.before_all_paths
-        utils.save_path_info(self.id, paths, counts)
+        self.paths, self.counts = self.all_paths.estimate_counts()  # used to be self.before_all_paths
+        utils.save_path_info(self.id, self.paths, self.counts)
 
     def no_biconnected_case(self):
         '''
@@ -188,8 +188,8 @@ class ExonSeek(object):
         self.all_paths.set_all_path_coordinates()
 
         # only one isoform, so read counts do not really matter
-        paths, counts = self.all_paths.estimate_counts()
-        utils.save_path_info(self.id, paths, counts)
+        self.paths, self.counts = self.all_paths.estimate_counts()
+        utils.save_path_info(self.id, self.paths, self.counts)
 
         # since the upstream, target, and downstream exon are constitutive then
         # they all have inclusion of 1.0
@@ -227,28 +227,28 @@ class ExonSeek(object):
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_coordinates()
-        paths, counts = self.all_paths.estimate_counts()
+        self.paths, self.counts = self.all_paths.estimate_counts()
 
         if self.upstream and self.downstream:
             # known flanking exon case
-            self.psi_upstream = algs.estimate_psi(self.upstream, paths, counts)
-            self.psi_downstream = algs.estimate_psi(self.downstream, paths, counts)
+            self.psi_upstream = algs.estimate_psi(self.upstream, self.paths, self.counts)
+            self.psi_downstream = algs.estimate_psi(self.downstream, self.paths, self.counts)
         elif self.strand == '-':
-            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                   counts,
+            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                   self.counts,
                                                                                    self.component[index + 1:])
-            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                       counts,
+            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                       self.counts,
                                                                                        list(reversed(self.component[:index])))
         else:
-            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                   counts,
+            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                   self.counts,
                                                                                    list(reversed(self.component[:index])))
-            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                       counts,
+            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                       self.counts,
                                                                                        self.component[index + 1:])
-        utils.save_path_info(self.id, paths, counts)
-        self.psi_target = algs.estimate_psi(self.target, paths, counts)
+        utils.save_path_info(self.id, self.paths, self.counts)
+        self.psi_target = algs.estimate_psi(self.target, self.paths, self.counts)
 
     def first_exon_case(self):
         '''
@@ -262,30 +262,30 @@ class ExonSeek(object):
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_coordinates()
-        paths, counts = self.all_paths.estimate_counts()
+        self.paths, self.counts = self.all_paths.estimate_counts()
 
         if self.upstream and self.downstream:
             # user defined flanking exon case
             if self.strand == '+' and self.graph.predecessors(self.target)[0] == self.upstream:
                 self.psi_upstream = 1.0
-                self.psi_downsteam = algs.estimate_psi(self.downstream, paths, counts)
+                self.psi_downsteam = algs.estimate_psi(self.downstream, self.paths, self.counts)
             elif self.strand == '-' and self.graph.predecessors(self.target)[0] == self.downstream:
                 self.psi_downstream = 1.0
-                self.psi_upstream = algs.estimate_psi(self.upstream, paths, counts)
+                self.psi_upstream = algs.estimate_psi(self.upstream, self.paths, self.counts)
             else:
                 raise utils.PrimerSeqError('Error: Flanking exon choice too far from target exon')
         elif self.strand == '+':
             self.upstream = self.graph.predecessors(self.target)[0]
             self.psi_upstream = 1.0  # defined by biconnected component alg as constitutive
-            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                       counts, self.component[1:])
-            utils.save_path_info(self.id, [[self.upstream] + p for p in paths], counts)  # add const. upstream exon to all paths
+            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                       self.counts, self.component[1:])
+            utils.save_path_info(self.id, [[self.upstream] + p for p in self.paths], self.counts)  # add const. upstream exon to all self.paths
         else:
-            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                   counts, self.component[1:])
+            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                   self.counts, self.component[1:])
             self.downstream = self.graph.predecessors(self.target)[0]
             self.psi_downstream = 1.0
-            utils.save_path_info(self.id, [p + [self.downstream] for p in paths], counts)  # add const. downstream exon to all paths
+            utils.save_path_info(self.id, [p + [self.downstream] for p in self.paths], self.counts)  # add const. downstream exon to all paths
         self.psi_target = 1.0
 
     def last_exon_case(self):
@@ -303,26 +303,26 @@ class ExonSeek(object):
         self.all_paths = algs.AllPaths(self.splice_graph, self.component, self.target, self.splice_graph.chr)
         self.all_paths.trim_tx_paths()
         self.all_paths.set_all_path_coordinates()
-        paths, counts = self.all_paths.estimate_counts()
+        self.paths, self.counts = self.all_paths.estimate_counts()
 
         if self.upstream and self.downstream:
             # user defined flanking exon case
             if self.strand == '+':
-                self.psi_upstream = algs.estimate_psi(self.upstream, paths, counts)
+                self.psi_upstream = algs.estimate_psi(self.upstream, self.paths, self.counts)
                 self.psi_downstream = 1.0
             elif self.strand == '-':
                 self.psi_upstream = 1.0
-                self.psi_downstream = algs.estimate_psi(self.downstream, paths, counts)
+                self.psi_downstream = algs.estimate_psi(self.downstream, self.paths, self.counts)
         if self.strand == '+':
-            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                   counts, possible_const)
+            self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                   self.counts, possible_const)
             self.downstream = self.graph.successors(self.target)[0]
             self.psi_downstream = 1.0
-            utils.save_path_info(self.id, [p + [self.downstream] for p in paths], counts)  # add const. downstream exon to all paths
+            utils.save_path_info(self.id, [p + [self.downstream] for p in self.paths], self.counts)  # add const. downstream exon to all self.paths
         else:
             self.upstream = self.graph.successors(self.target)[0]
             self.psi_upstream = 1.0
-            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(paths,
-                                                                                       counts, possible_const)
-            utils.save_path_info(self.id, [[self.upstream] + p for p in paths], counts)  # add const. upstream exon to all paths
+            self.downstream, self.psi_downstream = self.find_closest_exon_above_cutoff(self.paths,
+                                                                                       self.counts, possible_const)
+            utils.save_path_info(self.id, [[self.upstream] + p for p in self.paths], self.counts)  # add const. upstream exon to all paths
         self.psi_target = 1.0  # the target is constitutive in this case
