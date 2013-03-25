@@ -579,7 +579,7 @@ class SavePlotDialog(wx.Dialog):
         tID = wx.NewId()
         self.list = utils.MyListCtrl(self, tID,
                                      style=wx.LC_REPORT
-                                     | wx.LC_SORT_ASCENDING
+                                     # | wx.LC_SORT_ASCENDING
                                      | wx.LC_EDIT_LABELS
                                      | wx.BORDER_NONE)
         # define the columns
@@ -690,6 +690,11 @@ class SavePlotDialog(wx.Dialog):
         for row in xrange(counts):
             title = self.list.GetItem(itemId=row, col=0).GetText()
             bigwig = self.list.GetItem(itemId=row, col=2).GetText()
+            print "row", row
+            print "Title", title
+            print "BigWig", bigwig
+            print "BAM", self.list.GetItem(itemId=row, col=1).GetText()
+            print "***************"
             titles.append(title)
             bigwigs.append(bigwig)
             if not bigwig:
