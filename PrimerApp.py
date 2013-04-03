@@ -243,7 +243,7 @@ class PrimerFrame(wx.Frame):
         # sizer_9.Add(self.output_choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
         # self.panel_4.SetSizer(sizer_9)
         # grid_sizer_2.Add(self.panel_4, 1, wx.EXPAND, 0)
-        grid_sizer_2.Add(self.output_choice_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
+        grid_sizer_2.Add(self.output_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
         sizer_8.Add(grid_sizer_2, 1, wx.EXPAND, 0)
         sizer_3.Add(sizer_8, 1, wx.EXPAND, 0)
         sizer_2.Add(sizer_3, 1, wx.EXPAND, 0)
