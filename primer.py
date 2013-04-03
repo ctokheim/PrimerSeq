@@ -292,14 +292,14 @@ def main(options):
     startTime = time.time()
 
     # read in primer3 options
-    logging.debug('Reading in primer3.txt . . .')
+    logging.debug('Reading in primer3 config file . . .')
     primer3_options = []
-    with open('primer3.txt') as handle:
+    with open(config_options['primer3_cfg']) as handle:
         for line in handle:
             # skip comment lines and lines with no set values
             if not line.startswith('#') and len(line.strip().split("=")[1]) > 0:
                 primer3_options.append(line)
-    logging.debug('Finished reading primer3.txt.')
+    logging.debug('Finished reading primer3 config file.')
 
     # the primer3 function runs the primer3_core executable
     try:

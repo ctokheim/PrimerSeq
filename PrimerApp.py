@@ -324,7 +324,7 @@ class PrimerFrame(wx.Frame):
         '''
         Try to open primer3.cfg in every platform so the user can edit it.
         '''
-        filepath = 'primer3.txt'
+        filepath = primer.config_options['primer3_cfg']
         if sys.platform.startswith('darwin'):
             subprocess.call(('open', filepath))
         elif os.name == 'nt':
