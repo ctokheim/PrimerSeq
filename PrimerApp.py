@@ -23,6 +23,7 @@ import wx
 # from wx.lib.pubsub import Publisher
 from wx.lib.pubsub import setuparg1
 from wx.lib.pubsub import pub
+import wx.stc as Stc
 import os
 import subprocess
 import re
@@ -76,7 +77,7 @@ class PrimerFrame(wx.Frame):
         primer3_id = wx.NewId()
         wxglade_tmp_menu.Append(primer3_id, "&Primer3", "Edit the parameters used by Primer3 to design primers", wx.ITEM_NORMAL)
         path_id = wx.NewId()
-        wxglade_tmp_menu.Append(path_id, "Primer3 P&ath", "Edit the default primer3 file paths", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(path_id, "Primer3 Location", "Edit where primer3 and the primer3 configuraton file are located", wx.ITEM_NORMAL)
         sort_id = wx.NewId()
         wxglade_tmp_menu.Append(sort_id, "&Sort GTF", "Sort a GTF file to make it a proper input for PrimerSeq", wx.ITEM_NORMAL)
         add_genes_id = wx.NewId()
@@ -98,15 +99,18 @@ class PrimerFrame(wx.Frame):
         self.fasta_label = wx.StaticText(self.primer_notebook_pane_1, -1, "FASTA:")
         self.choose_fasta_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_fasta_button.SetToolTip(wx.ToolTip('Select your genome sequence\nin FASTA format'))
-        self.fasta_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
+        self.fasta_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
+        self.fasta_choice_label.SetBackgroundColour(self.primer_notebook.GetBackgroundColour())
         self.gtf_label = wx.StaticText(self.primer_notebook_pane_1, -1, "GTF:")
         self.choose_gtf_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_gtf_button.SetToolTip(wx.ToolTip('Select your gene annotation\nin a sorted GTF format'))
-        self.gtf_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
+        self.gtf_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
+        self.gtf_choice_label.SetBackgroundColour(self.primer_notebook.GetBackgroundColour())
         self.bam_label = wx.StaticText(self.primer_notebook_pane_1, -1, "SAM/BAM(s):")
         self.choose_bam_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_bam_button.SetToolTip(wx.ToolTip('Select one or multiple SAM or BAM file(s).\nWhen selecting, hold ctrl to select multiple'))
-        self.bam_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
+        self.bam_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
+        self.bam_choice_label.SetBackgroundColour(self.primer_notebook.GetBackgroundColour())
         self.sizer_4_staticbox = wx.StaticBox(self.primer_notebook_pane_1, -1, "Load Files")
         self.coordinates_label = wx.StaticText(self.primer_notebook_pane_1, -1, "Coordinates:")
         self.coordinates_text_field = wx.TextCtrl(self.primer_notebook_pane_1, -1, "", style=wx.TE_MULTILINE | wx.HSCROLL)
@@ -116,7 +120,8 @@ class PrimerFrame(wx.Frame):
         self.choose_output_button.SetToolTip(wx.ToolTip('Select the output file'))
         # self.panel_4 = wx.Panel(self.primer_notebook_pane_1, -1)
         # self.output_choice_label = wx.TextCtrl(self.panel_4, -1, "None", style=wx.TE_READONLY)
-        self.output_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.TE_READONLY)
+        self.output_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
+        self.output_choice_label.SetBackgroundColour(self.primer_notebook.GetBackgroundColour())
         self.run_button = wx.Button(self.primer_notebook_pane_1, -1, "Run PrimerSeq")
         self.run_button.SetToolTip(wx.ToolTip('Run PrimerSeq'))
         self.primer_notebook_pane_2 = wx.Panel(self.primer_notebook, -1)
@@ -159,6 +164,7 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.on_choose_bam_button, self.choose_bam_button)
         self.Bind(wx.EVT_BUTTON, self.on_choose_output_button, self.choose_output_button)
         self.Bind(wx.EVT_BUTTON, self.on_run_button, self.run_button)
+        self.Bind(Stc.EVT_STC_START_DRAG, self.on_cancel_drag, self.fasta_choice_label)
         # end wxGlade
 
         self.my_icon = wx.EmptyIcon()
@@ -278,6 +284,10 @@ class PrimerFrame(wx.Frame):
         sizer_1.Fit(self)
         self.Layout()
         # end wxGlade
+
+    def on_cancel_drag(self, event):
+        event.SetDragText("")
+        event.Skip()
 
     def on_edit_primer3_path(self, event):
         """Open dialog to set primer3 properties"""
