@@ -44,6 +44,7 @@ import datetime
 
 def handle_uncaught_exceptions(t, ex, tb):
     # traceback.print_tb(tb)  # print traceback to stdout so I can debug
+    logging.debug('Error: ' + str(t) + str(ex))
     logging.debug('Traceback:\n' + ''.join(traceback.format_list(traceback.extract_tb(tb))))
     dlg = wx.MessageDialog(None,
                            'An uncaught error occured in PrimerSeq.'
@@ -74,6 +75,8 @@ class PrimerFrame(wx.Frame):
         self.primer_frame_menubar.Append(wxglade_tmp_menu, "Edit")
         primer3_id = wx.NewId()
         wxglade_tmp_menu.Append(primer3_id, "&Primer3", "Edit the parameters used by Primer3 to design primers", wx.ITEM_NORMAL)
+        path_id = wx.NewId()
+        wxglade_tmp_menu.Append(path_id, "Primer3 P&ath", "Edit the default primer3 file paths", wx.ITEM_NORMAL)
         sort_id = wx.NewId()
         wxglade_tmp_menu.Append(sort_id, "&Sort GTF", "Sort a GTF file to make it a proper input for PrimerSeq", wx.ITEM_NORMAL)
         add_genes_id = wx.NewId()
@@ -142,6 +145,7 @@ class PrimerFrame(wx.Frame):
         self.__do_layout()
 
         self.Bind(wx.EVT_MENU, self.on_help, id=help_id)  # used to specify id as -1
+        self.Bind(wx.EVT_MENU, self.on_edit_primer3_path, id=path_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_reset, id=reset_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_quit, id=quit_id)  # used to specify id as -1
@@ -274,6 +278,10 @@ class PrimerFrame(wx.Frame):
         sizer_1.Fit(self)
         self.Layout()
         # end wxGlade
+
+    def on_edit_primer3_path(self, event):
+        """Open dialog to set primer3 properties"""
+        cd.Primer3PathDialog(self, -1, 'Primer3 Location')
 
     def on_load_example(self, event):
         """Load a single sample test data. The test data can be found in the example directory."""

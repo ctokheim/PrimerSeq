@@ -690,11 +690,6 @@ class SavePlotDialog(wx.Dialog):
         for row in xrange(counts):
             title = self.list.GetItem(itemId=row, col=0).GetText()
             bigwig = self.list.GetItem(itemId=row, col=2).GetText()
-            print "row", row
-            print "Title", title
-            print "BigWig", bigwig
-            print "BAM", self.list.GetItem(itemId=row, col=1).GetText()
-            print "***************"
             titles.append(title)
             bigwigs.append(bigwig)
             if not bigwig:
@@ -910,3 +905,111 @@ class SavePlotDialog(wx.Dialog):
         DisplayPlotDialog(self, -1, 'Primer Results for ' + self.target_of_interest,
                           ['tmp/depth_plot/' + self.target_id + '.png',
                            'tmp/draw/' + self.target_id + '.png'])
+
+
+class Primer3PathDialog(wx.Dialog):
+    def __init__(self, parent, id, title, text=''):
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 125), style=wx.DEFAULT_DIALOG_STYLE)
+
+        self.parent = parent
+        # self.text = wx.StaticText(self, -1, text)
+
+        # set primer3 attributes
+        self.primer3_directory = primer.config_options['primer3']
+        self.primer3_config = primer.config_options['primer3_cfg']
+
+        # widgets for handling choice of primer3 directory
+        grid_sizer = wx.GridSizer(1, 3, 0, 0)
+        self.directory_label = wx.StaticText(self, -1, "Primer3 Folder:")
+        self.directory_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.choose_directory_button = wx.Button(self, -1, "Choose . . .")
+        self.choose_directory_button.SetToolTip(wx.ToolTip('Choose your Primer3 directory'))
+        self.directory_choice_label = wx.TextCtrl(self, -1, primer.config_options['primer3'], style=wx.TE_READONLY)
+        self.directory_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        grid_sizer.Add(self.directory_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
+        grid_sizer.Add(self.choose_directory_button, 0, wx.ALIGN_CENTER, 10)
+        grid_sizer.Add(self.directory_choice_label, 0, wx.EXPAND, 10)
+
+        # widgits for handling primer
+        grid_sizer_primer3_config = wx.GridSizer(1, 3, 0, 0)
+        self.primer3_config_label = wx.StaticText(self, -1, "Primer3 Config.:")
+        self.primer3_config_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        self.primer3_config_button = wx.Button(self, -1, "Choose . . .")
+        self.primer3_config_button.SetToolTip(wx.ToolTip('Choose your Primer3 configuration file'))
+        self.primer3_config_choice_label = wx.TextCtrl(self, -1, primer.config_options['primer3_cfg'], style=wx.TE_READONLY)
+        self.primer3_config_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        grid_sizer_primer3_config.Add(self.primer3_config_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
+        grid_sizer_primer3_config.Add(self.primer3_config_button, 0, wx.ALIGN_CENTER, 10)
+        grid_sizer_primer3_config.Add(self.primer3_config_choice_label, 0, wx.EXPAND, 10)
+
+        # apply and close buttons
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.apply_button = wx.Button(self, -1, 'Apply')
+        self.apply_button.Disable()
+        self.close_button = wx.Button(self, -1, 'Close')
+        button_sizer.Add(self.apply_button, 0, wx.ALIGN_RIGHT)
+        button_sizer.Add(self.close_button, 0, wx.ALIGN_LEFT)
+
+        # set sizer information
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddMany([(grid_sizer, 0, wx.EXPAND, 10),
+                       ((10, 10), 0),  # add spacer
+                       (grid_sizer_primer3_config, 0, wx.EXPAND, 10),
+                       ((10, 10), 0),  # add spacer
+                       (button_sizer, 0, wx.ALIGN_CENTER)])  # add button
+        sizer.SetMinSize((500, 100))
+
+        self.Bind(wx.EVT_BUTTON, self.on_primer3_config_choice, self.primer3_config_button)
+        self.Bind(wx.EVT_BUTTON, self.on_close, self.close_button)
+        self.Bind(wx.EVT_BUTTON, self.on_apply, self.apply_button)
+        self.Bind(wx.EVT_BUTTON, self.on_directory_choice, self.choose_directory_button)
+        self.SetSizer(sizer)
+        self.Show()
+
+    def on_apply(self, event):
+        """Set values related to primer3 in PrimerSeq.cfg"""
+        # read the existing options and then set to new value
+        with open('PrimerSeq.cfg', 'r') as handle:
+            my_config = ConfigParser.ConfigParser()
+            my_config.readfp(handle)
+            my_config.set('directory', 'primer3', self.primer3_directory)
+            my_config.set('directory', 'primer3_cfg', self.primer3_config)
+            primer.config_options['primer3'] = self.primer3_directory
+            primer.config_options['primer3_cfg'] = self.primer3_config
+        # write new configuration options
+        with open('PrimerSeq.cfg', 'w') as write_handle:
+            my_config.write(write_handle)
+        self.apply_button.Disable()
+        event.Skip()
+
+    def on_close(self, event):
+        """Close the dialog"""
+        self.Destroy()
+        event.Skip()
+
+    def on_directory_choice(self, event):
+        """Handle selecting the primer3 directory"""
+        dlg = wx.DirDialog(self, message='Choose the Primer3 directory')
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            self.primer3_directory = dlg.GetPath()  # get the new filenames from the dialog
+            self.directory_choice_label.SetValue(self.primer3_directory)
+            dlg.Destroy()  # best to do this sooner
+            self.apply_button.Enable()
+        # do nothhing if press cancel
+        else:
+            dlg.Destroy()
+
+    def on_primer3_config_choice(self, event):
+        """Handle selecting the primer3 configuration file"""
+        dlg = wx.FileDialog(self, message='Choose the Primer3 Configuration File', defaultDir=os.getcwd(),
+                            wildcard='Text file (*.txt)|*.txt')  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            self.primer3_config = dlg.GetPath()  # get the new filenames from the dialog
+            self.primer3_config_choice_label.SetValue(self.primer3_config)
+            dlg.Destroy()  # best to do this sooner
+            self.apply_button.Enable()
+        # do nothhing if press cancel
+        else:
+            dlg.Destroy()
