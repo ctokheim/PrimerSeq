@@ -627,6 +627,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>."""
 
         info = wx.AboutDialogInfo()
+        tmp_icon = wx.EmptyIcon()
+        tmp_icon.CopyFromBitmap(wx.Bitmap("about.ico", wx.BITMAP_TYPE_ANY))
         info.SetName('PrimerSeq')
         info.SetVersion('1.1.0.beta')
         info.SetDescription(description)
@@ -635,7 +637,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>."""
         info.SetLicence(licence)
         info.AddDeveloper('Collin Tokheim')
         info.AddDocWriter('Collin Tokheim')
-        info.SetIcon(self.my_icon)
+        info.SetIcon(tmp_icon)
         wx.AboutBox(info)
 
 
