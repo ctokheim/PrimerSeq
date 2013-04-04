@@ -97,7 +97,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
 
         # use icon for new frame
         self.my_icon = wx.EmptyIcon()
-        self.my_icon.CopyFromBitmap(wx.Bitmap("my_transparent_awesome.ico", wx.BITMAP_TYPE_ANY))
+        self.my_icon.CopyFromBitmap(wx.Bitmap("PrimerSeq.ico", wx.BITMAP_TYPE_ANY))
         self.SetIcon(self.my_icon)
 
         # bind toolbar icons

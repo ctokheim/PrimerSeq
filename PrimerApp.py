@@ -168,7 +168,7 @@ class PrimerFrame(wx.Frame):
         # end wxGlade
 
         self.my_icon = wx.EmptyIcon()
-        self.my_icon.CopyFromBitmap(wx.Bitmap("my_transparent_awesome.ico", wx.BITMAP_TYPE_ANY))
+        self.my_icon.CopyFromBitmap(wx.Bitmap("PrimerSeq.ico", wx.BITMAP_TYPE_ANY))
         self.SetIcon(self.my_icon)
 
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
