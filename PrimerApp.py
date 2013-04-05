@@ -202,6 +202,7 @@ class PrimerFrame(wx.Frame):
         self.coordinates_text_field.SetMinSize((396, 60))
         self.output_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.output_choice_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.output_choice_label.SetMinSize((135, 27))
         user_entry_size = (135, 27)  # size of widgets in option tab
         self.psi_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.psi_text_field.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
@@ -258,7 +259,7 @@ class PrimerFrame(wx.Frame):
         # sizer_9.Add(self.output_choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
         # self.panel_4.SetSizer(sizer_9)
         # grid_sizer_2.Add(self.panel_4, 1, wx.EXPAND, 0)
-        grid_sizer_2.Add(self.output_choice_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
+        grid_sizer_2.Add(self.output_choice_label, 1, wx.ALIGN_CENTER_VERTICAL, 0)
         sizer_8.Add(grid_sizer_2, 1, wx.EXPAND, 0)
         sizer_3.Add(sizer_8, 1, wx.EXPAND, 0)
         sizer_2.Add(sizer_3, 1, wx.EXPAND, 0)
