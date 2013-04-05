@@ -471,11 +471,13 @@ class InSilicoPcrDialog(wx.Dialog):
         self.genome_label = wx.StaticText(self, -1, "Genome:  ")
         self.panel_3 = wx.Panel(self, -1)
         self.genome_text_field = wx.TextCtrl(self, -1, "Human")
+        self.genome_text_field.SetMinSize((145, 27))
         genome_sizer = wx.GridSizer(1, 2, 0, 0)
         genome_sizer.Add(self.genome_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         genome_sizer.Add(self.genome_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
         self.assembly_label = wx.StaticText(self, -1, "Assembly:  ")
         self.assembly_text_field = wx.TextCtrl(self, -1, "hg19")
+        self.assembly_text_field.SetMinSize((145, 27))
         assembly_sizer = wx.GridSizer(1, 2, 0, 0)
         assembly_sizer.Add(self.assembly_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         assembly_sizer.Add(self.assembly_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
@@ -487,6 +489,7 @@ class InSilicoPcrDialog(wx.Dialog):
         type_sizer.Add(self.type_combo_box, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
         self.max_prod_size_label = wx.StaticText(self, -1, "Max Product size:  ")
         self.max_prod_size_text_field = wx.TextCtrl(self, -1, "4000")
+        self.max_prod_size_text_field.SetMinSize((145, 27))
         max_prod_size_sizer = wx.GridSizer(1, 2, 0, 0)
         max_prod_size_sizer.Add(self.max_prod_size_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
         max_prod_size_sizer.Add(self.max_prod_size_text_field, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, 0)
@@ -569,7 +572,7 @@ class DisplayPlotDialog(wx.Dialog):
 
 class SavePlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, opts, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(400, 300), style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 300))  # , style=wx.DEFAULT_DIALOG_STYLE)
 
         self.options = opts
         self.output_file = opts['output']
