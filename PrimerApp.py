@@ -202,20 +202,25 @@ class PrimerFrame(wx.Frame):
         self.coordinates_text_field.SetMinSize((396, 60))
         self.output_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.output_choice_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        user_entry_size = (135, 27)  # size of widgets in option tab
         self.psi_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
         self.psi_text_field.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.psi_text_field.SetMinSize(user_entry_size)
         self.type_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        self.type_combo_box.SetMinSize((85, 27))
+        self.type_combo_box.SetMinSize(user_entry_size)
         self.type_combo_box.SetSelection(0)
         self.gene_id_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        self.gene_id_combo_box.SetMinSize((85, 27))
+        self.gene_id_combo_box.SetMinSize(user_entry_size)
         self.gene_id_combo_box.SetSelection(0)
         self.temp_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
-        self.temp_combo_box.SetMinSize((100, 27))
+        self.temp_combo_box.SetMinSize(user_entry_size)
         self.temp_combo_box.SetSelection(-1)
         self.read_threshold_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.read_threshold_text_field.SetMinSize(user_entry_size)
         self.anchor_length_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.anchor_length_text_field.SetMinSize(user_entry_size)
         self.min_jct_count_label.SetFont(wx.Font(11, wx.DEFAULT, wx.NORMAL, wx.NORMAL, 0, "Sans"))
+        self.min_jct_count_text_field.SetMinSize(user_entry_size)
         # end wxGlade
 
     def __do_layout(self):
