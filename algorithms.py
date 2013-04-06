@@ -19,6 +19,7 @@ import numpy as np
 import sys
 import logging
 import utils
+import multinomial_em as mem
 
 oldsettings = np.seterr(all='raise')
 
@@ -211,7 +212,7 @@ class AllPaths(object):
 
         # run EM algorithm
         logging.debug('Start read count EM algorithm . . . ')
-        self.count_info = read_count_em(self.tx_paths, self.sub_graph)
+        self.count_info = mem.multinomial_em(self.tx_paths, self.sub_graph)
         logging.debug('Finished calculating counts.')
 
         return map(list, self.tx_paths), self.count_info
@@ -237,177 +238,3 @@ class AllPaths(object):
             else:
                 skip_length.append(utils.calc_product_length(path, primer_coords))  # length of everything but target exon and flanking constitutive exons
         self.inc_lengths, self.skip_lengths = list(set(inc_length)), list(set(skip_length))
-
-
-def read_count_em(bcc_paths, sub_graph):
-    '''
-    Estimate multinomial probilities by using an EM algorithm by using
-    junction reads.
-    '''
-    oldsettings = np.seterr(all='raise')  # make sure error is raised instead of numerical warning
-
-    # useful convenience dicts
-    indexToEdge = {i: e for i, e in enumerate(sub_graph.edges())}
-    edgeToIndex = {e: i for i, e in enumerate(sub_graph.edges())}
-
-    # set up count/tx info variables
-    num_tx = len(bcc_paths)
-    num_edges = len(sub_graph.edges())
-    read_counts = np.zeros(num_edges)
-    for i, val in enumerate(read_counts):
-        u, v = indexToEdge[i]
-        read_counts[i] = sub_graph[u][v]['weight']
-    total_counts = np.sum(read_counts)
-
-    # set up the uncommited matrix Y
-    Y = np.zeros((num_edges, num_tx))
-    for tx_index, path in enumerate(bcc_paths):
-        for i in range(len(path) - 1):
-            try:
-                Y[edgeToIndex[(path[i], path[i + 1])]][tx_index] = read_counts[
-                    edgeToIndex[(path[i], path[i + 1])]]
-            except:
-                print '*' * 10, path[i], path[i + 1], tx_index, edgeToIndex
-                raise
-
-    # set up p the probability array
-    p = np.ones(num_tx) * 1 / num_tx
-
-    # start EM
-    counter, MAX_ITERS = 0, 10000  # these variables impose a max iteration restriction of 10000 on the EM algorithm
-    epsilon = float('inf')
-    THRESHOLD = .0001
-    while epsilon > THRESHOLD and counter < MAX_ITERS:
-        # E-step
-        for i, row in enumerate(Y):
-            try:
-                if np.sum(row) != 0 and row.dot(p) != 0:
-                    Y[i] = row * p / row.dot(p) * read_counts[i]
-            except:
-                print counter
-                print row
-                print p
-                print row.dot(p)
-                raise utils.PrimerSeqError('Numerical error in EM algorithm (likely under/overflow error).')
-
-        # M-step
-        p_new = np.sum(Y, axis=0) / total_counts
-
-        # convergence variable
-        epsilon = np.sum(np.abs(p_new - p))
-
-        p = p_new  # update probabilities
-        p = p * (p > THRESHOLD)  # call effectively small probabilities zero to avoid numerical underflow errors
-        counter += 1  # increment the iteration counter
-
-    tx_counts = total_counts * p
-    return tx_counts
-
-
-def estimate_psi(exon_of_interest, paths, counts):
-    """
-    Uses the estimated isoform count information from read_count_em to
-    estimate the exon inclusion level (psi). Note that read counts are normalized
-    using the number of junctions (edges) for that isoform.
-    """
-    inc_count, skip_count = 0, 0
-    for i, num in enumerate(counts):
-        if exon_of_interest in paths[i]:
-            inc_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
-        else:
-            skip_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
-    if not inc_count and not skip_count:
-        psi = -1  # -1 indicates a divide by zero error
-    else:
-        psi = float(inc_count) / (inc_count + skip_count)
-    return psi
-
-
-def generate_isoforms(component_subgraph, s_graph):
-    """
-    Take in a digraph and output isoforms of its biconnected components (splice modules)
-
-    input
-        G - a directed acyclic graph
-        tx_paths - a list of paths from the annotation
-    output
-        paths - a list of isoforms for splice modules
-    """
-    logging.debug('Start generating isoforms . . .')
-    tx_paths, G = s_graph.annotation, s_graph.get_graph()
-    #for component in get_biconnected(G):
-    # define subgraph of biconnected nodes
-    #component_subgraph = nx.subgraph(G, component)
-    component = sorted(component_subgraph.nodes(), key=lambda x: (x[0], x[1]))  # make sure it is sorted
-
-    # trim tx_paths to only contain paths within component_subgraph
-    tmp = set()
-    for p in tx_paths:
-        # make sure this tx path has the biconnected component
-        if component[0] in p and component[-1] in p:
-            tmp.add(tuple(
-                p[p.index(component[0]):p.index(component[-1]) + 1]))  # make sure there is no redundant paths
-    tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
-
-    # assert statements about the connectivity of the graph
-    assert nx.is_weakly_connected(component_subgraph), 'Yikes! expected weakly connected graph'
-    assert nx.is_biconnected(component_subgraph.to_undirected()), 'Yikes! expected a biconnected component'
-
-    # assert statements about AFE/ALE testing
-    num_first_exons = len(filter(lambda x: len(component_subgraph.predecessors(x)) == 0, component_subgraph.nodes()))
-    assert num_first_exons <= 1, 'Yikes! AFE like event is not expected'
-    num_last_exons = len(filter(lambda x: len(component_subgraph.successors(x)) == 0, component_subgraph.nodes()))
-    assert num_last_exons <= 1, 'Yikes! ALE like event is not expected'
-
-    # mark all edges as unvisited
-    visited_edges = {}
-    for u, v in component_subgraph.edges():
-        try:
-            visited_edges[u][v] = 0
-        except KeyError:
-            visited_edges[u] = {}
-            visited_edges[u][v] = 0
-    num_visited_edges = 0  # no edges visited to start with
-
-    # mark visited edges if in known annotation
-    for path in tx_paths:
-        for i in range(len(path) - 1):
-            try:
-                if not visited_edges[path[i]][path[i + 1]]:
-                    visited_edges[path[i]][path[i + 1]] = 1
-                    num_visited_edges += 1
-            except:
-                pass
-
-    # Iterate until atleast one isoform explains each edge
-    component_paths = tx_paths
-    while num_visited_edges < component_subgraph.number_of_edges():
-        # find maximum weight path
-        path, no_new_edges = bellman_ford_longest_path(component_subgraph,
-                                                       num_nodes=G.number_of_nodes(),
-                                                       visited=visited_edges)
-        if not no_new_edges:
-            component_paths.append(path)
-
-        # bookeeping on visited edges
-        for i in range(len(path) - 1):
-            if visited_edges[path[i]][path[i + 1]] == 0:
-                visited_edges[path[i]][path[i + 1]] = 1
-                num_visited_edges += 1
-            G[path[i]][path[i + 1]]['weight'] = G[path[
-                i]][path[i + 1]]['weight'] / 10.0  # down scale path
-
-    logging.debug('Finished generating isoforms.')
-    tmp = sorted(component)  # make sure nodes are sorted
-    # component_paths += [filter(lambda x: x >= start and x <= stop, p) for p in tx_paths]  # add paths known from transcript annotation
-    component_paths = map(list, list(
-        set(map(tuple, component_paths))))  # remove redundant paths
-
-    logging.debug('Start read count EM algorithm . . . ')
-    count_info = read_count_em(component_paths, component_subgraph)
-    logging.debug('Finished calculating counts.')
-    #original_count = sum([component_subgraph[arc_tail][arc_head]['weight'] for arc_tail, arc_head in component_subgraph.edges()])  # total actual read counts that the subgraph has
-    #module_info.append([[start, stop], list(count_info), original_count])   # module starts at first node and ends at last node
-    # paths.append(component_paths)  # add paths
-
-    return component_paths, count_info

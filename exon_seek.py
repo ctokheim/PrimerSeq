@@ -21,6 +21,7 @@ Description: exon_seek.py holds the ExonSeek class which searches
 for appropriate flanking "constitutive" exons to place primers on.
 '''
 import algorithms as algs
+import multinomial_em as mem
 import logging
 import json
 import utils
@@ -88,7 +89,7 @@ class ExonSeek(object):
         Progressively step away from the target exon to find a sufficient constitutive exon
         """
         for exon in possible_exons:
-            psi = algs.estimate_psi(exon, paths, counts)
+            psi = mem.estimate_psi(exon, paths, counts)
             if psi >= self.cutoff:
                 return exon, psi
 
@@ -116,11 +117,11 @@ class ExonSeek(object):
 
         if self.upstream and self.downstream:
             if self.strand == '+':
-                self.psi_upstream = algs.estimate_psi(self.upstream, before_paths, before_counts)
-                self.psi_downstream = algs.estimate_psi(self.downstream, after_paths, after_counts)
+                self.psi_upstream = mem.estimate_psi(self.upstream, before_paths, before_counts)
+                self.psi_downstream = mem.estimate_psi(self.downstream, after_paths, after_counts)
             elif self.strand == '-':
-                self.psi_upstream = algs.estimate_psi(self.upstream, after_paths, after_counts)
-                self.psi_downstream = algs.estimate_psi(self.downstream, before_paths, before_counts)
+                self.psi_upstream = mem.estimate_psi(self.upstream, after_paths, after_counts)
+                self.psi_downstream = mem.estimate_psi(self.downstream, before_paths, before_counts)
         elif self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(before_paths,
                                                                                    before_counts,
@@ -230,8 +231,8 @@ class ExonSeek(object):
 
         if self.upstream and self.downstream:
             # known flanking exon case
-            self.psi_upstream = algs.estimate_psi(self.upstream, self.paths, self.counts)
-            self.psi_downstream = algs.estimate_psi(self.downstream, self.paths, self.counts)
+            self.psi_upstream = mem.estimate_psi(self.upstream, self.paths, self.counts)
+            self.psi_downstream = mem.estimate_psi(self.downstream, self.paths, self.counts)
         elif self.strand == '-':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(self.paths,
                                                                                    self.counts,
@@ -247,7 +248,7 @@ class ExonSeek(object):
                                                                                        self.counts,
                                                                                        self.component[index + 1:])
         utils.save_path_info(self.id, self.paths, self.counts)
-        self.psi_target = algs.estimate_psi(self.target, self.paths, self.counts)
+        self.psi_target = mem.estimate_psi(self.target, self.paths, self.counts)
 
     def first_exon_case(self):
         '''
@@ -267,10 +268,10 @@ class ExonSeek(object):
             # user defined flanking exon case
             if self.strand == '+' and self.graph.predecessors(self.target)[0] == self.upstream:
                 self.psi_upstream = 1.0
-                self.psi_downsteam = algs.estimate_psi(self.downstream, self.paths, self.counts)
+                self.psi_downsteam = mem.estimate_psi(self.downstream, self.paths, self.counts)
             elif self.strand == '-' and self.graph.predecessors(self.target)[0] == self.downstream:
                 self.psi_downstream = 1.0
-                self.psi_upstream = algs.estimate_psi(self.upstream, self.paths, self.counts)
+                self.psi_upstream = mem.estimate_psi(self.upstream, self.paths, self.counts)
             else:
                 raise utils.PrimerSeqError('Error: Flanking exon choice too far from target exon')
         elif self.strand == '+':
@@ -307,11 +308,11 @@ class ExonSeek(object):
         if self.upstream and self.downstream:
             # user defined flanking exon case
             if self.strand == '+':
-                self.psi_upstream = algs.estimate_psi(self.upstream, self.paths, self.counts)
+                self.psi_upstream = mem.estimate_psi(self.upstream, self.paths, self.counts)
                 self.psi_downstream = 1.0
             elif self.strand == '-':
                 self.psi_upstream = 1.0
-                self.psi_downstream = algs.estimate_psi(self.downstream, self.paths, self.counts)
+                self.psi_downstream = mem.estimate_psi(self.downstream, self.paths, self.counts)
         if self.strand == '+':
             self.upstream, self.psi_upstream = self.find_closest_exon_above_cutoff(self.paths,
                                                                                    self.counts, possible_const)
