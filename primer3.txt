@@ -6,7 +6,7 @@
 # by saving the options to this config file.
 # Do not add additional parameters!!!!
 ###########################################
-PRIMER_PRODUCT_SIZE_RANGE=100-400
+PRIMER_PRODUCT_SIZE_RANGE=115-400
 PRIMER_MIN_GC=40
 PRIMER_MAX_GC=69
 PRIMER_MIN_SIZE=15
