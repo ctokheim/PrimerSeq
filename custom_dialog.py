@@ -577,6 +577,7 @@ class SavePlotDialog(wx.Dialog):
         self.options = opts
         self.output_file = opts['output']
         self.output_directory = None  # user needs to specify an output directory
+        self.data_dir = 'data/'  # directory to place imgs, etc.
 
         self.parent = parent
         self.text = wx.StaticText(self, -1, text)
@@ -683,11 +684,22 @@ class SavePlotDialog(wx.Dialog):
             self.save_plot_button.Enable()
             webbrowser.open(os.path.join(self.output_directory, 'index.html'))
 
-    def on_save_plot(self, event):
+    def _check_directory(self):
+        """A simple check if the user specified a output directory"""
         if not self.output_directory:
             dlg = wx.MessageDialog(self, 'Please enter an output directory.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return  # exit if user didn't specify an output
+        elif not os.path.isdir(self.output_directory):
+            os.makedirs(self.output_directory)
+
+    def on_save_plot(self, event):
+        # check what the user specified as the output directory
+        self._check_directory()
+
+        # make data directory for imgs, etc
+        if not os.path.isdir(os.path.join(self.output_directory, self.data_dir)):
+            os.mkdir(os.path.join(self.output_directory, self.data_dir))
 
         # get information from listctrl and make sure user specified data
         counts = self.list.GetItemCount()
@@ -737,7 +749,7 @@ class SavePlotDialog(wx.Dialog):
         # add links to AS events with designed primers
         for line in self.results:
             index_html.add_text(line[0] + ', ')
-            index_html.add_link(line[0] + '.html',
+            index_html.add_link(os.path.join(self.data_dir, line[0] + '.html'),
                                 line[1])  # link to each AS event
             index_html.add_text(', <i>' + line[-1] + '</i>')  # italicized gene name
 
@@ -789,7 +801,7 @@ class SavePlotDialog(wx.Dialog):
                 # only error msgs and blank lines do not have tabs
                 if len(line) > 1:
                     tx_paths, counts, gene = self.get_isforms_and_counts(line, options)
-                    my_html = SavePlotsHTML()
+                    my_html = SavePlotsHTML(style='../style.css')
                     for index in range(len(tx_paths)):
                         path, count = tx_paths[index], counts[index]
                         self.create_plots(ID, index, plot_domain, path, tgt_pos, count, [bigwigs[index]], gene, options['output'], out_dir)
@@ -797,7 +809,7 @@ class SavePlotDialog(wx.Dialog):
                         my_html.add_img('%s.%d.depth.png' % (ID, index))
                         my_html.add_img('%s.%d.isoforms.png' % (ID, index))
                         my_html.add_line_break()
-                    with open(os.path.join(out_dir, ID + '.html'), 'wb') as html_writer:
+                    with open(os.path.join(out_dir, self.data_dir + ID + '.html'), 'wb') as html_writer:
                         html_writer.write(str(my_html))
             handle.close()
             shutil.copy('style.css', out_dir)  # copy css to folder
@@ -873,7 +885,7 @@ class SavePlotDialog(wx.Dialog):
         opts = {'path': path,
                 'target_exon': tgt_exon,
                 'counts': counts,
-                'output': os.path.join(output_directory, tgt_id + '.' + str(bam_index) + '.isoforms.png'),
+                'output': os.path.join(output_directory, self.data_dir + tgt_id + '.' + str(bam_index) + '.isoforms.png'),
                 'scale': 1,
                 'primer_file': out_file,
                 'id': tgt_id}
@@ -885,7 +897,7 @@ class SavePlotDialog(wx.Dialog):
                 'gene': gene,
                 'size': 2.,
                 'step': 1,
-                'output': os.path.join(output_directory, tgt_id + '.' + str(bam_index) + '.depth.png')}
+                'output': os.path.join(output_directory, self.data_dir + tgt_id + '.' + str(bam_index) + '.depth.png')}
         self.depth_plot(opts)
 
     def draw_isoforms(self, opts):

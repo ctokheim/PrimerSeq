@@ -21,7 +21,8 @@ class SavePlotsHTML(object):
     transcript abundance, and primer design. This allows users to view
     the results outside of the PrimerSeq program.
     """
-    def __init__(self):
+    def __init__(self, style='style.css'):
+        self.style_sheet = style
         self.html_content = ''
 
     def add_heading(self, text, heading_type='h1'):
@@ -53,7 +54,7 @@ class SavePlotsHTML(object):
         return """<!DOCTYPE html>
 <html>
 <head>
-    <LINK href="style.css" rel="stylesheet" type="text/css">
+    <LINK href="%s" rel="stylesheet" type="text/css">
     <title>PrimerSeq v1.1.0.beta Output</title>
 </head>
 <body>
@@ -61,7 +62,7 @@ class SavePlotsHTML(object):
 %s
 </div>
 </body>
-</html>""" % (self.html_content)
+</html>""" % (self.style_sheet, self.html_content)
 
     def __str__(self):
         """Convenience method for get_html"""
