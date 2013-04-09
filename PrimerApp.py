@@ -65,8 +65,10 @@ class PrimerFrame(wx.Frame):
         # Menu Bar
         self.primer_frame_menubar = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
+        load_quick_ex_id = wx.NewId()
+        wxglade_tmp_menu.Append(load_quick_ex_id, "&Load Quick Ex.", "Load a single exon example data", wx.ITEM_NORMAL)
         load_ex_id = wx.NewId()
-        wxglade_tmp_menu.Append(load_ex_id, "&Load Ex.", "Load an example data set", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(load_ex_id, "&Load Larger Ex.", "Load a 10 exon example data set", wx.ITEM_NORMAL)
         reset_id = wx.NewId()
         wxglade_tmp_menu.Append(reset_id, "&Reset", "Reset all inputs", wx.ITEM_NORMAL)
         quit_id = wx.NewId()
@@ -152,6 +154,7 @@ class PrimerFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_help, id=help_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_edit_primer3_path, id=path_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
+        self.Bind(wx.EVT_MENU, self.on_load_quick_example, id=load_quick_ex_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_reset, id=reset_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_quit, id=quit_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_add_genes, id=add_genes_id)
@@ -299,13 +302,34 @@ class PrimerFrame(wx.Frame):
         """Open dialog to set primer3 properties"""
         cd.Primer3PathDialog(self, -1, 'Primer3 Location')
 
-    def on_load_example(self, event):
-        """Load a single sample test data. The test data can be found in the example directory."""
+    def on_load_quick_example(self, event):
+        """Load a single example exon"""
         self.gtf, self.bam, self.fasta = [], [], None
-        self.set_fasta("example/chr18.fa", "chr18.fa", use_dlg=False)
-        self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
-        self.set_gtf('example/example.chr18.gtf', 'example.chr18.gtf', use_dlg=False)
-        self.coordinates_text_field.SetValue('-chr18:9562919-9563044')
+        self.set_fasta('example/chr2.fa', 'chr2.fa', use_dlg=False)
+        self.set_bam(['example/example.sorted.bam'], ['example.sorted.bam'], use_dlg=False)
+        self.set_gtf('example/example.gtf', 'example.gtf', use_dlg=False)
+        self.coordinates_text_field.SetValue('-chr2:218694566-218694605')
+
+    def on_load_example(self, event):
+        """Load multiple test exons. The test data can be found in the example directory."""
+        self.gtf, self.bam, self.fasta = [], [], None
+        # self.set_fasta("example/chr18.fa", "chr18.fa", use_dlg=False)
+        # self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
+        # self.set_gtf('example/example.chr18.gtf', 'example.chr18.gtf', use_dlg=False)
+        # self.coordinates_text_field.SetValue('-chr18:9562919-9563044')
+        self.set_fasta('example/chr2.fa', 'chr2.fa', use_dlg=False)
+        self.set_bam(['example/example.sorted.bam'], ['example.sorted.bam'], use_dlg=False)
+        self.set_gtf('example/example.gtf', 'example.gtf', use_dlg=False)
+        self.coordinates_text_field.SetValue('-chr2:218694566-218694605\n'
+                                             '+chr2:228194321-228194499\n'
+                                             '-chr2:74369398-74369487\n'
+                                             '-chr2:38973285-38973321\n'
+                                             '+chr2:54035435-54035597\n'
+                                             '+chr2:201303844-201304051\n'
+                                             '-chr2:216257653-216257926\n'
+                                             '+chr2:173354212-173354386\n'
+                                             '+chr2:30371110-30371407\n'
+                                             '-chr2:20478343-20478580\n')
 
     def on_reset(self, event):
         """
