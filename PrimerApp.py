@@ -308,15 +308,11 @@ class PrimerFrame(wx.Frame):
         self.set_fasta('example/chr2.fa', 'chr2.fa', use_dlg=False)
         self.set_bam(['example/example.sorted.bam'], ['example.sorted.bam'], use_dlg=False)
         self.set_gtf('example/example.gtf', 'example.gtf', use_dlg=False)
-        self.coordinates_text_field.SetValue('-chr2:218694566-218694605')
+        self.coordinates_text_field.SetValue('-chr2:216257653-216257926')
 
     def on_load_example(self, event):
         """Load multiple test exons. The test data can be found in the example directory."""
         self.gtf, self.bam, self.fasta = [], [], None
-        # self.set_fasta("example/chr18.fa", "chr18.fa", use_dlg=False)
-        # self.set_bam(['example/chr18_9546792_9614600.sam'], ['chr18_9546792_9614600.sam'], use_dlg=False)
-        # self.set_gtf('example/example.chr18.gtf', 'example.chr18.gtf', use_dlg=False)
-        # self.coordinates_text_field.SetValue('-chr18:9562919-9563044')
         self.set_fasta('example/chr2.fa', 'chr2.fa', use_dlg=False)
         self.set_bam(['example/example.sorted.bam'], ['example.sorted.bam'], use_dlg=False)
         self.set_gtf('example/example.gtf', 'example.gtf', use_dlg=False)
