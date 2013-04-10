@@ -49,10 +49,16 @@ The menu has several import options within three categories.
 1.1 File
 ++++++++
 
-Load Ex.
-~~~~~~~~
+Load Quick Ex.
+~~~~~~~~~~~~~~
 
-The File->Load Ex. option automatically loads example data that is distributed with PrimerSeq.
+The File->Load Quick Ex. option automatically loads a single exon example data that is distributed with PrimerSeq.
+For details read the `getting started <http://primerseq.sf.net/getting_started.html>`_ page.
+
+Load Larger Ex.
+~~~~~~~~~~~~~~~
+
+The File->Load Larger Ex. option automatically loads a 10 exon example data that is distributed with PrimerSeq.
 For details read the `getting started <http://primerseq.sf.net/getting_started.html>`_ page.
 
 Reset
@@ -73,6 +79,18 @@ Primer3
 
 The Edit->Primer3 option opens a configuration file for Primer3 called primer3.txt. For information on
 editing Primer3 parameters please see their `manual <../primer3/primer3_manual.htm>`_.
+
+Primer3 Location
+~~~~~~~~~~~~~~~~
+
+The Edit->"Primer3 Location" option opens the following dialog that allows you to specify where primer3
+and a primer3 configuration file is located. This functionality is useful if you wish to use your own
+installed primer3 or have several configuration files. To view your current primer3 configuration file
+press Edit->Primer3.
+
+.. image:: primer3_location.png
+    :align: center
+    :alt: alternate text
 
 Sort GTF & Add Genes
 ~~~~~~~~~~~~~~~~~~~~
@@ -141,7 +159,7 @@ You can also mix several GTF files into a single input GTF file for PrimerSeq! F
 2.3 Mapped reads (SAM/BAM(s))
 +++++++++++++++++++++++++++++
 
-You can specify none, one or multiple SAM/BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a .sorted.bam extension so PrimerSeq does not try to re-sort the file.
+You can specify none, one or multiple SAM/BAM files as input. Make sure to hold down the ctrl key to select multiple files. SAM/BAM files are the typical output format from read aligners like Tophat. The SAM/BAM file allows PrimerSeq to estimate the relative abundance of different isoforms. If you know your BAM file is sorted (like the output from Tophat) then please name the BAM file with a **.sorted.bam** extension so PrimerSeq does not try to re-sort the file.
 
 2.4 Target exon(s)
 ++++++++++++++++++
@@ -188,7 +206,17 @@ PrimerSeq saves results to the text file you specify immediately after primer de
     :alt: alternate text
 
 The results window allows you to plot the results of primer design and check for unintended product
-amplification using UCSC's In-Silico PCR. For information on producing these results, please see the
+amplification using UCSC's In-Silico PCR.  There are
+several buttons, starting from the left they are:
+
+  1. "*Create Plots*" - Create a single plot displaying primer design (see below)
+  2. "*In-Silico PCR*" - Automatically links to UCSCS's *in-silico* PCR result (see below)
+  3. "*Save Plots*" - Save all plots and *in-silico* PCR links as a web page (HTML)
+  4. "*Reset Values*" - Re-fills in values if user accidently makes edits
+  5. "*Help*" - Briefly describes the above buttons
+  6. "*Exit*" - Exits the results window
+
+For information on producing the below results, please see the
 `getting started <http://primerseq.sf.net/getting_started.html>`_ page. The `user tutorial <http://primerseq.sf.net/user_tutorial>`_ has additional documentation describing more advanced features.
 
 .. image:: display_plot.png
