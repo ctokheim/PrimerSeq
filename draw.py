@@ -171,6 +171,7 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
 
     # plot exons
     collection.set_facecolor(color_scheme)
+    collection.set_edgecolor(color_scheme)
     ax.add_collection(collection)
 
     # add lines when applicable
