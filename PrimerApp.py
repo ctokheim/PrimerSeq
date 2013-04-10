@@ -316,13 +316,13 @@ class PrimerFrame(wx.Frame):
         self.set_fasta('example/chr2.fa', 'chr2.fa', use_dlg=False)
         self.set_bam(['example/example.sorted.bam'], ['example.sorted.bam'], use_dlg=False)
         self.set_gtf('example/example.gtf', 'example.gtf', use_dlg=False)
-        self.coordinates_text_field.SetValue('-chr2:218694566-218694605\n'
+        self.coordinates_text_field.SetValue('-chr2:216257653-216257926\n'
                                              '+chr2:228194321-228194499\n'
+                                             '-chr2:218694566-218694605\n'
                                              '-chr2:74369398-74369487\n'
                                              '-chr2:38973285-38973321\n'
                                              '+chr2:54035435-54035597\n'
                                              '+chr2:201303844-201304051\n'
-                                             '-chr2:216257653-216257926\n'
                                              '+chr2:173354212-173354386\n'
                                              '+chr2:30371110-30371407\n'
                                              '-chr2:20478343-20478580\n')
