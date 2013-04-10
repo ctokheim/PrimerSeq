@@ -43,7 +43,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
                               "Create Plots", "Create new primer plots")
         insilico_pcr_id = wx.NewId()
         toolbar.AddSimpleTool(insilico_pcr_id, self.get_bmp(wx.ART_EXECUTABLE_FILE),
-                              "In Silico PCR", "Test primers with in silico PCR")
+                              "In-Silico PCR", "Test primers with in-silico PCR")
         save_plot_id = wx.NewId()
         toolbar.AddSimpleTool(save_plot_id, self.get_bmp(wx.ART_FILE_SAVE),
                               "Save Plots", "Save each plot to an html file viewable in your browser")

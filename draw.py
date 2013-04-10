@@ -163,6 +163,16 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
         patches.append(art)
         exonCount += 1
 
+    # add lines when applicable
+    my_junction_line = JunctionLine(exonRectangles)
+    my_junction_line.createExonLines()
+    exon_lines = my_junction_line.get_exon_lines()
+
+    # exonLines could be empty
+    for tmp_line in exon_lines:
+        ax.plot([tmp_line[0][0], tmp_line[1][0]], [tmp_line[0][1], tmp_line[1][1]], linewidth=1, color='black')
+
+    ### start plotting exons ###
     collection = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=1)
 
     # make color scheme size match the number of exons
@@ -173,15 +183,7 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
     collection.set_facecolor(color_scheme)
     collection.set_edgecolor(color_scheme)
     ax.add_collection(collection)
-
-    # add lines when applicable
-    my_junction_line = JunctionLine(exonRectangles)
-    my_junction_line.createExonLines()
-    exon_lines = my_junction_line.get_exon_lines()
-
-    # exonLines could be emptry
-    for tmp_line in exon_lines:
-        ax.plot([tmp_line[0][0], tmp_line[1][0]], [tmp_line[0][1], tmp_line[1][1]], linewidth=1, color='black')
+    ### end plotting exons ###
 
     ax.set_ylim(-1.0, 1.0)
     plt.gca().axes.get_yaxis().set_visible(False)
