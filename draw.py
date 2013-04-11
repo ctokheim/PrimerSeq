@@ -154,15 +154,6 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
     exonRectangles = scale_intron_length(exonRectangles, options['scale'])
     new_start, new_stop = exonRectangles[0].start, exonRectangles[-1].stop
 
-    # plot exons
-    patches = []
-    exonCount = 0
-    for tmpExon in exonRectangles:
-        art = mpatches.Rectangle(np.array([tmpExon.exon_start, tmpExon.bottom_left.y]), tmpExon.exon_stop - tmpExon.exon_start, tmpExon.height)
-        art.set_clip_on(False)
-        patches.append(art)
-        exonCount += 1
-
     # add lines when applicable
     my_junction_line = JunctionLine(exonRectangles)
     my_junction_line.createExonLines()
@@ -173,15 +164,24 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
         ax.plot([tmp_line[0][0], tmp_line[1][0]], [tmp_line[0][1], tmp_line[1][1]], linewidth=1, color='black')
 
     ### start plotting exons ###
+    # plot exons
+    patches = []
+    exonCount = 0
+    for tmpExon in exonRectangles:
+        art = mpatches.Rectangle(np.array([tmpExon.exon_start, tmpExon.bottom_left.y]), tmpExon.exon_stop - tmpExon.exon_start, tmpExon.height)
+        art.set_clip_on(True)
+        patches.append(art)
+        exonCount += 1
     collection = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=1)
 
     # make color scheme size match the number of exons
     color_scheme = [[.6, 0, 0] if tuple(e) == tgt_exon else [0, 0, 0] for e in exons]
+    edge_color_scheme = [[.45, 0, 0] if tuple(e) == tgt_exon else [0, 0, 0] for e in exons]
     # color_scheme = [[0, 0, 0]] * len(exons)
 
     # plot exons
     collection.set_facecolor(color_scheme)
-    collection.set_edgecolor(color_scheme)
+    collection.set_edgecolor(edge_color_scheme)
     ax.add_collection(collection)
     ### end plotting exons ###
 
