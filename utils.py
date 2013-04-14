@@ -19,6 +19,24 @@ import wx.lib.mixins.listctrl as listmix
 import json
 
 
+# define column order of output
+ID = 0
+TARGET = 1
+PRIMER_COORD = 2
+PSI_TGT = 3
+FOR_PRIMER = 4
+REV_PRIMER = 5
+AVG_TM = 6
+SKIP_SIZE = 7
+INC_SIZE = 8
+UPSTREAM_EXON = 9
+PSI_UP = 10
+DOWNSTREAM_EXON = 11
+PSI_DOWN = 12
+ASM_REGION = 13
+GENE = 14
+
+
 def get_start_pos(coordinate):
     """
     get start from 'chr:start-stop'
@@ -45,6 +63,33 @@ def get_chr(coordinate):
     get chr from 'chr:start-stop'
     """
     return coordinate.split(":")[0]
+
+
+def get_primer_coordinates(primer_coord):
+    """Turns chr:start1-end1;chr:start2-end2 into (start1, end1), (start2, end2)"""
+    first, second = primer_coord.split(";")
+    return get_pos(first), get_pos(second)
+
+
+def find_first_exon(pos, exon_list):
+    """
+    Finds the first exon the position is contained within.
+    Assumes exon_list is already sorted.
+    """
+    for i, (ex_start, ex_end) in enumerate(exon_list):
+        if pos[0] >= ex_start and pos[1] <= ex_end:
+            return i
+
+
+def find_last_exon(pos, exon_list):
+    """
+    Finds the last exon the position is contained within.
+    Assumes exon_list is already sorted.
+    """
+    for i in range(len(exon_list)-1, -1, -1):
+        ex_start, ex_end = exon_list[i]
+        if pos[0] >= ex_start and pos[1] <= ex_end:
+            return i
 
 
 def construct_coordinate(chr, start, end):
