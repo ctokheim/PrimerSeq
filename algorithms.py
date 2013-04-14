@@ -122,8 +122,9 @@ class AllPaths(object):
         self.sub_graph = nx.subgraph(self.graph, self.component)
 
         # add any possible tx that uses novel edges to list of known txs
-        all_paths = list(nx.all_simple_paths(self.sub_graph, source=self.component[0], target=self.component[-1]))
-        for tx in all_paths:
+        for tx in nx.all_simple_paths(self.sub_graph,
+                                      source=self.component[0],
+                                      target=self.component[-1]):
             novel = False
             for i in range(len(tx) - 1):
                 if (tx[i], tx[i + 1]) not in known_edges:
