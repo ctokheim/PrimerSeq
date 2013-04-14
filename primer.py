@@ -129,14 +129,15 @@ def mkdir_tmp():
     '''
     Make all the necessary directories for temporary files
     '''
-    if not os.path.exists(config_options['tmp']): os.mkdir(config_options['tmp'])
-    if not os.path.exists(config_options['tmp'] + '/sam'): os.mkdir(config_options['tmp'] + '/sam')
-    if not os.path.exists(config_options['tmp'] + '/jct'): os.mkdir(config_options['tmp'] + '/jct')
-    if not os.path.exists(config_options['tmp'] + '/bed'): os.mkdir(config_options['tmp'] + '/bed')
-    if not os.path.exists(config_options['tmp'] + '/wig'): os.mkdir(config_options['tmp'] + '/wig')
-    if not os.path.exists(config_options['tmp'] + '/draw'): os.mkdir(config_options['tmp'] + '/draw')
-    if not os.path.exists(config_options['tmp'] + '/depth_plot'): os.mkdir(config_options['tmp'] + '/depth_plot')
-    if not os.path.exists(config_options['tmp'] + '/isoforms'): os.mkdir(config_options['tmp'] + '/isoforms')
+    if not os.path.isdir(config_options['tmp']): os.mkdir(config_options['tmp'])
+    if not os.path.isdir(config_options['tmp'] + '/sam'): os.mkdir(config_options['tmp'] + '/sam')
+    if not os.path.isdir(config_options['tmp'] + '/jct'): os.mkdir(config_options['tmp'] + '/jct')
+    if not os.path.isdir(config_options['tmp'] + '/bed'): os.mkdir(config_options['tmp'] + '/bed')
+    if not os.path.isdir(config_options['tmp'] + '/wig'): os.mkdir(config_options['tmp'] + '/wig')
+    if not os.path.isdir(config_options['tmp'] + '/draw'): os.mkdir(config_options['tmp'] + '/draw')
+    if not os.path.isdir(config_options['tmp'] + '/depth_plot'): os.mkdir(config_options['tmp'] + '/depth_plot')
+    if not os.path.isdir(config_options['tmp'] + '/isoforms'): os.mkdir(config_options['tmp'] + '/isoforms')
+    if not os.path.isdir(config_options['tmp'] + 'indiv_isoforms'): os.mkdir(config_options['tmp'] + 'indiv_isoforms')
 
 
 def primer_coordinates(p3_output, strand, tar, up, down):
