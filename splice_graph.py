@@ -54,6 +54,7 @@ import utils
 import sys
 from wig import Wig
 from exon_seek import ExonSeek
+import multinomial_em as mem
 
 # logging imports
 import logging
@@ -303,7 +304,8 @@ def predefined_exons_case(id, target, sGraph, genome, upstream_exon, downstream_
     all_paths.set_all_path_coordinates()
     # all_paths.keep_weakly_connected()  # hack to prevent extraneous exons causing problems in EM alg
     paths, counts = all_paths.estimate_counts()  # run EM algorithm
-    psi_target = algs.estimate_psi(target, paths, counts)
+    # psi_target = algs.estimate_psi(target, paths, counts)
+    psi_target = mem.estimate_psi(target, paths, counts)
     utils.save_path_info(id, paths, counts)  # save paths/counts in tmp/isoforms/id.json
 
     # get sequence of upstream/target/downstream combo
