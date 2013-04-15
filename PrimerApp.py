@@ -25,6 +25,7 @@ from wx.lib.pubsub import setuparg1
 from wx.lib.pubsub import pub
 import wx.stc as Stc
 import os
+import glob
 import subprocess
 import re
 import sys
@@ -628,11 +629,19 @@ class PrimerFrame(wx.Frame):
             for s in opts['rnaseq']:
                 my_writer.write(s.path + '\n')
 
+        # remove old json files
+        for f in glob.glob('tmp/indiv_isoforms/*.json'):
+            os.remove(f)
+
         # save data in json format
         with open(opts['output']) as handle:
             handle.readline()  # skip the header
             for line in csv.reader(handle, delimiter='\t'):
                 rc.save_isforms_and_counts(line, opts)
+
+        # remove SAM files
+        for f in glob.glob(os.path.join(primer.config_options['tmp'], 'sam/*.sam')):
+            os.remove(f)
 
     def on_plot(self, event):  # wxGlade: PrimerFrame.<event_handler>
         '''This method is deprecated since plotting is now done in the view output frame'''

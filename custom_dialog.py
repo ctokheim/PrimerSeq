@@ -1156,11 +1156,13 @@ class SavePlotDialog(wx.Dialog):
                 # only error msgs and blank lines do not have tabs
                 if len(line) > 1:
                     # tx_paths, counts, gene = self.get_isforms_and_counts(line, options)
+                    # json_id = int(ID) - 1  # JSON filenames are indexed from zero rather than 1
                     tx_paths, counts = self.get_count_info(ID)  # get info from json files
                     gene = line[utils.GENE]  # get gene name from text file
                     my_html = SavePlotsHTML(style='../style.css')
                     for index in range(len(tx_paths)):
                         path, count = tx_paths[index], counts[index]
+                        print bigwigs, index
                         self.create_plots(ID, index, plot_domain, path, tgt_pos, count, [bigwigs[index]], gene, options['output'], out_dir)
                         my_html.add_heading(titles[index])
                         my_html.add_img('%s.%d.depth.png' % (ID, index))

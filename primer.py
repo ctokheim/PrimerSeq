@@ -23,6 +23,7 @@ primers.
 '''
 import subprocess
 import os
+import glob
 import gtf
 import splice_graph
 import csv
@@ -315,16 +316,31 @@ def main(options):
 
     # delete temporary sam files (may eventually delete more tmp files)
     logging.debug('Deleting tmp files')
-    if not options['keep_temp']:
-        tmp_sam = 'tmp/sam'
-        for f in os.listdir(tmp_sam):
-            os.remove(os.path.join(tmp_sam, f))
+    delete_tmp_files(options)
 
     ### record end of running primer3 ###
     logging.debug("Program ended")
     currentTime = time.time()
     runningTime = currentTime - startTime  # in seconds
     logging.debug("Program ran for %.2d:%.2d:%.2d" % (runningTime / 3600, (runningTime % 3600) / 60, runningTime % 60))
+
+
+def delete_tmp_files(opts):
+    """Delete Primer3 files that clutter the tmp directory"""
+    print config_options['tmp']
+    # delete SAM files
+    if not opts['keep_temp']:
+        for f in glob.glob(os.path.join(config_options['tmp'], 'sam/*.sam')):
+            print f
+            os.remove(f)
+
+    # delete all .for files from primer3
+    for f in glob.glob(os.path.join(config_options['tmp'], '*.for')):
+        os.remove(f)
+
+    # delete all .rev files from primer3
+    for f in glob.glob(os.path.join(config_options['tmp'], '*.rev')):
+        os.remove(f)
 
 
 class ValidateRnaseq(argparse.Action):
