@@ -137,7 +137,7 @@ def mkdir_tmp():
     if not os.path.isdir(config_options['tmp'] + '/draw'): os.mkdir(config_options['tmp'] + '/draw')
     if not os.path.isdir(config_options['tmp'] + '/depth_plot'): os.mkdir(config_options['tmp'] + '/depth_plot')
     if not os.path.isdir(config_options['tmp'] + '/isoforms'): os.mkdir(config_options['tmp'] + '/isoforms')
-    if not os.path.isdir(config_options['tmp'] + 'indiv_isoforms'): os.mkdir(config_options['tmp'] + 'indiv_isoforms')
+    if not os.path.isdir(config_options['tmp'] + '/indiv_isoforms'): os.mkdir(config_options['tmp'] + '/indiv_isoforms')
 
 
 def primer_coordinates(p3_output, strand, tar, up, down):

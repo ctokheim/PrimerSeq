@@ -28,6 +28,7 @@ import os
 import subprocess
 import re
 import sys
+import csv
 import shutil
 from pygr.seqdb import SequenceFileDB
 import sam
@@ -36,6 +37,7 @@ import webbrowser
 import custom_thread as ct
 import custom_dialog as cd
 import view_output as vo
+import read_counts as rc
 
 # logging imports
 import traceback
@@ -610,9 +612,27 @@ class PrimerFrame(wx.Frame):
         self.disable_load_buttons()
 
         # Design primers using a thread otherwise the GUI will lock up
-        self.current_process = ct.RunPrimerSeqThread(target=primer.main,  # run primer design by calling primer.py's main function
+        # self.current_process = ct.RunPrimerSeqThread(target=primer.main,  # run primer design by calling primer.py's main function
+        #                                              args=(self.options,))
+        self.current_process = ct.RunPrimerSeqThread(target=self.run_primer_design,  # run primer design by calling primer.py's main function
                                                      args=(self.options,))
         event.Skip()
+
+    def run_primer_design(self, opts):
+        """Performs that actual execution of primer design"""
+        # design primers
+        primer.main(opts)
+
+        # make bam location file
+        with open('tmp/indiv_isoforms/key.txt', 'wb') as my_writer:
+            for s in opts['rnaseq']:
+                my_writer.write(s.path + '\n')
+
+        # save data in json format
+        with open(opts['output']) as handle:
+            handle.readline()  # skip the header
+            for line in csv.reader(handle, delimiter='\t'):
+                rc.save_isforms_and_counts(line, opts)
 
     def on_plot(self, event):  # wxGlade: PrimerFrame.<event_handler>
         '''This method is deprecated since plotting is now done in the view output frame'''
