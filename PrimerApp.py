@@ -605,7 +605,7 @@ class PrimerFrame(wx.Frame):
         self.options['no_gene_id'] = False if str(self.gene_id_combo_box.GetValue()) == 'Valid' else True
         self.options['min_jct_count'] = int(self.min_jct_count_text_field.GetValue())
         self.options['anchor_length'] = int(self.anchor_length_text_field.GetValue())
-        self.options['job_id'] = 'jobs_id'
+        self.options['job_id'] = 'PrimerSeq'
 
         # display dialog and disable buttons while designing primers
         self.load_progress = cd.CustomDialog(self, -1, 'Run PrimerSeq', 'Designing primers . . .\n\nThis dialog will close after it is done.')
