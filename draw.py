@@ -188,7 +188,12 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
     ax.set_ylim(-1.0, 1.0)
     plt.gca().axes.get_yaxis().set_visible(False)
     if isinstance(pct, (float, int)):
-        offset_text(ax, '%.1f' % (100 * pct) + '%\n' + '%d bp' % prod_length, 1, (-.03, .75))
+        if prod_length:
+            # primers amplify this isoform case
+            offset_text(ax, '%.1f' % (100 * pct) + '%\n' + '%d bp' % prod_length, 1, (-.03, .75))
+        else:
+            # primers don't amplify that isoform case
+            offset_text(ax, '%.1f' % (100 * pct) + '%\n' + 'N/A', 1, (-.03, .75))
     else:
         offset_text(ax, pct, 1)
     # if prod_length:
