@@ -194,3 +194,10 @@ def save_path_info(file_basename, p, cts, save_dir='tmp/isoforms/'):
     '''
     with open(save_dir + str(file_basename) + '.json', 'w') as handle:
         json.dump({'path': p, 'counts': list(cts)}, handle, indent=4)  # output path information to tmp file
+
+
+def get_isoforms_and_counts(file_path):
+    """Get path and count info after using save_path_info"""
+    with open(file_path) as handle:
+        data = json.load(handle)
+    return data['path'], data['counts']
