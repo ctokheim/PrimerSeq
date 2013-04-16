@@ -1,5 +1,6 @@
 import splice_graph as sg
 from exon_seek import ExonSeek
+import algorithms as algs
 import utils
 import logging
 
@@ -30,12 +31,15 @@ def save_isforms_and_counts(line, options):
                                                   output_type='list',
                                                   both=options['both_flag'])
 
-    paths_list = []
-    counts_list = []
     for bam_ix, my_splice_graph in enumerate(bam_splice_graphs):
         # this case is meant for user-defined flanking exons
-        if line[utils.UPSTREAM_EXON] == '-1' and line[utils.DOWNSTREAM_EXON] == '-1':
+        if line[utils.PSI_UP] == '-1' and line[utils.PSI_DOWN] == '-1':
+            # find path and count information
             paths, counts = user_defined_exons(my_splice_graph, line)
+
+            # filter out single exon paths
+            my_tmp = [(path, count) for path, count in zip(paths, counts) if len(path) > 1]
+            paths, counts = zip(*my_tmp)
         # this case is meant for automatic choice of flanking exons
         else:
             paths, counts = primerseq_defined_exons(my_splice_graph, line, options['psi'])
@@ -43,16 +47,13 @@ def save_isforms_and_counts(line, options):
                              paths, counts,
                              save_dir='tmp/indiv_isoforms/')
     logging.debug('Finished saving isoform and count information for event %s.' % ID)
-    #    paths_list.append(paths)
-    #    counts_list.append(counts)
-    # return paths_list, counts_list, gene_name  # return the tx paths and count information for a single AS event
 
 
 def user_defined_exons(tmp_sg, line):
     chr, strand = utils.get_chr(line[utils.TARGET]), line[utils.TARGET][0]  # get chr and strand
     upstream_exon = utils.get_pos(line[utils.UPSTREAM_EXON])  # get user-defined flanking exons
     downstream_exon = utils.get_pos(line[utils.DOWNSTREAM_EXON])
-    first_primer, second_primer = utils.get_primer_coordinates(utils.PRIMER_COORD)
+    first_primer, second_primer = utils.get_primer_coordinates(line[utils.PRIMER_COORD])
 
     # get possible exons for primer amplification
     tmp = sorted(tmp_sg.get_graph().nodes(), key=lambda x: (x[0], x[1]))
@@ -67,7 +68,7 @@ def user_defined_exons(tmp_sg, line):
     # Use correct tx's and estimate counts/psi
     all_paths = algs.AllPaths(tmp_sg,
                               my_exons,
-                              utils.get_pos(target_coordinate),  # tuple (start, end)
+                              utils.get_pos(line[utils.TARGET]),  # tuple (start, end)
                               chr=chr,
                               strand=strand)
     # all_paths.trim_tx_paths()

@@ -97,7 +97,7 @@ def addCommas(myNum):
 
 def estimate_isoform_psi(tx_paths, counts):
     num_edges = map(lambda x: len(x) - 1, tx_paths)
-    normalized_counts = [count/float(num_edges[i]) for i, count in enumerate(counts)]
+    normalized_counts = [count/float(num_edges[i]) if num_edges[i] else 0.0 for i, count in enumerate(counts)]
     return [ct/sum(normalized_counts) for ct in normalized_counts]
 
 
@@ -205,7 +205,7 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
 def retrieve_top(tx_paths, counts, n=5):
     # sort the potential paths by normalized counts
     tmp = zip(counts, tx_paths)
-    tmp.sort(key=lambda x: -float(x[0])/(len(x[1]) - 1))
+    tmp.sort(key=lambda x: -float(x[0])/(len(x[1]) - 1) if len(x[1]) > 1 else 0)
     top_counts, top_tx_paths = zip(*tmp)
     percent_estimate = estimate_isoform_psi(top_tx_paths, top_counts)
     if len(top_tx_paths) >= n:
