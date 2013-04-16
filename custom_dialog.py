@@ -18,6 +18,7 @@
 import wx
 from wx.lib.pubsub import setuparg1
 from wx.lib.pubsub import pub
+import wx.lib.scrolledpanel as scrolled
 
 import custom_thread as ct
 import csv
@@ -764,19 +765,44 @@ class DisplayMultiplePlotsDialog(wx.Dialog):
                            # style=wx.DEFAULT_DIALOG_STYLE ^ wx.RESIZE_BORDER)
 
         self.parent = parent
-
-        # add all images
-        for i in range(0, len(img_files), 2):
-            depth_png = wx.Image(img_files[i], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-            draw_png = wx.Image(img_files[i+1], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
-            draw_bitmap = wx.StaticBitmap(self, -1, draw_png, (10, 5), (draw_png.GetWidth(), draw_png.GetHeight()))
-            depth_bitmap = wx.StaticBitmap(self, -1, depth_png, (10, 5), (depth_png.GetWidth(), depth_png.GetHeight()))
-            sizer = wx.BoxSizer(wx.VERTICAL)
-            sizer.Add(depth_bitmap, 0, wx.ALIGN_CENTER)
-            sizer.Add(draw_bitmap, 0, wx.ALIGN_CENTER)
-
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        scl_panel = MyScrolledPanel(self, img_files)
+        sizer.Add(scl_panel)
+        # # add all images
+        # for i in range(0, len(img_files), 2):
+        #     depth_png = wx.image(img_files[i], wx.bitmap_type_any).converttobitmap()
+        #     draw_png = wx.image(img_files[i+1], wx.bitmap_type_any).converttobitmap()
+        #     draw_bitmap = wx.staticbitmap(self, -1, draw_png, (10, 5), (draw_png.getwidth(), draw_png.getheight()))
+        #     depth_bitmap = wx.staticbitmap(self, -1, depth_png, (10, 5), (depth_png.getwidth(), depth_png.getheight()))
+        #     sizer = wx.boxsizer(wx.vertical)
+        #     sizer.add(depth_bitmap, 0, wx.align_center)
+        #     sizer.Add(draw_bitmap, 0, wx.ALIGN_CENTER)
         self.SetSizerAndFit(sizer)
         self.Show()
+
+
+class MyScrolledPanel(scrolled.ScrolledPanel):
+    def __init__(self, parent, img_paths):
+        scrolled.ScrolledPanel.__init__(self, parent, -1, size=(600, 450))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        # add all images
+        for i in range(0, len(img_paths), 2):
+            depth_png = wx.Image(img_paths[i], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+            draw_png = wx.Image(img_paths[i+1], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+            draw_bitmap = wx.StaticBitmap(self, -1, draw_png, (10, 5), (draw_png.GetWidth(), draw_png.GetHeight()))
+            depth_bitmap = wx.StaticBitmap(self, -1, depth_png, (10, 5), (depth_png.GetWidth(), depth_png.GetHeight()))
+            vbox.Add(depth_bitmap, 0, wx.ALIGN_CENTER)
+            vbox.Add(draw_bitmap, 0, wx.ALIGN_CENTER)
+            if i == 0:
+                first_depth = depth_bitmap.GetSize()
+                first_draw = draw_bitmap.GetSize()
+                my_size = (first_depth[0] + first_draw[0], first_depth[1] + first_draw[1])
+        # vbox.Add(desc, 0, wx.ALIGN_LEFT|wx.ALL, 5)
+
+        self.SetSize(my_size)
+        self.SetSizer(vbox)
+        # self.SetAutoLayout(1)
+        self.SetupScrolling()
 
 
 class SavePlotDialog2(wx.Dialog):
