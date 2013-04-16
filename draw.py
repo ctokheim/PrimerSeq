@@ -238,7 +238,11 @@ def calc_product_length(path, primer_coord):
     first_exon_primer, second_exon_primer = False, False  # flag for telling if a primer was contained within an exon
     flag = False
     for start, end in path:
-        if start <= primer_coord[0][0] and end >= primer_coord[0][1]:
+        if start <= primer_coord[0][0] and end >= primer_coord[0][1] and start <= primer_coord[1][0] and end >= primer_coord[1][1]:
+            tmp_len = primer_coord[1][0] - primer_coord[0][1]
+            first_exon_primer = True
+            second_exon_primer = True
+        elif start <= primer_coord[0][0] and end >= primer_coord[0][1]:
             tmp_len += end - primer_coord[0][1]
             flag = True
             first_exon_primer = True
