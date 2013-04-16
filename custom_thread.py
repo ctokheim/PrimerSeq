@@ -36,6 +36,7 @@ class PlotThread(threading.Thread):
             output = self.tar(*self.args)  # threaded call
             wx.CallAfter(pub.sendMessage, "plot_update", ())
         except:
+            traceback.print_exc()
             wx.CallAfter(pub.sendMessage, "plot_error", ())
 
 
