@@ -22,6 +22,7 @@ from wx.lib.pubsub import pub
 import custom_thread as ct
 import csv
 import os
+import glob
 import utils
 import sys
 import primer
@@ -71,6 +72,191 @@ class CustomDialog(wx.Dialog):
 
 
 class PlotDialog(wx.Dialog):
+    def __init__(self, parent, id, title, output_file, text=''):
+        wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
+
+        self.output_file = output_file
+        self.img_files = []  # store path to all image files created
+
+        self.parent = parent
+        self.text = wx.StaticText(self, -1, text)
+
+        self.bigwig_label = wx.StaticText(self, -1, "BigWig(s):")
+        self.choose_bigwig_button = wx.Button(self, -1, "Choose . . .")
+        self.choose_bigwig_button.SetToolTip(wx.ToolTip('Choose BigWig file(s).\nHold ctrl to select multiple'))
+        self.bigwig = []
+        self.panel_3 = wx.Panel(self, -1)
+        # self.bigwig_choice_label = wx.StaticText(self, -1, "None")
+        self.bigwig_choice_label = wx.TextCtrl(self, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
+        self.bigwig_choice_label.SetBackgroundColour(self.bigwig_label.GetBackgroundColour())
+        bigwig_sizer = wx.GridSizer(1, 3, 0, 0)
+        bigwig_sizer.Add(self.bigwig_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        bigwig_sizer.Add(self.choose_bigwig_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        bigwig_sizer.Add(self.bigwig_choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
+
+        # read in valid primer output
+        with open(self.output_file) as handle:
+            self.results = filter(lambda x: len(x) > 1,  # if there is no tabs then it represents an error msg in the output
+                                  csv.reader(handle, delimiter='\t'))[1:]
+            select_results = [', '.join([r[0], r[-1], r[1]]) for r in self.results]
+
+        # target selection widgets
+        target_sizer = wx.GridSizer(1, 2, 0, 0)
+        self.target_label = wx.StaticText(self, -1, "Select Target:")
+        self.target_combo_box = wx.ComboBox(self, -1, choices=select_results, style=wx.CB_DROPDOWN | wx.TE_READONLY)
+        self.target_combo_box.SetMinSize((145, 27))
+        target_sizer.Add(self.target_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        target_sizer.Add(self.target_combo_box, 0, wx.ALIGN_LEFT, 0)
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.plot_button = wx.Button(self, -1, 'Plot')
+        self.cancel_button = wx.Button(self, -1, 'Cancel')
+        button_sizer.Add(self.plot_button, 0, wx.ALIGN_RIGHT)
+        button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(bigwig_sizer, 0, wx.EXPAND, 10)
+        sizer.Add(target_sizer, 0, wx.EXPAND)
+        sizer.Add(button_sizer, 0, wx.ALIGN_CENTER)
+        sizer.SetMinSize((300, 100))
+
+        self.Bind(wx.EVT_BUTTON, self.choose_bigwig_event, self.choose_bigwig_button)
+        self.Bind(wx.EVT_BUTTON, self.on_plot_button, self.plot_button)
+        self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
+        self.SetSizer(sizer)
+        self.Show()
+
+        pub.subscribe(self.plot_update, "plot_update")
+        pub.subscribe(self.on_plot_error, "plot_error")
+
+    def on_plot_error(self, msg):
+        # self.parent.update_after_error((None,))
+        pass  # prevent error on trying to call method
+
+    def cancel_button_event(self, event):
+        self.Destroy()
+        event.Skip()
+
+    def choose_bigwig_event(self, event):
+        dlg = wx.FileDialog(self, message='Choose your BigWig files', defaultDir=os.getcwd(),
+                            wildcard='BigWig files (*.bw)|*.bw|BigWig files (*.bigWig)|*.bigWig', style=wx.FD_MULTIPLE)  # open file dialog
+        # if they press ok
+        if dlg.ShowModal() == wx.ID_OK:
+            filenames = dlg.GetPaths()  # get the new filenames from the dialog
+            filenames_without_path = dlg.GetFilenames()  # only grab the actual filenames and none of the path information
+            dlg.Destroy()  # best to do this sooner
+
+            self.bigwig = filenames
+            # self.bigwig_choice_label.SetLabel(', '.join(filenames_without_path))
+            self.bigwig_choice_label.SetValue(', '.join(filenames_without_path))
+        else:
+            dlg.Destroy()
+
+    def on_plot_button(self, event):
+        if not self.target_combo_box.GetValue():
+            dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            return
+        logging.debug('Plot button event callback . . .')
+
+        self.target_id = str(self.target_combo_box.GetValue().split(',')[0])
+        self.target_of_interest = str(self.target_combo_box.GetValue().split(', ')[1])
+
+        # get the line from the file that matches the user selection
+        for row in self.results:
+            if row[0] == self.target_id:
+                row_of_interest = row
+
+        # find where the plot should span
+        start, end = utils.get_pos(row_of_interest[-2])
+        chr = utils.get_chr(row_of_interest[-2])
+        plot_domain = utils.construct_coordinate(chr, start, end)
+        gene_name = row_of_interest[-1]  # currently gene name is last column but likely will change
+        self.target_pos = utils.get_pos(row_of_interest[1])
+
+        self.plot_button.SetLabel('Ploting . . .')
+        self.plot_button.Disable()
+
+        # draw isoforms
+        plot_thread = ct.PlotThread(target=self.generate_plots,
+                                    args=(self.target_id,
+                                          self.target_pos,
+                                          plot_domain,
+                                          self.bigwig,
+                                          self.output_file,
+                                          gene_name))
+
+    def generate_plots(self, tgt_id, target_pos, plt_domain, bigwig, out_file, gene_name):
+        # generate read depth plot
+        opts = {'bigwig': bigwig,
+                'position': plt_domain,
+                'gene': gene_name,
+                'id': tgt_id,
+                'size': 2.,
+                'step': 1,
+                'output': os.path.join(primer.config_options['tmp'], 'depth_plot/')}
+        self.depth_plot(opts)
+
+        # generate isoform drawing
+        opts = {'json_dir': os.path.join(primer.config_options['tmp'], 'indiv_isoforms/'),
+                'output': os.path.join(primer.config_options['tmp'], 'draw/'),
+                'target_exon': target_pos,
+                'scale': 1,
+                'primer_file': out_file,
+                'id': tgt_id}
+        self.draw_isoforms(opts)
+
+    def draw_isoforms(self, opts):
+        '''
+        Draw isoforms by using draw.py
+        '''
+        logging.debug('Drawing isoforms %s . . .' % str(opts))
+        coord = draw.read_primer_file(self.output_file, opts['id'])
+        # load json file that has information isoforms and their counts
+        for f in glob.glob(os.path.join(opts['json_dir'], '%s*.json' % opts['id'])):
+            # check file
+            split = f.split('.')
+            if len(split) == 3:
+                bam_num = split[1]
+            else:
+                continue
+
+            # draw
+            with open(f) as handle:
+                my_json = json.load(handle)
+                output_img = os.path.join(opts['output'], '%s.%s.png' % (opts['id'], bam_num))
+                draw.main(my_json['path'],
+                          opts['target_exon'],
+                          my_json['counts'],
+                          coord,
+                          output_img,
+                          opts)
+                self.img_files.append(output_img)
+        logging.debug('Finished drawing isoforms.')
+
+    def depth_plot(self, opts):
+        '''
+        Create a read depth plot by using depth_plot.py
+        '''
+        logging.debug('Creating read depth plot %s . . .' % str(opts))
+        for i, bw in enumerate(opts['bigwig']):
+            output = os.path.join(opts['output'], '%s.%s.png' % (opts['id'], i))
+            depth_plot.read_depth_plot(bw, output, opts)
+            self.img_files.append(output)
+        logging.debug('Finished creating read depth plot.')
+
+    def plot_update(self, msg):
+        self.plot_button.SetLabel('Plot')
+        self.plot_button.Enable()
+        DisplayMultiplePlotsDialog(self, -1,
+                                   'Primer Results for ' + self.target_of_interest,
+                                   self.img_files)
+                                   # ['tmp/depth_plot/' + self.target_id + '.png',
+                                   # 'tmp/draw/' + self.target_id + '.png'])
+        logging.debug('Finished plotting.')
+
+
+class EvaluateASEventDialog(wx.Dialog):
     def __init__(self, parent, id, title, output_file, text=''):
         wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
 
@@ -212,7 +398,8 @@ class PlotDialog(wx.Dialog):
             my_json = json.load(handle)
 
         coord = draw.read_primer_file(self.output_file, opts['id'])
-        draw.main(my_json['path'], opts['target_exon'], my_json['counts'], coord, opts)
+        draw.main(my_json['path'], opts['target_exon'], my_json['counts'],
+                  coord, opts['output'], opts)
         logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
@@ -220,7 +407,7 @@ class PlotDialog(wx.Dialog):
         Create a read depth plot by using depth_plot.py
         '''
         logging.debug('Creating read depth plot %s . . .' % str(opts))
-        depth_plot.read_depth_plot(opts)
+        depth_plot.read_depth_plot(opts['bigwig'], opts['output'], opts)
         logging.debug('Finished creating read depth plot.')
 
     def plot_update(self, msg):
@@ -565,6 +752,28 @@ class DisplayPlotDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.depth_bitmap, 0, wx.ALIGN_CENTER)
         sizer.Add(self.draw_bitmap, 0, wx.ALIGN_CENTER)
+
+        self.SetSizerAndFit(sizer)
+        self.Show()
+
+
+class DisplayMultiplePlotsDialog(wx.Dialog):
+    def __init__(self, parent, id, title, img_files):
+        # call super constructor
+        wx.Dialog.__init__(self, parent, id, title,)
+                           # style=wx.DEFAULT_DIALOG_STYLE ^ wx.RESIZE_BORDER)
+
+        self.parent = parent
+
+        # add all images
+        for i in range(0, len(img_files), 2):
+            depth_png = wx.Image(img_files[i], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+            draw_png = wx.Image(img_files[i+1], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+            draw_bitmap = wx.StaticBitmap(self, -1, draw_png, (10, 5), (draw_png.GetWidth(), draw_png.GetHeight()))
+            depth_bitmap = wx.StaticBitmap(self, -1, depth_png, (10, 5), (depth_png.GetWidth(), depth_png.GetHeight()))
+            sizer = wx.BoxSizer(wx.VERTICAL)
+            sizer.Add(depth_bitmap, 0, wx.ALIGN_CENTER)
+            sizer.Add(draw_bitmap, 0, wx.ALIGN_CENTER)
 
         self.SetSizerAndFit(sizer)
         self.Show()
@@ -1188,69 +1397,6 @@ class SavePlotDialog(wx.Dialog):
             all_counts.append(tmp_count)
         return all_paths, all_counts
 
-    def get_isforms_and_counts(self, line, options):
-        # get information about each row
-        ID, target_coordinate = line[:2]
-        strand = target_coordinate[0]
-        chr = utils.get_chr(target_coordinate[1:])
-        tmp_start, tmp_end = utils.get_pos(target_coordinate)
-
-        # get information regarding the gene
-        if options['no_gene_id']:
-            gene_dict, gene_name = sg.get_weakly_connected_tx(options['gtf'], strand, chr, tmp_start, tmp_end)  # hopefully filter out junk
-        else:
-            gene_dict, gene_name = sg.get_from_gtf_using_gene_name(options['gtf'], strand, chr, tmp_start, tmp_end)
-
-        # get edge weights
-        edge_weights_list = [sam_obj.extractSamRegion(chr, gene_dict['start'], gene_dict['end'])
-                             for sam_obj in options['rnaseq']]
-
-        # construct splice graph for each BAM file
-        bam_splice_graphs = sg.construct_splice_graph(edge_weights_list,
-                                                      gene_dict,
-                                                      chr,
-                                                      strand,
-                                                      options['read_threshold'],
-                                                      options['min_jct_count'],
-                                                      output_type='list',
-                                                      both=options['both_flag'])
-
-        paths_list = []
-        counts_list = []
-        for my_splice_graph in bam_splice_graphs:
-            # this case is meant for user-defined flanking exons
-            if line[10] == '-1' and line[12] == '-1':
-                # get user-defined flanking exons
-                upstream_exon, downstream_exon = utils.get_pos(line[9]), utils.get_pos(line[11])
-
-                # get possible exons for primer amplification
-                tmp = sorted(my_splice_graph.get_graph().nodes(), key=lambda x: (x[0], x[1]))
-                if my_splice_graph.strand == '+':
-                    my_exons = tmp[tmp.index(upstream_exon):tmp.index(downstream_exon) + 1]
-                else:
-                    my_exons = tmp[tmp.index(downstream_exon):tmp.index(upstream_exon) + 1]
-
-                # Use correct tx's and estimate counts/psi
-                all_paths = algs.AllPaths(my_splice_graph,
-                                          my_exons,
-                                          utils.get_pos(target_coordinate),  # tuple (start, end)
-                                          chr=chr,
-                                          strand=strand)
-                all_paths.trim_tx_paths()
-                all_paths.set_all_path_coordinates()
-                paths, counts = all_paths.estimate_counts()  # run EM algorithm
-                paths_list.append(paths)
-                counts_list.append(counts)
-            # this case is meant for automatic choice of flanking exons
-            else:
-                # not the best use of the ExonSeek object, initially intended to find appropriate flanking exons
-                # but in this case ExonSeek is used to get the transcripts and associate counts
-                exon_seek_obj = ExonSeek(utils.get_pos(target_coordinate), my_splice_graph, ID, options['psi'], None, None)
-                all_paths, upstream, downstream, component, psi_target, psi_upstream, psi_downstream = exon_seek_obj.get_info()
-                paths_list.append(exon_seek_obj.paths)
-                counts_list.append(exon_seek_obj.counts)
-        return paths_list, counts_list, gene_name  # return the tx paths and count information for a single AS event
-
     def create_plots(self, tgt_id, bam_index, plt_domain, path, tgt_exon, counts, bigwig, gene, out_file, output_directory):
         """Create plots for a single BAM/BigWig pair"""
         # generate isoform drawing
@@ -1278,7 +1424,8 @@ class SavePlotDialog(wx.Dialog):
         '''
         logging.debug('Drawing isoforms %s . . .' % str(opts))
         coord = draw.read_primer_file(self.output_file, opts['id'])
-        draw.main(opts['path'], opts['target_exon'], opts['counts'], coord, opts)
+        draw.main(opts['path'], opts['target_exon'], opts['counts'], coord,
+                  opts['output'], opts)
         logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
@@ -1286,16 +1433,10 @@ class SavePlotDialog(wx.Dialog):
         Create a read depth plot by using depth_plot.py
         '''
         logging.debug('Creating read depth plot %s . . .' % str(opts))
-        depth_plot.read_depth_plot(opts)
+        depth_plot.read_depth_plot(opts['bigwig'],  # bigwigs - "file1,file2,..."
+                                   opts['output'],  # img file
+                                   opts)  # options
         logging.debug('Finished creating read depth plot.')
-
-    def plot_update(self, msg):
-        self.plot_button.SetLabel('Plot')
-        self.plot_button.Enable()
-        DisplayPlotDialog(self, -1, 'Primer Results for ' + self.target_of_interest,
-                          ['tmp/depth_plot/' + self.target_id + '.png',
-                           'tmp/draw/' + self.target_id + '.png'])
-
 
 
 class Primer3PathDialog(wx.Dialog):
