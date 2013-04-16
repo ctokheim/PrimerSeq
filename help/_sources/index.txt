@@ -139,8 +139,8 @@ Genome sequences are only allowed in FASTA format. Use FASTA files that contain 
 sequence for a species to avoid problems. You can obtain the Human and Mouse genome from the following
 links:
 
-* `hg19 <http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.2bit>`_
-* `mm9 <http://hgdownload.cse.ucsc.edu/goldenPath/mm9/bigZips/mm9.2bit>`_
+* `hg19 <http://mimg.ucla.edu/faculty/xing/public_data/PrimerSeq/hg19.fa.gz>`_
+* `mm9 <http://mimg.ucla.edu/faculty/xing/public_data/PrimerSeq/mm9.fa.gz>`_
 
 The first time you load a FASTA file may take several minutes. Subsequent loading will occur instantly.
 
@@ -212,9 +212,10 @@ several buttons, starting from the left they are:
   1. "*Create Plots*" - Create a single plot displaying primer design (see below)
   2. "*In-Silico PCR*" - Automatically links to UCSCS's *in-silico* PCR result (see below)
   3. "*Save Plots*" - Save all plots and *in-silico* PCR links as a web page (HTML)
-  4. "*Reset Values*" - Re-fills in values if user accidently makes edits
-  5. "*Help*" - Briefly describes the above buttons
-  6. "*Exit*" - Exits the results window
+  4. "*Evaluate AS Events*" - Plot the Alternative Splicing event structure using pooled data
+  5. "*Reset Values*" - Re-fills in values if user accidently makes edits
+  6. "*Help*" - Briefly describes the above buttons
+  7. "*Exit*" - Exits the results window
 
 For information on producing the below results, please see the
 `getting started <http://primerseq.sf.net/getting_started.html>`_ page. The `user tutorial <http://primerseq.sf.net/user_tutorial>`_ has additional documentation describing more advanced features.
