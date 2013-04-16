@@ -456,7 +456,7 @@ class AddGeneIdsDialog(wx.Dialog):
 class InSilicoPcrDialog(wx.Dialog):
     def __init__(self, parent, id, title, output_file):
         wx.Dialog.__init__(self, parent, id, title,
-                           size=(300, 175))
+                           size=(300, 190))
                            #style=wx.DEFAULT_DIALOG_STYLE)
 
         self.parent = parent
@@ -1162,7 +1162,6 @@ class SavePlotDialog(wx.Dialog):
                     my_html = SavePlotsHTML(style='../style.css')
                     for index in range(len(tx_paths)):
                         path, count = tx_paths[index], counts[index]
-                        print bigwigs, index
                         self.create_plots(ID, index, plot_domain, path, tgt_pos, count, [bigwigs[index]], gene, options['output'], out_dir)
                         my_html.add_heading(titles[index])
                         my_html.add_img('%s.%d.depth.png' % (ID, index))
