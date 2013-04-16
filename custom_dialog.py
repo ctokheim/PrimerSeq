@@ -73,27 +73,39 @@ class CustomDialog(wx.Dialog):
 
 
 class PlotDialog(wx.Dialog):
-    def __init__(self, parent, id, title, output_file, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
+    def __init__(self, parent, id, title, output_file, options, text=''):
+        wx.Dialog.__init__(self, parent, id, title, size=(300, 215), style=wx.DEFAULT_DIALOG_STYLE)
 
         self.output_file = output_file
-        self.img_files = []  # store path to all image files created
+        self.draw_imgs = []
+        self.depth_imgs = []
 
         self.parent = parent
-        self.text = wx.StaticText(self, -1, text)
+        # self.text = wx.StaticText(self, -1, text)
 
-        self.bigwig_label = wx.StaticText(self, -1, "BigWig(s):")
-        self.choose_bigwig_button = wx.Button(self, -1, "Choose . . .")
-        self.choose_bigwig_button.SetToolTip(wx.ToolTip('Choose BigWig file(s).\nHold ctrl to select multiple'))
-        self.bigwig = []
-        self.panel_3 = wx.Panel(self, -1)
+        tID = wx.NewId()
+        self.list = utils.MyListCtrl(self, tID,
+                                     style=wx.LC_REPORT
+                                     # | wx.LC_SORT_ASCENDING
+                                     | wx.LC_EDIT_LABELS
+                                     | wx.BORDER_NONE)
+        # define the columns
+        self.list.InsertColumn(0, 'BAM')
+        self.list.InsertColumn(1, 'BigWig')
+        self.set_list(options['rnaseq'])  # populate the list ctrl with data
+
+        # self.bigwig_label = wx.StaticText(self, -1, "BigWig(s):")
+        # self.choose_bigwig_button = wx.Button(self, -1, "Choose . . .")
+        # self.choose_bigwig_button.SetToolTip(wx.ToolTip('Choose BigWig file(s).\nHold ctrl to select multiple'))
+        # self.bigwig = []
+        # self.panel_3 = wx.Panel(self, -1)
         # self.bigwig_choice_label = wx.StaticText(self, -1, "None")
-        self.bigwig_choice_label = wx.TextCtrl(self, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
-        self.bigwig_choice_label.SetBackgroundColour(self.bigwig_label.GetBackgroundColour())
-        bigwig_sizer = wx.GridSizer(1, 3, 0, 0)
-        bigwig_sizer.Add(self.bigwig_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
-        bigwig_sizer.Add(self.choose_bigwig_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
-        bigwig_sizer.Add(self.bigwig_choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
+        # self.bigwig_choice_label = wx.TextCtrl(self, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
+        # self.bigwig_choice_label.SetBackgroundColour(self.bigwig_label.GetBackgroundColour())
+        # bigwig_sizer = wx.GridSizer(1, 3, 0, 0)
+        # bigwig_sizer.Add(self.bigwig_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+        # bigwig_sizer.Add(self.choose_bigwig_button, 0, wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL, 0)
+        # bigwig_sizer.Add(self.bigwig_choice_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
 
         # read in valid primer output
         with open(self.output_file) as handle:
@@ -116,12 +128,13 @@ class PlotDialog(wx.Dialog):
         button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(bigwig_sizer, 0, wx.EXPAND, 10)
+        # sizer.Add(bigwig_sizer, 0, wx.EXPAND, 10)
+        sizer.Add(self.list, 0, wx.EXPAND, 10)
         sizer.Add(target_sizer, 0, wx.EXPAND)
         sizer.Add(button_sizer, 0, wx.ALIGN_CENTER)
         sizer.SetMinSize((300, 100))
 
-        self.Bind(wx.EVT_BUTTON, self.choose_bigwig_event, self.choose_bigwig_button)
+        # self.Bind(wx.EVT_BUTTON, self.choose_bigwig_event, self.choose_bigwig_button)
         self.Bind(wx.EVT_BUTTON, self.on_plot_button, self.plot_button)
         self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
         self.SetSizer(sizer)
@@ -132,34 +145,54 @@ class PlotDialog(wx.Dialog):
 
     def on_plot_error(self, msg):
         # self.parent.update_after_error((None,))
+        dlg = wx.MessageDialog(self, 'You likely have mistyped a BigWig file.', style=wx.OK | wx.ICON_ERROR)
+        dlg.ShowModal()
+        self.plot_button.SetLabel('Plot')
+        self.plot_button.Enable()
         pass  # prevent error on trying to call method
 
     def cancel_button_event(self, event):
         self.Destroy()
         event.Skip()
 
-    def choose_bigwig_event(self, event):
-        dlg = wx.FileDialog(self, message='Choose your BigWig files', defaultDir=os.getcwd(),
-                            wildcard='BigWig files (*.bw)|*.bw|BigWig files (*.bigWig)|*.bigWig', style=wx.FD_MULTIPLE)  # open file dialog
-        # if they press ok
-        if dlg.ShowModal() == wx.ID_OK:
-            filenames = dlg.GetPaths()  # get the new filenames from the dialog
-            filenames_without_path = dlg.GetFilenames()  # only grab the actual filenames and none of the path information
-            dlg.Destroy()  # best to do this sooner
+    def _set_bigwigs(self):
+        # get information from listctrl and make sure user specified data
+        counts = self.list.GetItemCount()
+        missing_bigwig_flag = False  # flag for absent bigwig file
+        bigwigs = []
+        for row in xrange(counts):
+            bigwig = self.list.GetItem(itemId=row, col=1).GetText()
+            bigwigs.append(bigwig)
+            if not bigwig:
+                missing_bigwig_flag = True
+        self.bigwig = bigwigs
+        return missing_bigwig_flag
 
-            self.bigwig = filenames
-            # self.bigwig_choice_label.SetLabel(', '.join(filenames_without_path))
-            self.bigwig_choice_label.SetValue(', '.join(filenames_without_path))
-        else:
-            dlg.Destroy()
+    def set_list(self, bam_list):
+        """Add bam information to listctrl"""
+        for i, bam in enumerate(bam_list):
+            index = self.list.InsertStringItem(sys.maxint, bam.path)
+            self.list.SetStringItem(index, 0, bam.path)
+            self.list.SetStringItem(index, 1, '')
+            self.list.SetItemData(index, i)
 
     def on_plot_button(self, event):
         if not self.target_combo_box.GetValue():
             dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return
-        logging.debug('Plot button event callback . . .')
+        missing_bw = self._set_bigwigs()
+        if missing_bw:
+            dlg = wx.MessageDialog(self, 'One or more BigWig files were not specified. If you intended to'
+                                   ' not plot read depth then press OK. If you want to plot read depth then'
+                                   ' press CANCEL and then type the file paths for the BigWig files corresponding'
+                                   ' to the BAM file.', 'Confirm BigWig', wx.OK | wx.CANCEL | wx.ICON_QUESTION)
+            result = dlg.ShowModal()
+            dlg.Destroy()
+            if result == wx.ID_CANCEL:
+                return  # exit if user wanted to specify bigwig files
 
+        logging.debug('Plot button event callback . . .')
         self.target_id = str(self.target_combo_box.GetValue().split(',')[0])
         self.target_of_interest = str(self.target_combo_box.GetValue().split(', ')[1])
 
@@ -232,7 +265,7 @@ class PlotDialog(wx.Dialog):
                           coord,
                           output_img,
                           opts)
-                self.img_files.append(output_img)
+                self.draw_imgs.append(output_img)
         logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
@@ -243,15 +276,25 @@ class PlotDialog(wx.Dialog):
         for i, bw in enumerate(opts['bigwig']):
             output = os.path.join(opts['output'], '%s.%s.png' % (opts['id'], i))
             depth_plot.read_depth_plot(bw, output, opts)
-            self.img_files.append(output)
+            self.depth_imgs.append(output)
         logging.debug('Finished creating read depth plot.')
 
     def plot_update(self, msg):
         self.plot_button.SetLabel('Plot')
         self.plot_button.Enable()
+
+        # set the order the images should appear
+        img_files = []
+        for i in range(len(self.depth_imgs)):
+            img_files.append(self.depth_imgs[i])
+            img_files.append(self.draw_imgs[i])
+        self.depth_imgs = []  # clear depth plots
+        self.draw_imgs = []  # clear isoform drawings
+
+        # display plots
         DisplayMultiplePlotsDialog(self, -1,
                                    'Primer Results for ' + self.target_of_interest,
-                                   self.img_files)
+                                   img_files)
                                    # ['tmp/depth_plot/' + self.target_id + '.png',
                                    # 'tmp/draw/' + self.target_id + '.png'])
         logging.debug('Finished plotting.')
@@ -777,6 +820,7 @@ class DisplayMultiplePlotsDialog(wx.Dialog):
         #     sizer = wx.boxsizer(wx.vertical)
         #     sizer.add(depth_bitmap, 0, wx.align_center)
         #     sizer.Add(draw_bitmap, 0, wx.ALIGN_CENTER)
+        self.SetBackgroundColour('white')
         self.SetSizerAndFit(sizer)
         self.Show()
 
@@ -793,6 +837,7 @@ class MyScrolledPanel(scrolled.ScrolledPanel):
             depth_bitmap = wx.StaticBitmap(self, -1, depth_png, (10, 5), (depth_png.GetWidth(), depth_png.GetHeight()))
             vbox.Add(depth_bitmap, 0, wx.ALIGN_CENTER)
             vbox.Add(draw_bitmap, 0, wx.ALIGN_CENTER)
+            vbox.Add((40, 40), 1, wx.EXPAND)
             if i == 0:
                 first_depth = depth_bitmap.GetSize()
                 first_draw = draw_bitmap.GetSize()
@@ -800,6 +845,7 @@ class MyScrolledPanel(scrolled.ScrolledPanel):
         # vbox.Add(desc, 0, wx.ALIGN_LEFT|wx.ALL, 5)
 
         self.SetSize(my_size)
+        self.SetBackgroundColour('white')
         self.SetSizer(vbox)
         # self.SetAutoLayout(1)
         self.SetupScrolling()
