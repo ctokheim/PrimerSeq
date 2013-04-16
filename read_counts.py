@@ -38,8 +38,8 @@ def save_isforms_and_counts(line, options):
             paths, counts = user_defined_exons(my_splice_graph, line)
 
             # filter out single exon paths
-            my_tmp = [(path, count) for path, count in zip(paths, counts) if len(path) > 1]
-            paths, counts = zip(*my_tmp)
+            # my_tmp = [(path, count) for path, count in zip(paths, counts) if len(path) > 1]
+            # paths, counts = zip(*my_tmp)
         # this case is meant for automatic choice of flanking exons
         else:
             paths, counts = primerseq_defined_exons(my_splice_graph, line, options['psi'])

@@ -47,6 +47,9 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         save_plot_id = wx.NewId()
         toolbar.AddSimpleTool(save_plot_id, self.get_bmp(wx.ART_FILE_SAVE),
                               "Save Plots", "Save each plot to an html file viewable in your browser")
+        evaluate_as_id = wx.NewId()
+        toolbar.AddSimpleTool(evaluate_as_id, self.get_bmp(wx.ART_INFORMATION),
+                              "Evaluate AS Event", "Evaluate the AS event using POOLED read counts")
         reset_id = wx.NewId()
         toolbar.AddSimpleTool(reset_id, self.get_bmp(wx.ART_UNDO),
                               "Reset Values", "Reset Information")
@@ -105,6 +108,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.Bind(wx.EVT_TOOL, self.on_save_plots, id=save_plot_id)
         self.Bind(wx.EVT_TOOL, self.on_plot, id=plot_id)
         self.Bind(wx.EVT_TOOL, self.on_help, id=wx.ID_HELP)
+        self.Bind(wx.EVT_TOOL, self.on_evaluate_as, id=evaluate_as_id)
         self.Bind(wx.EVT_TOOL, self.on_reset, id=reset_id)
         self.Bind(wx.EVT_TOOL, self.on_exit, id=wx.ID_EXIT)
 
@@ -141,7 +145,10 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         dlg.ShowModal()
 
     def on_plot(self, event):
-        cd.PlotDialog(self, -1, 'Plot Results', self.output_filename)
+        cd.PlotDialog(self, -1, 'Plot Results', self.output_filename, self.options)
+
+    def on_evaluate_as(self, event):
+        cd.EvaluateASEventDialog(self, -1, 'Plot Results', self.output_filename)
 
     def read_output_file(self, output_file):
         # get information from results file

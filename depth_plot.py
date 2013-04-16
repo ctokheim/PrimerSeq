@@ -158,14 +158,14 @@ def generate_plot(ax, bw, chr, start, stop, options):
     return max_count, tmp_start, tmp_stop
 
 
-def read_depth_plot(options):
+def read_depth_plot(my_bigwigs, output, options):
     if type(options['position']) == type(list()):
         chr = utils.get_chr(options['position'][0])
         start, stop = zip(*map(lambda x: utils.get_pos(x), options['position']))
     else:
         chr = utils.get_chr(options['position'])
         start, stop = utils.get_pos(options['position'])
-    bigwigs = options['bigwig'].split(',')
+    bigwigs = my_bigwigs.split(',')
     num_subplots = len(bigwigs)  # num of bam files equals number of subplots
     fig, axes = plt.subplots(num_subplots, 1, sharex=True, sharey=True, figsize=(6, options['size'] * num_subplots))
     gray = (0.9, 0.9, 0.9)
@@ -223,7 +223,7 @@ def read_depth_plot(options):
         fig.subplots_adjust(wspace=0.05, hspace=0.05)
 
         # save figure
-        plt.savefig(options['output'])
+        plt.savefig(output)
 
 
 if __name__ == '__main__':

@@ -327,11 +327,9 @@ def main(options):
 
 def delete_tmp_files(opts):
     """Delete Primer3 files that clutter the tmp directory"""
-    print config_options['tmp']
     # delete SAM files
     if not opts['keep_temp']:
         for f in glob.glob(os.path.join(config_options['tmp'], 'sam/*.sam')):
-            print f
             os.remove(f)
 
     # delete all .for files from primer3

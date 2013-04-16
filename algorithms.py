@@ -163,9 +163,10 @@ class AllPaths(object):
         for p in self.tx_paths:
             first_ex = utils.find_first_exon(first_primer, p)
             last_ex = utils.find_last_exon(second_primer, p)
-            if first_ex and last_ex:
+            if first_ex is not None and last_ex is not None:
                 tmp.add(tuple(p[first_ex:last_ex+1]))  # make sure no redundancies
-        self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+        # self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+        self.tx_paths = list(tmp)
 
     def trim_tx_paths_using_flanking_exons(self, strand, up_exon, down_exon):
         tmp = set()
@@ -241,7 +242,8 @@ class AllPaths(object):
         '''
         tmp = []
         for p in self.tx_paths:
-            tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.tx_paths))
+            # tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), self.tx_paths))
+            tmp.append(map(lambda x: (self.strand, self.chr, x[0], x[1]), p))
         self.all_path_lengths = tmp
 
     def set_all_path_lengths(self, primer_coords):

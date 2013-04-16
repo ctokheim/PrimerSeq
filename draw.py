@@ -264,7 +264,7 @@ def calc_product_length(path, primer_coord):
     return final_len
 
 
-def main(tx_paths, target_exon, counts, primer_coord, options):
+def main(tx_paths, target_exon, counts, primer_coord, output, options):
     # configurations
     matplotlib.rcParams['font.size'] = 16  # edit font size of title
     matplotlib.rcParams['xtick.labelsize'] = 13
@@ -308,7 +308,7 @@ def main(tx_paths, target_exon, counts, primer_coord, options):
 
     fig.subplots_adjust(hspace=.00, wspace=.00)  # change subplot spacing
     # plt.show()
-    plt.savefig(options['output'])
+    plt.savefig(output)
     plt.clf()
 
 
