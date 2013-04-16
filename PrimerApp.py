@@ -173,6 +173,8 @@ class PrimerFrame(wx.Frame):
         self.Bind(Stc.EVT_STC_START_DRAG, self.on_cancel_drag, self.fasta_choice_label)
         # end wxGlade
 
+        self.view_output_frame = None  # No primers have been designed yet
+
         self.my_icon = wx.EmptyIcon()
         self.my_icon.CopyFromBitmap(wx.Bitmap("PrimerSeq.ico", wx.BITMAP_TYPE_ANY))
         self.SetIcon(self.my_icon)
@@ -428,11 +430,11 @@ class PrimerFrame(wx.Frame):
             self.enable_load_buttons()
 
     def update_after_run(self, msg):
+        """Destory loading dialog and display primer design results"""
         self.load_progress.Destroy()
         self.enable_load_buttons()
-        # view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", msg.data[0])
-        view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", self.options)
-        view_output_frame.Show()
+        self.view_output_frame = vo.ViewOutputFrame(self, -1, "Primer Design Results", self.options)
+        self.view_output_frame.Show()
 
     def update_after_error(self, msg):
         dlg = wx.MessageDialog(self, 'An uncaught error occured in PrimerSeq. Please check the log file (%s) for details. You may need to press Reset from the File menu to continue.\n\nIf you are consistently having problems please check the PrimerSeq FAQ:\nhttp://primerseq.sourceforge.net/faq.html' % log_file, style=wx.OK | wx.ICON_ERROR)
@@ -581,6 +583,11 @@ class PrimerFrame(wx.Frame):
             dlg = wx.MessageDialog(self, 'Please fill in all of the required fields.', style=wx.OK)
             dlg.ShowModal()
             return
+        if self.view_output_frame:
+            dlg = wx.MessageDialog(self, 'Please close your existing primer design results\n'
+                                   'before designing more primers.', style=wx.OK)
+            dlg.ShowModal()
+            return
 
         strandList, chrList, startList, endList = [], [], [], []  # stores all coordinate info
 
@@ -637,7 +644,9 @@ class PrimerFrame(wx.Frame):
         with open(opts['output']) as handle:
             handle.readline()  # skip the header
             for line in csv.reader(handle, delimiter='\t'):
-                rc.save_isforms_and_counts(line, opts)
+                # lines of length 1 are displaying error msgs
+                if len(line) > 1:
+                    rc.save_isforms_and_counts(line, opts)
 
         # remove SAM files
         for f in glob.glob(os.path.join(primer.config_options['tmp'], 'sam/*.sam')):
