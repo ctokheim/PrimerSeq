@@ -1208,7 +1208,7 @@ class SavePlotDialog2(wx.Dialog):
 
 class SavePlotDialog(wx.Dialog):
     def __init__(self, parent, id, title, opts, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(400, 300))  # , style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 320))  # , style=wx.DEFAULT_DIALOG_STYLE)
 
         self.options = opts
         self.output_file = opts['output']
@@ -1249,22 +1249,22 @@ class SavePlotDialog(wx.Dialog):
         grid_sizer.Add(self.directory_choice_label, 0, wx.EXPAND, 10)
 
         # create genome widgets
-        grid_sizer_genome = wx.GridSizer(1, 2, 0, 0)
+        grid_sizer_genome = wx.GridSizer(1, 3, 0, 0)
         self.genome_label = wx.StaticText(self, -1, "Genome:  ")
         self.genome_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.genome_choice_label = wx.TextCtrl(self, -1, "Human")
         self.genome_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         grid_sizer_genome.Add(self.genome_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
-        grid_sizer_genome.Add(self.genome_choice_label, 0, wx.EXPAND, 10)
+        grid_sizer_genome.Add(self.genome_choice_label, 1, wx.EXPAND, 10)
 
         # create genome assembly widgets
-        grid_sizer_assembly = wx.GridSizer(1, 2, 0, 0)
+        grid_sizer_assembly = wx.GridSizer(1, 3, 0, 0)
         self.assembly_label = wx.StaticText(self, -1, "Assembly:  ")
         self.assembly_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.assembly_choice_label = wx.TextCtrl(self, -1, "hg19")
         self.assembly_choice_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         grid_sizer_assembly.Add(self.assembly_label, 0, wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 10)
-        grid_sizer_assembly.Add(self.assembly_choice_label, 0, wx.EXPAND, 10)
+        grid_sizer_assembly.Add(self.assembly_choice_label, 1, wx.EXPAND, 10)
 
         # run and cancel buttons
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1273,6 +1273,11 @@ class SavePlotDialog(wx.Dialog):
         button_sizer.Add(self.save_plot_button, 0, wx.ALIGN_RIGHT)
         button_sizer.Add(self.cancel_button, 0, wx.ALIGN_LEFT)
 
+        self.sizer_staticbox = wx.StaticBox(self, -1, "In-Silico PCR Options")
+        sizer_static = wx.StaticBoxSizer(self.sizer_staticbox, wx.VERTICAL)
+        sizer_static.Add(grid_sizer_genome, 0, wx.EXPAND, 10)
+        sizer_static.Add(grid_sizer_assembly, 0, wx.EXPAND, 10)
+
         # set sizer information
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddMany([(self.list, 0, wx.EXPAND, 10),
@@ -1280,11 +1285,13 @@ class SavePlotDialog(wx.Dialog):
                        # ((10, 10), 0),  # add spacer
                        # (self.data_text_field, 0, wx.EXPAND, 10),  # add text box
                        ((10, 10), 0),  # add spacer
-                       (grid_sizer_genome, 0, wx.EXPAND, 10),
-                       ((10, 10), 0),  # add spacer
-                       (grid_sizer_assembly, 0, wx.EXPAND, 10),
-                       ((10, 10), 0),  # add spacer
                        (grid_sizer, 0, wx.EXPAND, 10),  # add output directory choice
+                       # (grid_sizer_genome, 0, wx.EXPAND, 10),
+                       ((10, 10), 0),  # add spacer
+                       (sizer_static, 0, wx.EXPAND, 10),
+                       # (grid_sizer_assembly, 0, wx.EXPAND, 10),
+                       # ((10, 10), 0),  # add spacer
+                       # (grid_sizer, 0, wx.EXPAND, 10),  # add output directory choice
                        ((10, 10), 0),  # add spacer
                        (button_sizer, 0, wx.ALIGN_CENTER)])  # add button
         sizer.SetMinSize((500, 100))
