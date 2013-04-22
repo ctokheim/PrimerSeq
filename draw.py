@@ -281,6 +281,7 @@ def main(tx_paths, target_exon, counts, primer_coord, output, options):
     fig, axes = plt.subplots(num_of_drawings, 1, sharex=True, sharey=True, figsize=(6, .75 * num_of_drawings))
 
     # loop through and make all subplots in a figure
+    lowest_start, highest_stop = float('inf'), float('-inf')
     for i, ax in enumerate(axes.flat):
         # draw exon structure + junctions
         # exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
@@ -291,11 +292,15 @@ def main(tx_paths, target_exon, counts, primer_coord, output, options):
             i -= 1
             prod_length = calc_product_length(tx_paths[i], primer_coord)
             exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], target_exon, percent_estimate[i], options, prod_length)
+        lowest_start = lowest_start if lowest_start < new_start else new_start
+        highest_stop = highest_stop if highest_stop > new_stop else new_stop
 
         if i == (num_of_txs - 1):
             first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]
-            exonDrawAxis.set_xlim(new_start, new_stop)
-            exonDrawAxis.set_xticks([new_start, new_stop])  # edited
+            # exonDrawAxis.set_xlim(new_start, new_stop)
+            # exonDrawAxis.set_xticks([new_start, new_stop])  # edited
+            exonDrawAxis.set_xlim(lowest_start, highest_stop)
+            exonDrawAxis.set_xticks([lowest_start, highest_stop])  # edited
             exonDrawAxis.xaxis.set_ticklabels(["%s" % (addCommas(first_label)), "%s" % (addCommas(last_label))])  # prevents scientific notation and provide scale effect for axis
             exonDrawAxis.get_xticklabels()[0].set_horizontalalignment('left')
             exonDrawAxis.get_xticklabels()[1].set_horizontalalignment('right')

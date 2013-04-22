@@ -150,7 +150,7 @@ class AllPaths(object):
                     p[p.index(self.component[0]):p.index(self.component[-1]) + 1]))  # make sure there is no redundant paths
         self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
 
-    def trim_tx_paths_using_primers(self, first_primer, second_primer):
+    def trim_tx_paths_using_primers(self, first_primer, second_primer, first_exon, second_exon):
         """
         Get rid of all transcripts which do not contain both the first
         and second primer. This method may keep transcripts that do not
@@ -164,7 +164,12 @@ class AllPaths(object):
             first_ex = utils.find_first_exon(first_primer, p)
             last_ex = utils.find_last_exon(second_primer, p)
             if first_ex is not None and last_ex is not None:
-                tmp.add(tuple(p[first_ex:last_ex+1]))  # make sure no redundancies
+                tmp_path = p[first_ex:last_ex+1]
+                if tmp_path[0][0] < first_exon[0]:
+                    tmp_path[0] = (first_exon[0], tmp_path[0][1])  # don't be before user-defined exon
+                if tmp_path[-1][1] > second_exon[1]:
+                    tmp_path[-1] = (tmp_path[-1][0], second_exon[1])  # don't be after user-defined exon
+                tmp.add(tuple(tmp_path))  # make sure no redundancies
         # self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
         self.tx_paths = list(tmp)
 

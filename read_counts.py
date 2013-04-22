@@ -72,7 +72,9 @@ def user_defined_exons(tmp_sg, line):
                               chr=chr,
                               strand=strand)
     # all_paths.trim_tx_paths()
-    all_paths.trim_tx_paths_using_primers(first_primer, second_primer)
+    fexon = upstream_exon if strand == "+" else downstream_exon
+    lexon = downstream_exon if strand == "+" else upstream_exon
+    all_paths.trim_tx_paths_using_primers(first_primer, second_primer, fexon, lexon)
     all_paths.set_all_path_coordinates()
     paths, counts = all_paths.estimate_counts()  # run EM algorithm
     return paths, counts
