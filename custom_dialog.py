@@ -1489,8 +1489,10 @@ class SavePlotDialog(wx.Dialog):
         self.draw_isoforms(opts)
 
         # generate read depth plot
+        min_pos, max_pos = utils.get_path_range(path)
+        plot_limit = utils.construct_coordinate(utils.get_chr(plt_domain), min_pos, max_pos)
         opts = {'bigwig': ','.join(bigwig),
-                'position': plt_domain,
+                'position': plot_limit,  # was plot_domain
                 'gene': gene,
                 'size': 2.,
                 'step': 1,

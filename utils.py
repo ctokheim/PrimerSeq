@@ -71,6 +71,16 @@ def get_primer_coordinates(primer_coord):
     return get_pos(first), get_pos(second)
 
 
+def get_path_range(paths):
+    """Returns the genomic range of several paths"""
+    tmp = []
+    for p in paths:
+        for exon in p:
+            tmp.append(exon[0])
+            tmp.append(exon[1])
+    return min(tmp), max(tmp)
+
+
 def find_first_exon(pos, exon_list):
     """
     Finds the first exon the position is contained within.

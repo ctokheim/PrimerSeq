@@ -292,8 +292,8 @@ def main(tx_paths, target_exon, counts, primer_coord, output, options):
             i -= 1
             prod_length = calc_product_length(tx_paths[i], primer_coord)
             exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], target_exon, percent_estimate[i], options, prod_length)
-        lowest_start = lowest_start if lowest_start < new_start else new_start
-        highest_stop = highest_stop if highest_stop > new_stop else new_stop
+            lowest_start = lowest_start if lowest_start < new_start else new_start
+            highest_stop = highest_stop if highest_stop > new_stop else new_stop
 
         if i == (num_of_txs - 1):
             first_label, last_label = tx_paths[i][0][0], tx_paths[i][-1][1]
