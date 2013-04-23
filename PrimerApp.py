@@ -667,10 +667,12 @@ class PrimerFrame(wx.Frame):
     def on_about(self, event):
         """Displays the About dialog box which explains details about PrimerSeq to the user"""
 
-        description = """PrimerSeq aims to design primers on flanking constitutive exons around your target position of interest.
-The advantage of PrimerSeq is it handles the ambiguity of where to place primers by incorporating RNA-Seq data.
-Essentially, the RNA-Seq data allows primers to be placed based on your particular cell line or experimental condition
-rather than using annotations that incorporate transcripts that are not expressed for your data.
+        description = """PrimerSeq designs RT-PCR primers that evaluate alternative splicing events by incorporating RNA-Seq data.
+        PrimerSeq is particularly advantageous for designing a large number of primers for validating alternative splicing events found in RNA-Seq data.
+        PrimerSeq incorporates RNA-Seq data in the design process to weight exons by their read counts.
+        Essentially, the RNA-Seq data allows primers to be placed using actually expressed transcripts.
+        This could be for your particular cell line or experimental condition, rather than using annotations that incorporate transcripts that are not expressed for your data.
+        Alternatively, you can design primers that are always on constitutive exons. PrimerSeq does not limit the use of gene annotations and can be used for a wide array of species.
 
 PrimerSeq redistributes primer3 which is licensed under GPLv2, the SAM-JDK which is licensed under Apache License V2.0, MIT, and the BigWig api which
 is licensed under LGPL v2.1. There is no source code modification to any of the previous work."""
