@@ -159,14 +159,17 @@ class PlotDialog(wx.Dialog):
         # get information from listctrl and make sure user specified data
         counts = self.list.GetItemCount()
         missing_bigwig_flag = False  # flag for absent bigwig file
+        bigwig_typo = False
         bigwigs = []
         for row in xrange(counts):
-            bigwig = self.list.GetItem(itemId=row, col=1).GetText()
+            bigwig = self.list.GetItem(itemId=row, col=1).GetText().strip()
             bigwigs.append(bigwig)
             if not bigwig:
                 missing_bigwig_flag = True
+            elif not os.path.exists(bigwig):
+                bigwig_typo = True
         self.bigwig = bigwigs
-        return missing_bigwig_flag
+        return missing_bigwig_flag, bigwig_typo
 
     def set_list(self, bam_list):
         """Add bam information to listctrl"""
@@ -181,7 +184,11 @@ class PlotDialog(wx.Dialog):
             dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return
-        missing_bw = self._set_bigwigs()
+        missing_bw, bw_typo = self._set_bigwigs()
+        if bw_typo:
+            dlg = wx.MessageDialog(self, 'One or more BigWig files are incorrect.', style=wx.OK)
+            dlg.ShowModal()
+            return
         if missing_bw:
             dlg = wx.MessageDialog(self, 'One or more BigWig files were not specified. If you intended to'
                                    ' not plot read depth then press OK. If you want to plot read depth then'
@@ -1347,14 +1354,17 @@ class SavePlotDialog(wx.Dialog):
         # get information from listctrl and make sure user specified data
         counts = self.list.GetItemCount()
         missing_bigwig_flag = False  # flag for absent bigwig file
+        bigwig_typo = False  # flag for incorrect path
         titles, bigwigs = [], []
         for row in xrange(counts):
-            title = self.list.GetItem(itemId=row, col=0).GetText()
-            bigwig = self.list.GetItem(itemId=row, col=2).GetText()
+            title = self.list.GetItem(itemId=row, col=0).GetText().strip()
+            bigwig = self.list.GetItem(itemId=row, col=2).GetText().strip()
             titles.append(title)
             bigwigs.append(bigwig)
             if not bigwig:
                 missing_bigwig_flag = True
+            elif not os.path.exists(bigwig):
+                bigwig_typo = True
         if missing_bigwig_flag:
             dlg = wx.MessageDialog(self, 'One or more BigWig files were not specified. If you intended to'
                                    ' not plot read depth then press OK. If you want to plot read depth then'
@@ -1364,6 +1374,10 @@ class SavePlotDialog(wx.Dialog):
             dlg.Destroy()
             if result == wx.ID_CANCEL:
                 return  # exit if user wanted to specify bigwig files
+        if bigwig_typo:
+            dlg = wx.MessageDialog(self, 'One or more BigWig file paths are incorrect.', style=wx.OK)
+            dlg.ShowModal()
+            return
 
         self.generate_index_html()  # create the index.html web page
 
