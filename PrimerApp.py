@@ -593,7 +593,11 @@ class PrimerFrame(wx.Frame):
 
         # handle the coordinates in self.coordinates_text_input
         coordinates_string = self.coordinates_text_field.GetValue()  # a string
-        coordinates = map(lambda y: re.split('\s*,+\s*', y), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', coordinates_string))))  # ['(strand)(chr):(start)-(end)', ...]
+        coordinates = map(lambda y: re.split('\s*,+\s*', y.strip()), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', coordinates_string))))  # ['(strand)(chr):(start)-(end)', ...]
+        if not coordinates:
+            dlg = wx.MessageDialog(self, 'Please fill in the exon coordinates field.', style=wx.OK)
+            dlg.ShowModal()
+            return
 
         # options for primer.py's main function
         self.options = {}
