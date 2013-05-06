@@ -1383,7 +1383,9 @@ class SavePlotDialog(wx.Dialog):
         index_html.add_text('%d/%d primer designs are successful! ' % (len(self.results), len(self.total_results)))
 
         # add text file to directory and link from html to it
-        shutil.copy(self.output_file, os.path.join(self.output_directory, 'output.txt'))  # copy the text file
+        new_output_file = os.path.join(self.output_directory, 'output.txt')
+        if self.output_file != new_output_file:
+            shutil.copy(self.output_file, new_output_file)  # copy the text file
         index_html.add_text('You can view the entire results ')
         index_html.add_link('output.txt', 'here')  # add link to text file with results
         index_html.add_line_break()
