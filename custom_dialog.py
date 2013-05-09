@@ -836,6 +836,7 @@ class MyScrolledPanel(scrolled.ScrolledPanel):
     def __init__(self, parent, img_paths):
         scrolled.ScrolledPanel.__init__(self, parent, -1, size=(600, 450))
         vbox = wx.BoxSizer(wx.VERTICAL)
+        my_size = (300, 200)  # default size
         # add all images
         for i in range(0, len(img_paths), 2):
             depth_png = wx.Image(img_paths[i], wx.BITMAP_TYPE_ANY).ConvertToBitmap()
@@ -849,7 +850,6 @@ class MyScrolledPanel(scrolled.ScrolledPanel):
                 first_depth = depth_bitmap.GetSize()
                 first_draw = draw_bitmap.GetSize()
                 my_size = (first_depth[0] + first_draw[0], first_depth[1] + first_draw[1])
-        # vbox.Add(desc, 0, wx.ALIGN_LEFT|wx.ALL, 5)
 
         self.SetSize(my_size)
         self.SetBackgroundColour('white')
