@@ -39,6 +39,7 @@ import custom_thread as ct
 import custom_dialog as cd
 import view_output as vo
 import read_counts as rc
+import utils
 
 # logging imports
 import traceback
@@ -593,11 +594,33 @@ class PrimerFrame(wx.Frame):
 
         # handle the coordinates in self.coordinates_text_input
         coordinates_string = self.coordinates_text_field.GetValue()  # a string
-        coordinates = map(lambda y: re.split('\s*,+\s*', y.strip()), map(str, filter(lambda x: x != '', re.split('\s*\n+\s*', coordinates_string))))  # ['(strand)(chr):(start)-(end)', ...]
+        coordinates = map(lambda y: re.split('\s*,+\s*', y.strip()),
+                          map(str, filter(lambda x: x != '',
+                          re.split('\s*\n+\s*', coordinates_string))))  # ['(strand)(chr):(start)-(end)', ...]
         if not coordinates:
             dlg = wx.MessageDialog(self, 'Please fill in the exon coordinates field.', style=wx.OK)
             dlg.ShowModal()
             return
+
+        # make sure exons actually exist in GTF before preceeding
+        bad_coordinate = []
+        for c in coordinates:
+            found_ex = self.find_exon(c)
+            bad_coordinate += [f == False for f in found_ex]
+        if (len(coordinates) == 1 and any(bad_coordinate)) or (not all(bad_coordinate) and any(bad_coordinate)):
+            clist = [item for sublist in coordinates for item in sublist]
+            first_indx = bad_coordinate.index(True)
+            first_bad_coord = clist[first_indx]
+            dlg = wx.MessageDialog(self, 'One or more coordinates were incorrect. First occurence of bad coordinate'
+                                   ' is %s.' % first_bad_coord, style=wx.OK)
+            dlg.ShowModal()
+            return
+        elif all(bad_coordinate):
+            dlg = wx.MessageDialog(self, 'All entered coordinates do not match an exon in the gene annotation.'
+                                   'You may have accidentally enter coordinates in 1-based format.', style=wx.OK)
+            dlg.ShowModal()
+            return
+
 
         # options for primer.py's main function
         self.options = {}
@@ -630,6 +653,21 @@ class PrimerFrame(wx.Frame):
                                                      args=(self.options,))
         event.Skip()
 
+    def find_exon(self, coord):
+        """Check if coordinates match a known exon from GTF"""
+        found = [False] * len(coord)
+        chr = utils.get_chr(coord[0][1:])
+        strand = coord[0][0]
+        pos_list = [utils.get_pos(c) for c in coord]
+        tmp = [p for sublist in pos_list for p in sublist]
+        start, end = min(tmp), max(tmp)
+        for gene_key in self.gtf[chr]:
+            if self.gtf[chr][gene_key]['strand'] == strand and self.gtf[chr][gene_key]['start'] <= start and self.gtf[chr][gene_key]['end'] >= end:
+                for k, pos in enumerate(pos_list):
+                    if pos in self.gtf[chr][gene_key]['exons']:
+                        found[k] = True
+        return found
+
     def run_primer_design(self, opts):
         """Performs that actual execution of primer design"""
         # design primers
@@ -642,6 +680,10 @@ class PrimerFrame(wx.Frame):
 
         # remove old json files
         for f in glob.glob('tmp/indiv_isoforms/*.json'):
+            os.remove(f)
+
+        # remove primer3 files
+        for f in glob.glob('primer3_log/*.txt'):
             os.remove(f)
 
         # save data in json format
