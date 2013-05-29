@@ -33,6 +33,7 @@ from pygr.seqdb import SequenceFileDB
 from pygr.sequence import Sequence
 import sam
 import utils
+import shutil
 import ConfigParser
 import platform
 
@@ -176,7 +177,7 @@ def primer3(options, primer3_options):
     It then designs primers by calling primer3. Next it parses the primer3 output and outputs the final results to a file. The output file
     is then emailed to the designated address in the command line parameters.
     """
-    jobs_ID = options['job_id']
+    jobs_ID = options['job_id']  # will remove this line
 
     # tmp directory
     mkdir_tmp()  # make any necessary tmp directories
@@ -190,6 +191,7 @@ def primer3(options, primer3_options):
     STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, ALL_PATHS, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ, GENE_NAME = range(12)
     output_list = []
     for z in range(len(flanking_info)):
+        jobs_ID = str(z)  # base file name for primer3 output
         # no flanking exon information case
         if len(flanking_info[z]) == 1:
             logging.debug(flanking_info[z][0])
@@ -231,14 +233,20 @@ def primer3(options, primer3_options):
                 os.remove(config_options['tmp'] + jobs_ID + '.Primer3')  # delete old files
 
             call_primer3(tar, jobs_ID)  # command line call to Primer3!
+            shutil.copy(os.path.join(config_options['tmp'], jobs_ID + '.Primer3'),
+                        config_options['primer3_log'])  # copy primer3 results
+            shutil.copy(os.path.join(config_options['tmp'], jobs_ID + '.conf'),
+                        config_options['primer3_log'])  # copy config file
 
             #################### Parse '.Primer3' ################################
             primer3_dict = read_primer3(config_options['tmp'] + '/' + jobs_ID + '.Primer3')
 
             # checks if no output
             if(primer3_dict.keys().count('PRIMER_LEFT_0_SEQUENCE') == 0):
-                logging.debug('No primer3 results for %s' % tar)
-                output_list.append(['No Primer3 results for ' + tar])
+                str_params = (tar, os.path.abspath(os.path.join(config_options['primer3_log'], str(z) + '.Primer3')))
+                primer3_problem = 'No Primer3 results for %s. Check %s for more details.' % str_params
+                logging.debug(primer3_problem)
+                output_list.append([primer3_problem])
                 continue
             # there is output case
             else:
@@ -338,6 +346,14 @@ def delete_tmp_files(opts):
 
     # delete all .rev files from primer3
     for f in glob.glob(os.path.join(config_options['tmp'], '*.rev')):
+        os.remove(f)
+
+    # remove primer3 files
+    for f in glob.glob(config_options['tmp'] + '/*.Primer3'):
+        os.remove(f)
+
+    # delete '.conf' input files for primer3
+    for f in glob.glob(config_options['tmp'] + '/*.conf'):
         os.remove(f)
 
 

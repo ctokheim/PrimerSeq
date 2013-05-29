@@ -682,10 +682,6 @@ class PrimerFrame(wx.Frame):
         for f in glob.glob('tmp/indiv_isoforms/*.json'):
             os.remove(f)
 
-        # remove primer3 files
-        for f in glob.glob('primer3_log/*.txt'):
-            os.remove(f)
-
         # save data in json format
         with open(opts['output']) as handle:
             handle.readline()  # skip the header
@@ -775,6 +771,9 @@ if __name__ == "__main__":
                         format='%(asctime)s %(message)s',
                         filename=log_file,
                         filemode='w')
+
+    # make sure primer3_log directory exists
+    if not os.path.exists(primer.config_options['primer3_log']): os.mkdir(primer.config_options['primer3_log'])
 
     # start GUI
     primerApp = PrimerApp(redirect=False)
