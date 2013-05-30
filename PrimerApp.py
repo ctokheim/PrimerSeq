@@ -301,6 +301,7 @@ class PrimerFrame(wx.Frame):
         # end wxGlade
 
     def on_cancel_drag(self, event):
+        """Attempt to prevent text from being draggable"""
         event.SetDragText("")
         event.Skip()
 
@@ -336,6 +337,7 @@ class PrimerFrame(wx.Frame):
     def on_reset(self, event):
         """
         Event handler for user reseting input if a fail/crash happened.
+        This method also deletes the tmp directory.
         """
         try:
             if self.load_progress:
@@ -371,9 +373,7 @@ class PrimerFrame(wx.Frame):
         cd.SortGtfDialog(self, -1, 'Sort GTF')
 
     def primer3_event(self, event):
-        '''
-        Try to open primer3.cfg in every platform so the user can edit it.
-        '''
+        '''Try to open primer3.cfg in every platform so the user can edit it. '''
         filepath = primer.config_options['primer3_cfg']
         if sys.platform.startswith('darwin'):
             subprocess.call(('open', filepath))
@@ -383,9 +383,7 @@ class PrimerFrame(wx.Frame):
             subprocess.call(('xdg-open', filepath))
 
     def on_primer3_manual(self, event):
-        '''
-        Try to open primer3_manual.htm in a webbrowser.
-        '''
+        '''Try to open primer3_manual.htm in a webbrowser. '''
         primer3_path = primer.config_options['primer3']
         if primer3_path == '../primer3':
             webbrowser.open(os.path.abspath('primer3/primer3_manual.htm'))
@@ -669,7 +667,10 @@ class PrimerFrame(wx.Frame):
         return found
 
     def run_primer_design(self, opts):
-        """Performs that actual execution of primer design"""
+        """
+        Performs that actual execution of primer design followed by
+        cleaning up some of the files in the tmp directory.
+        """
         # design primers
         primer.main(opts)
 
@@ -693,18 +694,6 @@ class PrimerFrame(wx.Frame):
         # remove SAM files
         for f in glob.glob(os.path.join(primer.config_options['tmp'], 'sam/*.sam')):
             os.remove(f)
-
-    def on_plot(self, event):  # wxGlade: PrimerFrame.<event_handler>
-        '''This method is deprecated since plotting is now done in the view output frame'''
-        try:
-            if self.output:
-                cd.PlotDialog(self, -1, 'Plot Results', self.output)
-            else:
-                dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
-                dlg.ShowModal()
-        except AttributeError:
-            dlg = wx.MessageDialog(self, 'Please run PrimerSeq before trying to plot results.', style=wx.OK)
-            dlg.ShowModal()
 
     def on_about(self, event):
         """Displays the About dialog box which explains details about PrimerSeq to the user"""

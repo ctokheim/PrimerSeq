@@ -142,14 +142,17 @@ def mkdir_tmp():
     if not os.path.isdir(config_options['tmp'] + '/indiv_isoforms'): os.mkdir(config_options['tmp'] + '/indiv_isoforms')
 
 
-def primer_coordinates(p3_output, strand, tar, up, down):
+def primer_coordinates(p3_output, strand, tar, up, down, use_target=True):
     '''
     This function parses the .Primer3 file to find the primer coordinates on
     the genome.
     '''
     # get position information
     (left_primer_offset, left_primer_length), (right_primer_offset, right_primer_length) = map(int, p3_output['PRIMER_LEFT_0'].split(',')), map(int, p3_output['PRIMER_RIGHT_0'].split(','))
-    target_start, target_end = utils.get_pos(tar)
+    if use_target:
+        target_start, target_end = utils.get_pos(tar)
+    else:
+        target_start, target_end = 0, 0  # dummy values
     upstream_start, upstream_end = utils.get_pos(up)
     downstream_start, downstream_end = utils.get_pos(down)
     my_chr = utils.get_chr(tar)
@@ -203,16 +206,27 @@ def primer3(options, primer3_options):
             ####################### Primer3 Parameter Configuration###########
             P3_FILE_FLAG = '1'
             PRIMER_EXPLAIN_FLAG = '1'
-            PRIMER_THERMODYNAMIC_PARAMETERS_PATH = config_options['primer3'] + '/src/primer3_config/'
+            PRIMER_THERMODYNAMIC_PARAMETERS_PATH = os.path.join(config_options['primer3'],
+                                                                'src/primer3_config/')
             SEQUENCE_ID = tar  # use the 'chr:start-stop' format for the sequence ID in primer3
             #SEQUENCE_TEMPLATE = flanking_info[z][UPSTREAM_Seq] + flanking_info[z][TARGET_SEQ].lower() + flanking_info[z][DOWNSTREAM_SEQ]
             #SEQUENCE_TARGET = str(len(flanking_info[z][UPSTREAM_Seq]) + 1) + ',' + str(len(flanking_info[z][TARGET_SEQ]))
-            SEQUENCE_TEMPLATE = str(flanking_info[z][UPSTREAM_Seq]).upper() + str(flanking_info[z][TARGET_SEQ]).lower() + str(flanking_info[z][DOWNSTREAM_SEQ]).upper()
-            SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,' + str(len(flanking_info[z][UPSTREAM_Seq])) + ',' + str(len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ])) + ',' + str(len(flanking_info[z][DOWNSTREAM_SEQ]))
+            # SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,' + str(len(flanking_info[z][UPSTREAM_Seq])) + ',' + str(len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ])) + ',' + str(len(flanking_info[z][DOWNSTREAM_SEQ]))
+            SEQUENCE_TEMPLATE = '%s%s%s' % (str(flanking_info[z][UPSTREAM_Seq]).upper(),
+                                            str(flanking_info[z][TARGET_SEQ]).lower(),
+                                            str(flanking_info[z][DOWNSTREAM_SEQ]).upper())
+            SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,%d,%d,%d' % (len(flanking_info[z][UPSTREAM_Seq]),
+                                                                  len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ]),
+                                                                  len(flanking_info[z][DOWNSTREAM_SEQ]))
+            # SEQUENCE_TEMPLATE = '%s%s' % (str(flanking_info[z][UPSTREAM_Seq]).upper(),
+            #                               str(flanking_info[z][DOWNSTREAM_SEQ]).upper())
+            # SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,%d,%d,%d' % (len(flanking_info[z][UPSTREAM_Seq]),
+            #                                                       len(flanking_info[z][UPSTREAM_Seq]),
+            #                                                       len(flanking_info[z][DOWNSTREAM_SEQ]))
             #############################################################
 
             ####################### Write jobs_ID.conf##################
-            with open(config_options['tmp'] + '/' + jobs_ID + '.conf', 'w') as outfile:
+            with open(os.path.join(config_options['tmp'], jobs_ID + '.conf'), 'w') as outfile:
                 # hard coded options
                 outfile.write('SEQUENCE_ID=' + SEQUENCE_ID + '\n')
                 outfile.write('SEQUENCE_TEMPLATE=' + SEQUENCE_TEMPLATE + '\n')
@@ -257,9 +271,8 @@ def primer3(options, primer3_options):
                 primer3_coords = primer_coordinates(primer3_dict, flanking_info[z][STRAND],
                                                     flanking_info[z][EXON_TARGET],
                                                     flanking_info[z][UPSTREAM_TARGET],
-                                                    flanking_info[z][DOWNSTREAM_TARGET])
-                # skipping_size_list = [str(int(j) + Primer3_PRIMER_PRODUCT_SIZE) for j in flanking_info[z][ALL_PATHS].skip_lengths]
-                # inclusion_size_list = [str(int(k) + Primer3_PRIMER_PRODUCT_SIZE) for k in flanking_info[z][ALL_PATHS].inc_lengths]
+                                                    flanking_info[z][DOWNSTREAM_TARGET],
+                                                    use_target=True)
                 flanking_info[z][ALL_PATHS].set_all_path_lengths(map(utils.get_pos, primer3_coords.split(';')))
                 skipping_size_list = flanking_info[z][ALL_PATHS].skip_lengths
                 inclusion_size_list = flanking_info[z][ALL_PATHS].inc_lengths
@@ -349,11 +362,11 @@ def delete_tmp_files(opts):
         os.remove(f)
 
     # remove primer3 files
-    for f in glob.glob(config_options['tmp'] + '/*.Primer3'):
+    for f in glob.glob(os.path.join(config_options['tmp'], '*.Primer3')):
         os.remove(f)
 
     # delete '.conf' input files for primer3
-    for f in glob.glob(config_options['tmp'] + '/*.conf'):
+    for f in glob.glob(os.path.join(config_options['tmp'], '*.conf')):
         os.remove(f)
 
 
