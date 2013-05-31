@@ -180,7 +180,6 @@ def primer3(options, primer3_options):
     It then designs primers by calling primer3. Next it parses the primer3 output and outputs the final results to a file. The output file
     is then emailed to the designated address in the command line parameters.
     """
-    jobs_ID = options['job_id']  # will remove this line
 
     # tmp directory
     mkdir_tmp()  # make any necessary tmp directories
@@ -194,7 +193,7 @@ def primer3(options, primer3_options):
     STRAND, EXON_TARGET, PSI_TARGET, UPSTREAM_TARGET, PSI_UPSTREAM, DOWNSTREAM_TARGET, PSI_DOWNSTREAM, ALL_PATHS, UPSTREAM_Seq, TARGET_SEQ, DOWNSTREAM_SEQ, GENE_NAME = range(12)
     output_list = []
     for z in range(len(flanking_info)):
-        jobs_ID = str(z)  # base file name for primer3 output
+        jobs_ID = str(z+1)  # base file name for primer3 output
         # no flanking exon information case
         if len(flanking_info[z]) == 1:
             logging.debug(flanking_info[z][0])
