@@ -215,3 +215,23 @@ def get_isoforms_and_counts(file_path):
     with open(file_path) as handle:
         data = json.load(handle)
     return data['path'], data['counts']
+
+def get_seq_from_list(chr_seq, strand, pos_list):
+    """
+    chr_seq: pygr chromosome object (can slice to get sequence)
+    strand: '+' or '-'
+    pos_list: [(start1, end1), (start2, end2), ...]
+    Returns the sequence of each position as a concatenated string that
+    goes upstream -> downstream.
+    """
+    sorted_pos = sorted(pos_list, key=lambda x: (x[0], x[1]))
+    if strand == '-':
+        sorted_pos = reversed(sorted_pos)
+
+    seq = ''
+    for start, end in sorted_pos:
+        if strand == '+':
+            seq += str(chr_seq[start:end]).lower()
+        else:
+            seq += str(-chr_seq[start:end]).lower()
+    return seq

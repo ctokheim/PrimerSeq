@@ -142,7 +142,7 @@ def mkdir_tmp():
     if not os.path.isdir(config_options['tmp'] + '/indiv_isoforms'): os.mkdir(config_options['tmp'] + '/indiv_isoforms')
 
 
-def primer_coordinates(p3_output, strand, tar, up, down, use_target=True):
+def primer_coordinates(p3_output, strand, my_chr, tar, up, down, use_target=True):
     '''
     This function parses the .Primer3 file to find the primer coordinates on
     the genome.
@@ -150,12 +150,12 @@ def primer_coordinates(p3_output, strand, tar, up, down, use_target=True):
     # get position information
     (left_primer_offset, left_primer_length), (right_primer_offset, right_primer_length) = map(int, p3_output['PRIMER_LEFT_0'].split(',')), map(int, p3_output['PRIMER_RIGHT_0'].split(','))
     if use_target:
-        target_start, target_end = utils.get_pos(tar)
+        target_start, target_end = tar
     else:
         target_start, target_end = 0, 0  # dummy values
-    upstream_start, upstream_end = utils.get_pos(up)
-    downstream_start, downstream_end = utils.get_pos(down)
-    my_chr = utils.get_chr(tar)
+    upstream_start, upstream_end = up
+    downstream_start, downstream_end = down
+    # my_chr = utils.get_chr(tar)
     # get position of primers
     if strand == '+':
         tmp = upstream_start + left_primer_offset
@@ -201,6 +201,7 @@ def primer3(options, primer3_options):
             output_list.append(flanking_info[z])  # write problem msg
         # has flanking exon information case
         else:
+            genome_chr = options['fasta'][flanking_info[z][ALL_PATHS].chr]
             tar = options['target'][z][1][0]  # flanking_info[z][1]  # target interval (used for print statements)
             tar_id = options['target'][z][0]
             ####################### Primer3 Parameter Configuration###########
@@ -212,17 +213,28 @@ def primer3(options, primer3_options):
             #SEQUENCE_TEMPLATE = flanking_info[z][UPSTREAM_Seq] + flanking_info[z][TARGET_SEQ].lower() + flanking_info[z][DOWNSTREAM_SEQ]
             #SEQUENCE_TARGET = str(len(flanking_info[z][UPSTREAM_Seq]) + 1) + ',' + str(len(flanking_info[z][TARGET_SEQ]))
             # SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,' + str(len(flanking_info[z][UPSTREAM_Seq])) + ',' + str(len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ])) + ',' + str(len(flanking_info[z][DOWNSTREAM_SEQ]))
-            SEQUENCE_TEMPLATE = '%s%s%s' % (str(flanking_info[z][UPSTREAM_Seq]).upper(),
-                                            str(flanking_info[z][TARGET_SEQ]).lower(),
-                                            str(flanking_info[z][DOWNSTREAM_SEQ]).upper())
-            SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,%d,%d,%d' % (len(flanking_info[z][UPSTREAM_Seq]),
-                                                                  len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ]),
-                                                                  len(flanking_info[z][DOWNSTREAM_SEQ]))
-            # SEQUENCE_TEMPLATE = '%s%s' % (str(flanking_info[z][UPSTREAM_Seq]).upper(),
-            #                               str(flanking_info[z][DOWNSTREAM_SEQ]).upper())
-            # SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,%d,%d,%d' % (len(flanking_info[z][UPSTREAM_Seq]),
-            #                                                       len(flanking_info[z][UPSTREAM_Seq]),
-            #                                                       len(flanking_info[z][DOWNSTREAM_SEQ]))
+            if options['short_isoform']:
+                # this option uses the shortest available isoform for designing primers
+                shortest_isoform = flanking_info[z][ALL_PATHS].get_shortest_path()
+                middle_sequence = utils.get_seq_from_list(genome_chr,
+                                                          flanking_info[z][STRAND],
+                                                          shortest_isoform[1:-1])
+                SEQUENCE_TEMPLATE = '%s%s%s' % (str(flanking_info[z][UPSTREAM_Seq]).upper(),
+                                                middle_sequence,
+                                                str(flanking_info[z][DOWNSTREAM_SEQ]).upper())
+                SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,%d,%d,%d' % (len(flanking_info[z][UPSTREAM_Seq]),
+                                                                      len(flanking_info[z][UPSTREAM_Seq]) + len(middle_sequence),
+                                                                      len(flanking_info[z][DOWNSTREAM_SEQ]))
+                middle_pos = (0, len(middle_sequence))
+            else:
+                # this uses upstream flanking exon, target exon, and downstream flanking exon to design primers
+                SEQUENCE_TEMPLATE = '%s%s%s' % (str(flanking_info[z][UPSTREAM_Seq]).upper(),
+                                                str(flanking_info[z][TARGET_SEQ]).lower(),
+                                                str(flanking_info[z][DOWNSTREAM_SEQ]).upper())
+                SEQUENCE_PRIMER_PAIR_OK_REGION_LIST = '0,%d,%d,%d' % (len(flanking_info[z][UPSTREAM_Seq]),
+                                                                      len(flanking_info[z][UPSTREAM_Seq]) + len(flanking_info[z][TARGET_SEQ]),
+                                                                      len(flanking_info[z][DOWNSTREAM_SEQ]))
+                middle_pos = utils.get_pos(flanking_info[z][EXON_TARGET])
             #############################################################
 
             ####################### Write jobs_ID.conf##################
@@ -268,10 +280,12 @@ def primer3(options, primer3_options):
                 # get info about product sizes
                 target_exon_len = len(flanking_info[z][TARGET_SEQ])
                 Primer3_PRIMER_PRODUCT_SIZE = int(primer3_dict['PRIMER_PAIR_0_PRODUCT_SIZE']) - target_exon_len
-                primer3_coords = primer_coordinates(primer3_dict, flanking_info[z][STRAND],
-                                                    flanking_info[z][EXON_TARGET],
-                                                    flanking_info[z][UPSTREAM_TARGET],
-                                                    flanking_info[z][DOWNSTREAM_TARGET],
+                primer3_coords = primer_coordinates(primer3_dict, flanking_info[z][STRAND], flanking_info[z][ALL_PATHS].chr,
+                                                    # utils.get_pos(flanking_info[z][EXON_TARGET]),
+                                                    # (0, len(middle_sequence)),
+                                                    middle_pos,  # either the target exon or a dummy pos for using shortest isoform
+                                                    utils.get_pos(flanking_info[z][UPSTREAM_TARGET]),
+                                                    utils.get_pos(flanking_info[z][DOWNSTREAM_TARGET]),
                                                     use_target=True)
                 flanking_info[z][ALL_PATHS].set_all_path_lengths(map(utils.get_pos, primer3_coords.split(';')))
                 skipping_size_list = flanking_info[z][ALL_PATHS].skip_lengths
@@ -281,7 +295,6 @@ def primer3(options, primer3_options):
                 # left_seq = Sequence(primer3_dict['PRIMER_LEFT_0_SEQUENCE'], 'left')
                 # right_seq = Sequence(primer3_dict['PRIMER_RIGHT_0_SEQUENCE'], 'right')
                 # forward_seq, reverse_seq = (-right_seq, -left_seq) if str(flanking_info[z][STRAND]) == '-' else (left_seq, right_seq)   # reverse complement sequence
-                genome_chr = options['fasta'][flanking_info[z][ALL_PATHS].chr]
                 my_strand = flanking_info[z][STRAND]
                 forward_pos, reverse_pos = map(utils.get_pos, primer3_coords.split(';')) if flanking_info[z][STRAND] == '+' else map(utils.get_pos, reversed(primer3_coords.split(';')))
                 forward_seq = genome_chr[forward_pos[0]:forward_pos[1]] if my_strand == '+' else -genome_chr[forward_pos[0]:forward_pos[1]]

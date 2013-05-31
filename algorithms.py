@@ -263,3 +263,17 @@ class AllPaths(object):
             else:
                 skip_length.append(utils.calc_product_length(path, primer_coords))  # length of everything but target exon and flanking constitutive exons
         self.inc_lengths, self.skip_lengths = list(set(inc_length)), list(set(skip_length))
+
+    def get_shortest_path(self):
+        """
+        Returns the shortest isoform, this could be a skipping isoform or an
+        inclusion isoform.
+        """
+        min_len = float('inf')
+        shortest_tx = []
+        for tx in self.tx_paths:
+            tx_len = sum([end - start for start, end in tx[1:-1]])  # this line won't work for retained introns
+            if tx_len < min_len:
+                shortest_tx = tx
+                min_len = tx_len
+        return shortest_tx
