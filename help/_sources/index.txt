@@ -193,6 +193,7 @@ PrimerSeq saves results to the text file you specify immediately after primer de
 * **Minimum Flanking PSI:** minimum inclusion level where a primer is allowed to be placed on that exon
 * **Splice Junction:** source for defining exon junctions
 * **Gene ID:** flag for whether the GTF has a valid Gene ID
+* **Shortest isoform:** design primers using the shortest isoform. This means product length restrictions (see Edit->Primer3) will effectively cause a minimum size for all isoforms.
 * **Keep Temporary:** flag for keeping temporary files created when running PrimerSeq
 * **Read Threshold:** minimum read count necessary to define a novel junction from RNA-Seq
 * **Anchor Length:** minimum number of bases on both sides of a junction for a read to be considered valid
