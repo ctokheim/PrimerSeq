@@ -144,6 +144,7 @@ class PlotDialog(wx.Dialog):
         pub.subscribe(self.on_plot_error, "plot_error")
 
     def on_plot_error(self, msg):
+        """Called if exception occurs during running"""
         # self.parent.update_after_error((None,))
         dlg = wx.MessageDialog(self, 'You likely have mistyped a BigWig file.', style=wx.OK | wx.ICON_ERROR)
         dlg.ShowModal()
@@ -152,6 +153,7 @@ class PlotDialog(wx.Dialog):
         pass  # prevent error on trying to call method
 
     def cancel_button_event(self, event):
+        """Cancel button event handler"""
         self.Destroy()
         event.Skip()
 
@@ -180,6 +182,7 @@ class PlotDialog(wx.Dialog):
             self.list.SetItemData(index, i)
 
     def on_plot_button(self, event):
+        """Event handler for plot button"""
         if not self.target_combo_box.GetValue():
             dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
@@ -228,6 +231,10 @@ class PlotDialog(wx.Dialog):
                                           gene_name))
 
     def generate_plots(self, tgt_id, target_pos, plt_domain, bigwig, out_file, gene_name):
+        """
+        Generates both the depth plot and drawing of AS event. This method is threaded
+        to prevent it locking the GUI.
+        """
         # generate read depth plot
         opts = {'bigwig': bigwig,
                 'position': plt_domain,
@@ -287,6 +294,7 @@ class PlotDialog(wx.Dialog):
         logging.debug('Finished creating read depth plot.')
 
     def plot_update(self, msg):
+        """Does housekeeping after finishing and then displays the plot"""
         self.plot_button.SetLabel('Plot')
         self.plot_button.Enable()
 
@@ -308,6 +316,7 @@ class PlotDialog(wx.Dialog):
 
 
 class EvaluateASEventDialog(wx.Dialog):
+    """EvaluateASEventDialog is a dialog that enables users to see pooled plot results"""
     def __init__(self, parent, id, title, output_file, text=''):
         wx.Dialog.__init__(self, parent, id, title, size=(300, 100), style=wx.DEFAULT_DIALOG_STYLE)
 
@@ -369,6 +378,7 @@ class EvaluateASEventDialog(wx.Dialog):
         pass  # prevent error on trying to call method
 
     def cancel_button_event(self, event):
+        """Event handler for cancel button"""
         self.Destroy()
         event.Skip()
 
@@ -421,6 +431,7 @@ class EvaluateASEventDialog(wx.Dialog):
                                           gene_name))
 
     def generate_plots(self, tgt_id, target_pos, plt_domain, bigwig, out_file, gene_name):
+        """Threaded method to generate figures for depth plot and drawing of AS event"""
         # generate isoform drawing
         opts = {'json': primer.config_options['tmp'] + '/isoforms/' + tgt_id + '.json',
                 'output': primer.config_options['tmp'] + '/' + 'draw/' + tgt_id + '.png',
@@ -1391,6 +1402,7 @@ class SavePlotDialog(wx.Dialog):
         self.save_plot_button.Disable()
 
     def generate_index_html(self):
+        """Generate the main web page (index.html) for the html output"""
         # start creating a index.html web page
         index_html = SavePlotsHTML()
         index_html.add_heading('Alternative Splicing Events')
@@ -1432,10 +1444,12 @@ class SavePlotDialog(wx.Dialog):
             handle.write(str(index_html))
 
     def cancel_button_event(self, event):
+        """Event handler for cancel button"""
         self.Destroy()
         event.Skip()
 
     def on_directory_choice(self, event):
+        """Handles choice of output directory by the user"""
         dlg = wx.DirDialog(self, message='Choose an output directory')
         # if they press ok
         if dlg.ShowModal() == wx.ID_OK:
@@ -1537,6 +1551,7 @@ class SavePlotDialog(wx.Dialog):
 
 
 class Primer3PathDialog(wx.Dialog):
+    """This class handles configuring the path to Primer3 and to the Primer3 configuration file"""
     def __init__(self, parent, id, title, text=''):
         wx.Dialog.__init__(self, parent, id, title, size=(400, 125), style=wx.DEFAULT_DIALOG_STYLE)
 

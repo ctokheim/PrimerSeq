@@ -99,6 +99,9 @@ def call_primer3(target_string, jobs_ID):
     """
     Does the actual call to primer3. Will raise a CalledProcessError if primer3
     exits with a non-zero exit status.
+
+    :param str jobs_ID: basename of output file for Primer3
+    :param str target_string: coordinate of target exon (only for logging purposes)
     """
     logging.debug('Calling primer3 for %s . . .' % target_string)
     os.chdir(config_options['tmp'])  # make sure primer3 files occur in tmp dir
@@ -115,6 +118,8 @@ def read_primer3(path):
     """
     Read the output from primer3_core into a dictionary containing
     the key:value relationship for the output tags.
+
+    :param str path: path to primer3 configuration file (default: primer3.txt)
     """
     primer3_dict = {}
     # read primer3 file
@@ -320,7 +325,12 @@ def primer3(options, primer3_options):
 
 
 def main(options):
-    """Reads in primer3 options, starts logging, and then calls the primer3 function to run primer3"""
+    """
+    Reads in primer3 options, starts logging, and then calls the :func:`primer3`
+    function to run primer3.
+
+    :param dict options: parameters for running PrimerSeq
+    """
 
     ##### Getting Start Time ######
     logging.debug('Start the program with [%s]', ' '.join(sys.argv))
@@ -359,7 +369,12 @@ def main(options):
 
 
 def delete_tmp_files(opts):
-    """Delete Primer3 files that clutter the tmp directory"""
+    """
+    Delete Primer3 files that clutter the tmp directory. Users must select the
+    keep temporary option in the GUI to prevent deletion of the LARGE SAM files.
+
+    :param dict opts: parameters for running PrimerSeq
+    """
     # delete SAM files
     if not opts['keep_temp']:
         for f in glob.glob(os.path.join(config_options['tmp'], 'sam/*.sam')):
@@ -398,6 +413,9 @@ class ValidateRnaseq(argparse.Action):
 
 
 class ValidateCutoff(argparse.Action):
+    """
+    Make sure PSI cutoff is between 0 and 1 since it is a percentage
+    """
     def __call__(self, parser, namespace, values, option_string=None):
         # if error print help and exit
         if 0 <= values <= 1:

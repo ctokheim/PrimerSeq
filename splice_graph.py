@@ -79,6 +79,7 @@ class SpliceGraph(object):
             self.graph = None
 
     def get_graph(self):
+        """getter for self.graph"""
         return self.graph
 
     def set_graph_as_annotation(self, annotation):

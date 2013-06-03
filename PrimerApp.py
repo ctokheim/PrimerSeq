@@ -48,6 +48,10 @@ import datetime
 
 
 def handle_uncaught_exceptions(t, ex, tb):
+    """
+    Should catch all uncaught exceptions so that an alert dialog can be
+    displayed to the user so that they know an error happened
+    """
     # traceback.print_tb(tb)  # print traceback to stdout so I can debug
     logging.debug('Error: ' + str(t) + str(ex))
     logging.debug('Traceback:\n' + ''.join(traceback.format_list(traceback.extract_tb(tb))))
@@ -60,6 +64,8 @@ def handle_uncaught_exceptions(t, ex, tb):
 
 
 class PrimerFrame(wx.Frame):
+    """Top level frame in my application."""
+
     def __init__(self, *args, **kwds):
         # begin wxGlade: PrimerFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE ^ wx.MAXIMIZE_BOX
@@ -157,6 +163,7 @@ class PrimerFrame(wx.Frame):
         self.__set_properties()
         self.__do_layout()
 
+        # bind event handlers to different events (IDs represent events)
         self.Bind(wx.EVT_MENU, self.on_help, id=help_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_edit_primer3_path, id=path_id)  # used to specify id as -1
         self.Bind(wx.EVT_MENU, self.on_load_example, id=load_ex_id)  # used to specify id as -1
@@ -532,6 +539,11 @@ class PrimerFrame(wx.Frame):
         """
         Loads FASTA into PrimerSeq. Uses Pygr's SequenceFileDB object to index the FASTA file
         so that subsequent loads occur almost instantly while still maintaining random access.
+        Indexing is preformed within a thread to prevent the GUI from locking.
+
+        :param str filename: full path to fasta
+        :param str filename_without_path: filename without full path (for display purposes)
+        :param bool use_dlg: flag for using a pop up dialog
         """
         try:
             # set the fasta attribute
@@ -566,7 +578,14 @@ class PrimerFrame(wx.Frame):
         event.Skip()
 
     def set_gtf(self, filename, filename_without_path, use_dlg=True):
-        """Loads exon features from GTF file into a python data structure."""
+        """
+        Loads exon features from GTF file into a python data structure. Uses a threaded call
+        to :func:`~primer.gene_annotation_reader`.
+
+        :param str filename: full path to GTF
+        :param str filename_without_path: filename without full path (for display purposes)
+        :param bool use_dlg: flag for using a pop up dialog
+        """
         # set the gtf attribute
         if use_dlg:
             self.load_progress = cd.CustomDialog(self, -1, 'GTF', 'Loading GTF . . .\n\nThis will take ~1 min.')
@@ -595,6 +614,11 @@ class PrimerFrame(wx.Frame):
         Ultimately uses the SAM-JDK to set the BAM file. The BAM file is not loaded into
         memory. However, if there is no .sorted.bam extension then the user's mapped reads
         will be converted to a BAM file and then is sorted (For large files this will take a long time).
+        Uses a threaded call to :meth:`~PrimerFrame.process_bam`.
+
+        :param str filename: full path to BAM
+        :param str filename_without_path: filename without full path (for display purposes)
+        :param bool use_dlg: flag for using a pop up dialog
         """
         # set the bam attribute
         self.bam = []  # clear bam attribute
@@ -607,7 +631,10 @@ class PrimerFrame(wx.Frame):
                                             attr='bam', label='bam_choice_label', label_text=str(', '.join(filenames_without_path)))
 
     def on_run_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
-        """Event handler for the running PrimerSeq button"""
+        """
+        Event handler for the running PrimerSeq button. Gets all necessary information from
+        GUI to start primer design. Then uses a threaded call to :meth:`~PrimerFrame.run_primer_design`.
+        """
         # alert the user there is missing input
         if self.gtf == [] or self.fasta is None or self.output == '':
             dlg = wx.MessageDialog(self, 'Please fill in all of the required fields.', style=wx.OK)
@@ -676,15 +703,19 @@ class PrimerFrame(wx.Frame):
         self.load_progress.Update(0)
         self.disable_load_buttons()
 
-        # Design primers using a thread otherwise the GUI will lock up
-        # self.current_process = ct.RunPrimerSeqThread(target=primer.main,  # run primer design by calling primer.py's main function
-        #                                              args=(self.options,))
+        # Design primers using a thread, otherwise the GUI will lock up
         self.current_process = ct.RunPrimerSeqThread(target=self.run_primer_design,  # run primer design by calling primer.py's main function
                                                      args=(self.options,))
         event.Skip()
 
     def find_exon(self, coord):
-        """Check if coordinates match a known exon from GTF"""
+        """
+        Check if coordinates match a known exon from GTF. This helps alert
+        the user if they enter bad coordinates.
+
+        :param list coord: a list of coordinates [-chr8:100-1000, ...]
+        :return: a list of booleans of whether coordinate was found in GTF
+        """
         found = [False] * len(coord)
         chr = utils.get_chr(coord[0][1:])
         strand = coord[0][0]
@@ -702,6 +733,8 @@ class PrimerFrame(wx.Frame):
         """
         Performs that actual execution of primer design followed by
         cleaning up some of the files in the tmp directory.
+
+        :param dict opts: user options for running PrimerSeq
         """
         # design primers
         primer.main(opts)
