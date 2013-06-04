@@ -48,13 +48,6 @@ def bellman_ford_longest_path(G, num_nodes, visited, weight='weight'):
     could possibly be generated based on novel edges. Assumes topologically
     sorted with source node as first in topological sort. Topological sort
     version runs in O(n+m) instead of O(nm).
-
-    input:
-        G - a networkx DAG
-        num_nodes - the number of nodes in the entire graph (not just the subgraph)
-        weight - the string that represents edge weight for G
-    output:
-        path - longest path from first node to last
     """
     # initialize variables
     sorted_nodes = sorted(G.nodes())

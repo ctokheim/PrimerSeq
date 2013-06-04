@@ -703,6 +703,8 @@ class AddGeneIdsDialog(wx.Dialog):
 
 
 class InSilicoPcrDialog(wx.Dialog):
+    """Dialog for viewing results of in-silico pcr"""
+
     def __init__(self, parent, id, title, output_file):
         wx.Dialog.__init__(self, parent, id, title,
                            size=(300, 190))
@@ -770,10 +772,16 @@ class InSilicoPcrDialog(wx.Dialog):
         self.Show()
 
     def on_cancel(self, event):
+        """Closes dialog if cancel button pressed"""
         self.Destroy()
         event.Skip()
 
     def on_run(self, event):
+        """
+        Creates a url with associated GET parameters to UCSCs in-silico PCR.
+        Then opens the url in the default web browser so the user can see
+        the results of in-silico PCR.
+        """
         # check user input, alert user if missing data
         if not self.target_combo_box.GetValue() or not self.type_combo_box.GetValue or not self.genome_text_field.GetValue() or not self.max_prod_size_text_field.GetValue() or not self.assembly_text_field.GetValue():
             dlg = wx.MessageDialog(self, 'Please fill in all input fields.', style=wx.OK | wx.ICON_ERROR)
@@ -798,6 +806,11 @@ class InSilicoPcrDialog(wx.Dialog):
 
 
 class DisplayPlotDialog(wx.Dialog):
+    """
+    Simple dialog to display only a single depth plot and isoform drawing.
+    Used by EvaluateASEventDialog.
+    """
+
     def __init__(self, parent, id, title, img_files):
         # call super constructor
         wx.Dialog.__init__(self, parent, id, title,)
