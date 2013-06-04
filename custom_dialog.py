@@ -820,6 +820,11 @@ class DisplayPlotDialog(wx.Dialog):
 
 
 class DisplayMultiplePlotsDialog(wx.Dialog):
+    """
+    Dialog with a scroll bar to display multiple images that otherwise
+    could not fit on the screen. Called after plotting is finished in
+    the PlotDialog object.
+    """
     def __init__(self, parent, id, title, img_files):
         # call super constructor
         wx.Dialog.__init__(self, parent, id, title,)
@@ -829,21 +834,16 @@ class DisplayMultiplePlotsDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         scl_panel = MyScrolledPanel(self, img_files)
         sizer.Add(scl_panel)
-        # # add all images
-        # for i in range(0, len(img_files), 2):
-        #     depth_png = wx.image(img_files[i], wx.bitmap_type_any).converttobitmap()
-        #     draw_png = wx.image(img_files[i+1], wx.bitmap_type_any).converttobitmap()
-        #     draw_bitmap = wx.staticbitmap(self, -1, draw_png, (10, 5), (draw_png.getwidth(), draw_png.getheight()))
-        #     depth_bitmap = wx.staticbitmap(self, -1, depth_png, (10, 5), (depth_png.getwidth(), depth_png.getheight()))
-        #     sizer = wx.boxsizer(wx.vertical)
-        #     sizer.add(depth_bitmap, 0, wx.align_center)
-        #     sizer.Add(draw_bitmap, 0, wx.ALIGN_CENTER)
         self.SetBackgroundColour('white')
         self.SetSizerAndFit(sizer)
         self.Show()
 
 
 class MyScrolledPanel(scrolled.ScrolledPanel):
+    """
+    Scrolled panel (ie it adds a scroll bar) that contains multiple
+    images as wx.StaticBitmap. Only used by DisplayMultiplePlotsDialog.
+    """
     def __init__(self, parent, img_paths):
         scrolled.ScrolledPanel.__init__(self, parent, -1, size=(600, 450))
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -870,6 +870,7 @@ class MyScrolledPanel(scrolled.ScrolledPanel):
 
 
 class SavePlotDialog2(wx.Dialog):
+    """Deprecated version. No longer used"""
     def __init__(self, parent, id, title, opts, text=''):
         wx.Dialog.__init__(self, parent, id, title, size=(400, 300))  # , style=wx.DEFAULT_DIALOG_STYLE)
 
@@ -1225,6 +1226,10 @@ class SavePlotDialog2(wx.Dialog):
 
 
 class SavePlotDialog(wx.Dialog):
+    """
+    Dialog used for saving results as HTML.
+    """
+
     def __init__(self, parent, id, title, opts, text=''):
         wx.Dialog.__init__(self, parent, id, title, size=(400, 320))  # , style=wx.DEFAULT_DIALOG_STYLE)
 
@@ -1332,18 +1337,18 @@ class SavePlotDialog(wx.Dialog):
             self.list.SetItemData(index, i)
 
     def on_finish(self, msg):
-        try:
-            # testing showed this message dialog threw an exception sometimes on windows vista
-            dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
-            dlg.ShowModal()
-        except:
-            # wierd behaviour has some times cause the dialog to fail to display
-            logging.debug('Traceback:\n' + traceback.format_exc())
-        finally:
-            # always reset buttons and open browser
-            self.save_plot_button.SetLabel('Generate Report')
-            self.save_plot_button.Enable()
-            webbrowser.open(os.path.join(self.output_directory, 'index.html'))
+        """
+        Alerts users with a dialog that generating the HTML has finished.
+        Also enables the disabled buttons and opens the index.html in
+        default browser.
+        """
+        # testing showed this message dialog threw an exception sometimes on windows vista
+        dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
+        dlg.ShowModal()
+        # always reset buttons and open browser
+        self.save_plot_button.SetLabel('Generate Report')
+        self.save_plot_button.Enable()
+        webbrowser.open(os.path.join(self.output_directory, 'index.html'))
 
     def _check_directory(self):
         """A simple check if the user specified a output directory"""
@@ -1355,6 +1360,7 @@ class SavePlotDialog(wx.Dialog):
             os.makedirs(self.output_directory)
 
     def on_save_plot(self, event):
+        """Event handler for user saving plots."""
         # check what the user specified as the output directory
         self._check_directory()
 
@@ -1461,6 +1467,7 @@ class SavePlotDialog(wx.Dialog):
             dlg.Destroy()
 
     def generate_plots(self, options, bigwigs, out_dir, titles):
+        """Creates html and plots for each AS event."""
         try:
             handle = open(options['output'], 'r')
             handle.readline()
