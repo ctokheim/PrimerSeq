@@ -273,7 +273,7 @@ def primer3(options, primer3_options):
 
             # checks if no output
             if(primer3_dict.keys().count('PRIMER_LEFT_0_SEQUENCE') == 0):
-                str_params = (tar, os.path.abspath(os.path.join(config_options['primer3_log'], str(z) + '.Primer3')))
+                str_params = (tar, os.path.abspath(os.path.join(config_options['primer3_log'], str(jobs_ID) + '.Primer3')))
                 primer3_problem = 'No Primer3 results for %s. Check %s for more details.' % str_params
                 logging.debug(primer3_problem)
                 output_list.append([primer3_problem])
