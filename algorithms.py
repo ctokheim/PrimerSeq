@@ -103,7 +103,7 @@ class AllPaths(object):
         else:
             raise ValueError('Strand should either be + or -')
 
-    def set_splice_graph(self, sg, component, target):
+    def set_splice_graph_old(self, sg, component, target):
         self.graph = sg.get_graph()
         self.tx_paths = sg.annotation
         self.original_tx_paths = sg.annotation  # tx paths all ways without trimming
@@ -128,7 +128,66 @@ class AllPaths(object):
         self.inc_lengths, self.skip_lengths = [], []  # call set all_path_lengths method
         self.all_path_coordinates = []  # call set_all_path_coordinates method
 
-    def trim_tx_paths(self):
+    def set_splice_graph(self, sg, component, target):
+        """Setter for the splice graph which consists of graph/transcript attributes"""
+        self.graph = sg.get_graph()
+        self.tx_paths = sg.annotation
+        self.original_tx_paths = sg.annotation  # tx paths all ways without trimming
+        self.component = component
+        self.target = target
+        self.sub_graph = nx.subgraph(self.graph, self.component)
+
+        # add novel txs
+        novel_txs = self.all_paths_with_novel_junctions()
+        self.tx_paths += novel_txs
+
+    def all_paths_with_novel_junctions(self):
+        """
+        Create novel isoforms by finding all possible paths that include
+        at least one novel junction.
+        """
+        iter_limit = 10000  # explicitly set error for upper limit of all paths
+        tx_list = []  # store novel isforms
+        known_edges = set([(tx[i], tx[i + 1])
+                          for tx in self.tx_paths
+                          for i in range(len(tx) - 1)])
+        tmp_sub_graph = self.add_dummy_nodes_to_graph(self.sub_graph)
+        tmp_src, tmp_sink = (float('-inf'), float('-inf')), (float('inf'), float('inf'))
+
+        # only add paths that include a novel jct
+        for l, tx in enumerate(nx.all_simple_paths(tmp_sub_graph,
+                                                   source=tmp_src,
+                                                   target=tmp_sink)):
+            # set the maximum number of iterations
+            if l >= iter_limit:
+                raise ValueError('Iteration limit reached.')
+
+            # find all paths with novel edge
+            novel = False
+            # for i in range(len(tx) - 1):
+            for i in range(1, len(tx) - 2):
+                if (tx[i], tx[i + 1]) not in known_edges:
+                    novel = True
+            if novel:
+                tx_list.append(tx[1:-1])
+        return tx_list
+
+    def add_dummy_nodes_to_graph(self, my_graph):
+        """Add a sink and source node to a graph"""
+        # setup variables
+        tmp_graph = my_graph.copy()  # make sure not editing the original graph
+        src_connected_nodes = [node for node in tmp_graph.nodes() if not tmp_graph.predecessors(node)]
+        sink_connected_nodes = [node for node in tmp_graph.nodes() if not tmp_graph.successors(node)]
+
+        # add edges to source and sink node
+        src, sink = (float('-inf'), float('-inf')), (float('inf'), float('inf'))
+        for node in src_connected_nodes:
+            tmp_graph.add_edge(src, node)
+        for node in sink_connected_nodes:
+            tmp_graph.add_edge(node, sink)
+        return tmp_graph
+
+    def trim_tx_paths_old(self):
         '''
         Remove all exons outside the biconnected component.
         '''
@@ -142,6 +201,34 @@ class AllPaths(object):
                 tmp.add(tuple(
                     p[p.index(self.component[0]):p.index(self.component[-1]) + 1]))  # make sure there is no redundant paths
         self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+
+    def trim_tx_paths(self):
+        '''
+        Remove all exons outside the biconnected component.
+        '''
+        self.component = sorted(self.component, key=lambda x: (x[0], x[1]))  # make sure it is sorted
+
+        # trim tx_paths to only contain paths within component_subgraph
+        tmp = set()
+        for p in self.tx_paths:
+            # make sure this tx path has the biconnected component
+            tmp_path = self._get_sub_tx(p)
+            if len(tmp_path) > 1:
+                tmp.add(tuple(
+                    tmp_path))
+                    # p[p.index(self.component[0]):p.index(self.component[-1]) + 1]))  # make sure there is no redundant paths
+        self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+
+    def _get_sub_tx(self, path):
+        sub_path = []
+        for p in path:
+            if p in self.component:
+                if sub_path and not self.sub_graph.has_edge(sub_path[-1], p):
+                    return []
+                sub_path.append(p)
+            elif len(sub_path) > 1:
+                return sub_path
+        return sub_path
 
     def trim_tx_paths_using_primers(self, first_primer, second_primer, first_exon, second_exon):
         """

@@ -88,10 +88,17 @@ class ExonSeek(object):
         """
         Progressively step away from the target exon to find a sufficient constitutive exon
         """
+        psi_list = []
         for exon in possible_exons:
             psi = mem.estimate_psi(exon, paths, counts)
+            psi_list.append(psi)
             if psi >= self.cutoff:
                 return exon, psi
+
+        # If code reaches this point then there was no flanking exon that met
+        # the self.cutoff criteria. Raise utils.PrimerSeqError to indicate failure.
+        raise utils.PrimerSeqError('A sufficiently high included flanking exon could '
+                                   'not be found (max: %.3f, cutoff: %.3f)' % (max(psi_list), self.cutoff))
 
     def two_biconnected_case(self):
         '''
