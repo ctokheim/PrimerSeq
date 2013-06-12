@@ -658,9 +658,20 @@ class PrimerFrame(wx.Frame):
             dlg.ShowModal()
             return
 
-        # make sure exons actually exist in GTF before preceeding
+        # make sure exons actually exist in GTF and that upstream/dowstream exons are in correct orderbefore preceeding
         bad_coordinate = []
         for c in coordinates:
+            if len(c) == 3:
+                # check order of upstream and downstream if user specified flanking exons
+                upstream_start = utils.get_start_pos(c[1])  # upstream start
+                downstream_start = utils.get_start_pos(c[2]) # downstream start
+                c_strand = c[0][0]  # strand
+                if (c_strand == '+' and upstream_start > downstream_start) or (c_strand == '-' and upstream_start < downstream_start):
+                    dlg = wx.MessageDialog(self, 'It appears you have incorrectly ordered the upstream and downstream exon.'
+                                           ' Since you have indicated %s strand, the order of exon %s should come after %s.' % (c_strand, c[1], c[2])
+                                           , style=wx.OK)
+                    dlg.ShowModal()
+                    return
             found_ex = self.find_exon(c)
             bad_coordinate += [f == False for f in found_ex]
         if (len(coordinates) == 1 and any(bad_coordinate)) or (not all(bad_coordinate) and any(bad_coordinate)):

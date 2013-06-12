@@ -160,7 +160,7 @@ class AllPaths(object):
                                                    target=tmp_sink)):
             # set the maximum number of iterations
             if l >= iter_limit:
-                raise ValueError('Iteration limit reached.')
+                raise utils.PrimerSeqError('Iteration limit reached in all paths algorithm.')
 
             # find all paths with novel edge
             novel = False
