@@ -40,6 +40,7 @@ import custom_dialog as cd
 import view_output as vo
 import read_counts as rc
 import utils
+import platform
 
 # logging imports
 import traceback
@@ -185,9 +186,13 @@ class PrimerFrame(wx.Frame):
 
         self.view_output_frame = None  # No primers have been designed yet
 
-        self.my_icon = wx.EmptyIcon()
-        self.my_icon.CopyFromBitmap(wx.Bitmap("PrimerSeq.ico", wx.BITMAP_TYPE_ANY))
-        self.SetIcon(self.my_icon)
+        try:
+            self.my_icon = wx.EmptyIcon()
+            self.my_icon.CopyFromBitmap(wx.Bitmap("PrimerSeq.ico", wx.BITMAP_TYPE_ANY))
+            self.SetIcon(self.my_icon)
+        except:
+            # skip if icon causes problems
+            pass
 
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
         pub.subscribe(self.update_after_dialog, "update")
@@ -400,7 +405,10 @@ class PrimerFrame(wx.Frame):
 
     def on_help(self, event):
         """Open documentation in default webbrowser"""
-        webbrowser.open(os.path.abspath('help/index.html'))
+        if platform.system().lower() == 'darwin':
+            os.system("open /Applications/Safari.app help/index.html")
+        else:
+            webbrowser.open(os.path.abspath('help/index.html'))
 
     def on_add_genes(self, event):
         """UCSC add Gene IDs event handler"""
@@ -424,9 +432,17 @@ class PrimerFrame(wx.Frame):
         '''Try to open primer3_manual.htm in a webbrowser. '''
         primer3_path = primer.config_options['primer3']
         if primer3_path == '../primer3':
-            webbrowser.open(os.path.abspath('primer3/primer3_manual.htm'))
+            abs_path = os.path.abspath('primer3/primer3_manual.htm')
+            if platform.system().lower() == 'darwin':
+                os.system("open /Applications/Safari.app %s" % abs_path)
+            else:
+                webbrowser.open(abs_path)
         else:
-            webbrowser.open(os.path.abspath(primer.config_options['primer3'] + '/primer3_manual.htm'))
+            abs_path = os.path.abspath(primer.config_options['primer3'] + '/primer3_manual.htm')
+            if platform.system().lower() == 'darwin':
+                os.system("open /Applications/Safari.app %s" % abs_path)
+            else:
+                webbrowser.open(abs_path)
 
     def update_after_dialog(self, msg):
         '''

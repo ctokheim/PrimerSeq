@@ -36,7 +36,8 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.output_filename = opts['output']  # separate attribute for legacy reasons
 
         # ToolBar at the top of the window
-        toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
+        # toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
+        toolbar = self.CreateToolBar(wx.TB_HORIZONTAL | wx.NO_BORDER)
         toolbar.SetToolBitmapSize(size=(24, 24))
         plot_id = wx.NewId()
         toolbar.AddSimpleTool(plot_id, self.get_bmp(wx.ART_NEW),
@@ -99,9 +100,13 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.SetAutoLayout(True)
 
         # use icon for new frame
-        self.my_icon = wx.EmptyIcon()
-        self.my_icon.CopyFromBitmap(wx.Bitmap("PrimerSeq.ico", wx.BITMAP_TYPE_ANY))
-        self.SetIcon(self.my_icon)
+        try:
+            self.my_icon = wx.EmptyIcon()
+            self.my_icon.CopyFromBitmap(wx.Bitmap("PrimerSeq.ico", wx.BITMAP_TYPE_ANY))
+            self.SetIcon(self.my_icon)
+        except:
+            # skip icon if error occurs
+            pass
 
         # bind toolbar icons
         self.Bind(wx.EVT_TOOL, self.on_insilico_pcr, id=insilico_pcr_id)
@@ -165,7 +170,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
                 self.list.SetItemBackgroundColour(i, "lightgray")
 
         # show how to select an item
-        self.list.SetItemState(5, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+        # self.list.SetItemState(5, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
 
         self.current_selection = 0
 

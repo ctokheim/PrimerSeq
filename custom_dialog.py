@@ -34,6 +34,7 @@ import depth_plot
 import subprocess
 import gtf
 import webbrowser
+import platform
 import ConfigParser
 import re
 import splice_graph as sg
@@ -57,7 +58,7 @@ class CustomDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.empty_text, 0, wx.ALIGN_CENTER)
         sizer.Add(self.text, 0, wx.ALIGN_CENTER)
-        sizer.Add(self.empty_text, 0, wx.ALIGN_CENTER)
+        # sizer.Add(self.empty_text, 0, wx.ALIGN_CENTER)
 
         self.SetSizer(sizer)
         self.Show()
@@ -802,7 +803,10 @@ class InSilicoPcrDialog(wx.Dialog):
                                         reverse=downstream_seq,
                                         target=str(self.type_combo_box.GetValue()),
                                         max_size=int(self.max_prod_size_text_field.GetValue()))
-        webbrowser.open(ucsc_url.get_url())  # open url in webbrowser
+        if platform.system().lower() == 'darwin':
+            os.system("open /Applications/Safari.app %s" % ucsc_url.get_url())
+        else:
+            webbrowser.open(ucsc_url.get_url())  # open url in webbrowser
 
 
 class DisplayPlotDialog(wx.Dialog):
@@ -1005,7 +1009,11 @@ class SavePlotDialog(wx.Dialog):
         # always reset buttons and open browser
         self.save_plot_button.SetLabel('Generate Report')
         self.save_plot_button.Enable()
-        webbrowser.open(os.path.join(self.output_directory, 'index.html'))
+        index_path = os.path.join(self.output_directory, 'index.html')  # path to index.html
+        if platform.system().lower() == 'darwin':
+            os.system("open /Applications/Safari.app %s" % index_path)
+        else:
+            webbrowser.open(index_path)
 
     def _check_directory(self):
         """A simple check if the user specified a output directory"""
