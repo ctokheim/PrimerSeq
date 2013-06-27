@@ -124,11 +124,11 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         self.read_output_file(self.output_filename)
 
     def on_save_plots(self, event):
-        try:
-            dlg = cd.SavePlotDialog(self, -1, "Generate HTML Report", self.options)
-            dlg.ShowModal()
-        except Exception, e:
-            print traceback.format_exc()
+        #try:
+        dlg = cd.SavePlotDialog(self, -1, "Generate HTML Report", self.options)
+        #    dlg.ShowModal()
+        #except Exception, e:
+        #    print traceback.format_exc()
 
     def on_help(self, event):
         dlg = wx.MessageDialog(self, 'Instructions:\n\nUse the tool bar to validate '
@@ -147,7 +147,7 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
     def on_insilico_pcr(self, event):
         dlg = cd.InSilicoPcrDialog(self, -1, "In Silico PCR",
                                    self.output_filename)
-        dlg.ShowModal()
+        # dlg.ShowModal()
 
     def on_plot(self, event):
         cd.PlotDialog(self, -1, 'Plot Results', self.output_filename, self.options)

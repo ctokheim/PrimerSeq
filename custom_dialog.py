@@ -892,7 +892,7 @@ class SavePlotDialog(wx.Dialog):
     """
 
     def __init__(self, parent, id, title, opts, text=''):
-        wx.Dialog.__init__(self, parent, id, title, size=(400, 320))  # , style=wx.DEFAULT_DIALOG_STYLE)
+        wx.Dialog.__init__(self, parent, id, title, size=(400, 320), style=wx.DEFAULT_DIALOG_STYLE)
 
         self.options = opts
         self.output_file = opts['output']
@@ -900,7 +900,7 @@ class SavePlotDialog(wx.Dialog):
         self.data_dir = 'data/'  # directory to place imgs, etc.
 
         self.parent = parent
-        self.text = wx.StaticText(self, -1, text)
+        # self.text = wx.StaticText(self, -1, text)
 
         tID = wx.NewId()
         self.list = utils.MyListCtrl(self, tID,
@@ -981,7 +981,7 @@ class SavePlotDialog(wx.Dialog):
         sizer.SetMinSize((500, 100))
 
         self.Bind(wx.EVT_BUTTON, self.on_save_plot, self.save_plot_button)
-        self.Bind(wx.EVT_BUTTON, self.cancel_button_event, self.cancel_button)
+        self.Bind(wx.EVT_BUTTON, self.on_cancel, self.cancel_button)
         self.Bind(wx.EVT_BUTTON, self.on_directory_choice, self.choose_directory_button)
         self.SetSizer(sizer)
         self.Show()
@@ -1114,7 +1114,7 @@ class SavePlotDialog(wx.Dialog):
         with open(os.path.join(self.output_directory, 'index.html'), 'w') as handle:
             handle.write(str(index_html))
 
-    def cancel_button_event(self, event):
+    def on_cancel(self, event):
         """Event handler for cancel button"""
         self.Destroy()
         event.Skip()
