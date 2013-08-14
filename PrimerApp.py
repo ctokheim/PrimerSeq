@@ -146,6 +146,7 @@ class PrimerFrame(wx.Frame):
         self.gene_id_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Gene ID:")
         self.gene_id_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'Valid', choices=["Valid", "Not Valid"], style=wx.CB_DROPDOWN | wx.TE_READONLY)
         self.design_checkbox = wx.CheckBox(self.primer_notebook_pane_2, -1, "Use shortest isoform to design primers?")
+        self.design_checkbox.SetValue(True)  # default uses shortest isoform to design primers
         self.temp_label = wx.StaticText(self.primer_notebook_pane_2, -1, "Keep Temporary:")
         self.temp_combo_box = wx.ComboBox(self.primer_notebook_pane_2, -1, 'No', choices=["No", "Yes"], style=wx.CB_DROPDOWN | wx.TE_READONLY)
         self.temp_combo_box.SetToolTip(wx.ToolTip('Keep intermediate files'))
