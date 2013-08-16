@@ -16,6 +16,7 @@
 
 import numpy as np
 import logging
+import itertools as it
 
 
 def debug_graph(G):
@@ -32,8 +33,9 @@ def debug_edges(paths, edges):
     for path in paths:
         for i in xrange(len(path) - 1):
             path_edge_set.add((path[i], path[i+1]))
-    print path_edge_set
-    print edges
+    print "PATH EDGES:", path_edge_set
+    print "GRAPH EDGES", edges
+    print "DIFF", set(path_edge_set) ^ set(edges)
 
 
 def construct_read_count_vector(graph, index_to_edge):
@@ -63,8 +65,13 @@ def construct_uncommited_matrix(Y, counts_vec, bcc_paths, edge_to_index):
     for tx_index, path in enumerate(bcc_paths):
         for i in range(len(path) - 1):
             edge = (path[i], path[i + 1])
-            read_count_index = edge_to_index[edge]
-            Y[read_count_index][tx_index] = counts_vec[read_count_index]
+            try:
+                read_count_index = edge_to_index[edge]
+                Y[read_count_index][tx_index] = counts_vec[read_count_index]
+            except KeyError:
+                # sometimes different path trimming methods causes keyerrors
+                # simply just skip cases where this occurs
+                pass
     return Y
 
 

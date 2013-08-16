@@ -324,7 +324,11 @@ def predefined_exons_case(id, target, sGraph, genome, upstream_exon, downstream_
             target_seq, downstream_seq]
 
 
-def calculate_target_psi(target, sg_list, component):
+def calculate_target_psi(target,
+                         sg_list,
+                         component,
+                         up_exon=None,
+                         down_exon=None):
     """
     Calculate psi for the target exon for each bam file. Sometimes there are
     no inc and no skip counts so there will be a divide by zero error. In such
@@ -333,9 +337,17 @@ def calculate_target_psi(target, sg_list, component):
     logging.debug("Calculating psi for each bam file  . . .")
     psi_list = []
     for sg in sg_list:
+        # setup allpaths object
         ap = algs.AllPaths(sg, component, target, chr=sg.chr)
-        ap.trim_tx_paths()
+
+        # trim paths according to if user specified flanking exons
+        if up_exon and down_exon:
+            ap.trim_tx_paths_using_flanking_exons(sg.strand, up_exon, down_exon)
+        else:
+            ap.trim_tx_paths()
         # ap.keep_weakly_connected()  # hack to avoid problems with user specified flanking exons
+
+        # estimate psi
         paths, counts = ap.estimate_counts()
         tmp_inc_count, tmp_skip_count = 0., 0.
         for i, p in enumerate(paths):
@@ -487,7 +499,13 @@ def main(options, args_output='tmp/debug.json'):
             if len(tmp) > 1:
                 # edit target psi value
                 tmp_all_paths = tmp[-4]  # CAREFUL the index for the AllPaths object may change
-                tmp[2] = calculate_target_psi(gene_dict['target'], single_bam_splice_graphs, tmp_all_paths.component)  # CAREFUL index for psi_target may change
+                tmp[2] = calculate_target_psi(gene_dict['target'],
+                                              single_bam_splice_graphs,
+                                              tmp_all_paths.component,
+                                              up_exon=None,
+                                              down_exon=None)
+                                              # up_exon=up_exon,
+                                              # down_exon=down_exon)  # CAREFUL index for psi_target may change
                 tmp.append(gene_name)
 
             # append result to output list

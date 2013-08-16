@@ -16,7 +16,9 @@
 
 '''
 File: exon_seek.py
+
 Author: Collin Tokheim
+
 Description: exon_seek.py holds the ExonSeek class which searches
 for appropriate flanking "constitutive" exons to place primers on.
 '''

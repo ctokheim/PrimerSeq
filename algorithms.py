@@ -263,8 +263,9 @@ class AllPaths(object):
                 elif strand == '-':
                     first_index, second_index = p.index(down_exon), p.index(up_exon)
                 tmp.add(tuple(
-                    p[first_index:second_index + 1]))  # make sure there is no redundant paths
-        self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+                    sorted(p[first_index:second_index + 1], key=lambda x: (x[0], x[1]))))  # make sure there is no redundant paths
+        # self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+        self.tx_paths = list(tmp)
 
     def trim_tx_paths_using_flanking_exons2(self, strand, up_exon, down_exon):
         """Keep TXs with appropriate flanking exons"""
