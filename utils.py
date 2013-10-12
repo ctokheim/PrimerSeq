@@ -182,7 +182,16 @@ class InSilicoPcrUrl(object):
         if target == 'Genome':
             self.target = 'genome'
         elif target == 'UCSC Genes':
-            self.target = self.assembly + 'Kg'
+            # unfortunately the ucsc genes have diff version numbers
+            # for different assemblies. this means the GET parameter input
+            # for wp_target may change based on the species/assembly.
+            assemblyToTxSuffix = {
+                'hg19': 'v14',
+                'hg18': 'Nov08',
+                'mm10': 'v13'
+            }
+            suffix = assemblyToTxSuffix[self.assembly] if self.assembly in assemblyToTxSuffix else ''
+            self.target = self.assembly + 'Kg' + suffix
 
         # base url for ucsc in-silico pcr
         self.base_url = 'http://genome.ucsc.edu/cgi-bin/hgPcr'
