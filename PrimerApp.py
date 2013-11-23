@@ -846,8 +846,13 @@ if __name__ == "__main__":
     # handle all uncaught exceptions
     sys.excepthook = handle_uncaught_exceptions
 
+    if os.path.isdir('PrimerApp.app'):
+        # mac applications are actually directories so
+        # I need to cd into where executable
+        os.chdir('PrimerApp.app/Contents/MacOS')
+
     # define logging file before using logging.debug
-    if not os.path.exists(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
+    if not os.path.isdir(primer.config_options['log']): os.mkdir(primer.config_options['log'])  # make directory to put log files
     log_file = os.path.join(primer.config_options['log'], 'log.PrimerApp.%s.txt' % str(datetime.datetime.now()).replace(':', '.'))
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(message)s',
