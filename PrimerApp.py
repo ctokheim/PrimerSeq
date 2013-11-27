@@ -525,7 +525,8 @@ class PrimerFrame(wx.Frame):
     def on_choose_output_button(self, event):  # wxGlade: PrimerFrame.<event_handler>
         """Event handler for setting output text file"""
         dlg = wx.FileDialog(self, message='Choose your output file',
-                            wildcard='Text file (*.txt)|*.txt')  # open file dialog
+                            wildcard='Text file (*.txt)|*.txt',
+                            style=wx.SAVE | wx.OVERWRITE_PROMPT)  # save file dialog
 
         if dlg.ShowModal() == wx.ID_OK:
             self.set_output(dlg.GetPath(), dlg.GetFilename())
