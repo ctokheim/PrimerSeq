@@ -803,9 +803,6 @@ class InSilicoPcrDialog(wx.Dialog):
                                         reverse=downstream_seq,
                                         target=str(self.type_combo_box.GetValue()),
                                         max_size=int(self.max_prod_size_text_field.GetValue()))
-        # if platform.system().lower() == 'darwin':
-        #    os.system("open /Applications/Safari.app %s" % ucsc_url.get_url())
-        # else:
         webbrowser.open(ucsc_url.get_url())  # open url in webbrowser
 
 
