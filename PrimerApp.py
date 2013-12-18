@@ -336,7 +336,7 @@ class PrimerFrame(wx.Frame):
         sizer_10.Add(sizer_11, 1, wx.EXPAND, 0)
         # sizer_10.Add(sizer_with_checkbox)
         self.primer_notebook_pane_2.SetSizer(sizer_10)
-        self.primer_notebook.AddPage(self.primer_notebook_pane_1, "Important")
+        self.primer_notebook.AddPage(self.primer_notebook_pane_1, "Required")
         self.primer_notebook.AddPage(self.primer_notebook_pane_2, "Optional")
         sizer_1.Add(self.primer_notebook, 1, wx.EXPAND, 0)
         self.SetSizer(sizer_1)
