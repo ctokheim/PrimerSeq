@@ -6,7 +6,7 @@ class AttributeField {
 	String gene_id;
 	String tx_id;
 	String text;
-	
+
 	public AttributeField(String attr){
 		this.text = attr.trim();  // store input for toString method
 		String[] split_string = this.text.split("[ ]*;*[ ]+");
@@ -17,16 +17,17 @@ class AttributeField {
 			next_str = split_string[i+1];  // the value of the associated key
 			if (tmp.toLowerCase().equals("gene_id")){
 				this.gene_id = next_str.replaceAll("\"", "");
+                this.gene_id = this.gene_id.replaceAll(";$", "");
 			}else if (tmp.toLowerCase().equals("transcript_id")){
 				this.tx_id = next_str.replaceAll("\"", "");
 			}
 		}
 	}
-	
+
 	public String getGeneID(){ return this.gene_id; }
-	
+
 	public String getTxID(){ return this.tx_id; }
-	
+
 	// output the unmodified text
 	public String toString(){
 		return this.text;
@@ -38,18 +39,18 @@ class AttributeField {
 class LineData {
 	String[] line;
 	AttributeField attr;
-	
+
 	public LineData(String[] splitted_line) {
 		this.line = splitted_line;
 		this.attr = new AttributeField(this.line[8]);
 		this.line[8] = this.attr.toString();
 	}
-	
+
 	// getter for string array
 	public String[] getLine(){
 		return this.line;
 	}
-	
+
 	// getter for attr
 	public AttributeField getAttr(){
 		return this.attr;
@@ -57,24 +58,24 @@ class LineData {
 }
 
 class SortGtfComparator implements Comparator<Object> {
-	
+
 	public int compare(Object o1, Object o2){
 		LineData l1 = (LineData) o1;
 		LineData l2 = (LineData) o2;
 		String[] line1 = l1.getLine();
 		String[] line2 = l2.getLine();
-		
+
 		// compare chromosome names
 		String seqname1 = (String) line1[0];
 		int seqCompare = seqname1.compareTo((String) line2[0]);
-		
+
 		// compare gene/tx ids
 		AttributeField attr1 = l1.getAttr();
 		AttributeField attr2 = l2.getAttr();
 		try{
 			int geneCompare = attr1.getGeneID().compareTo(attr2.getGeneID());
 			int txCompare = attr1.getTxID().compareTo(attr2.getTxID());
-			
+
 			// comparison logic
 			if(seqCompare < 0){
 				return -1;
@@ -122,7 +123,7 @@ class TabDelimReader {
 			Scanner scan = new Scanner(new File(fname));
 			while(scan.hasNextLine()){
 				tmp_line = scan.nextLine().split("\t");  // hold line data temporarily
-				
+
 				// Ignore lines that are not "exon" features for a speed up in performance
 				if(tmp_line[2].equals("exon")) {
 					this.lines.add(new LineData(tmp_line));
@@ -132,7 +133,7 @@ class TabDelimReader {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public ArrayList<LineData> getLines(){
 		return this.lines;
 	}
@@ -151,10 +152,10 @@ public class SortGtf {
             	stringBuilder.append(separator);
             }
 	    }
-	    return stringBuilder.toString();                           
+	    return stringBuilder.toString();
 	}
-	
-	
+
+
 	public static void main(String[] args){
 		// complain about args
 		if (args.length != 2){
@@ -162,17 +163,17 @@ public class SortGtf {
 			System.out.println("Usage: java -jar SortGtf.jar input.gtf output.gtf");
 			System.exit(1);
 		}
-		
+
 		// Read in and then sort the GTF
 		TabDelimReader inputReader = new TabDelimReader(args[0]);
 		ArrayList<LineData> lines = inputReader.getLines();  // read in GTF (tab-separated)
 		Object[] data = lines.toArray();
 		Arrays.sort(data, new SortGtfComparator()); // sort the data
-		
+
 		// output the sorted gtf
 		try{
 			Formatter output=new Formatter(args[1]);
-			
+
 			String[] dataLine;
 			int i;
 			LineData tmp;
@@ -186,6 +187,6 @@ public class SortGtf {
 		} catch(FileNotFoundException e){
 			e.printStackTrace();
 		}
-		
+
 	}
 }
