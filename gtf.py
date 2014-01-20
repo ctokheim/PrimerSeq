@@ -64,10 +64,71 @@ def sort_gtf(file_name, output):
             write_handle.write(str(gtf_obj))
 
 
+def is_sorted(iterable, compare):
+    """Returns if iterable is sorted given the definition of
+    a compare function"""
+    a, b = tee(iterable)
+    next(b, None)
+    return all(imap(compare, a, b))
+
+
+def gtf_compare(a, b):
+    """compare two lines of a GTF file to see if they are
+    correctly sorted as "a" before "b"."""
+    tmp_list = [a, b]  # proposed sorted order
+    srt_list = sorted(tmp_list, key=lambda x: (x.seqname,
+                                               x.attribute['gene_id'],
+                                               x.attribute['transcript_id'],
+                                               x.start, x.end))  # actual sorted order
+
+    # return flag for whether the two entries were in sorted order
+    flag = (tmp_list == srt_list)
+    return flag
+
+
+def gtf_iter_reader(handle):
+    """Iterator yielding GTF objects."""
+    for gtf_line in csv.reader(handle, delimiter='\t'):
+        yield Gtf(gtf_line)
+
+
+def is_gtf_sorted(file_name):
+    """Returns Boolean for if gtf is sorted."""
+    with open(file_name) as handle:
+        mygtf_reader = gtf_iter_reader(handle)
+        return is_sorted(mygtf_reader, gtf_compare)
+
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='The command line interface for this python file is meant to properly sort a gtf file')
-    parser.add_argument('-g', required=True, dest='gtf', action='store', help='path to gtf file')
-    parser.add_argument('-o', required=True, dest='output', action='store', help='properly sorted gtf output')
+    parser = argparse.ArgumentParser(description="""Either performs proper sorting of GTF for PrimerSeq or checks if GTF is sorted.
+                                     For Sorting GTF:\npython gtf.py -i unsorted.gtf -o sorted.gtf,
+                                     For checking if GTF is sorted:\npython gtf.py -c not_sure_if_sorted.gtf""")
+    parser.add_argument('-i',
+                        type=str,
+                        default='',
+                        dest='gtf',
+                        action='store',
+                        help='path to gtf file to sort')
+    parser.add_argument('-o',
+                        type=str,
+                        default='',
+                        dest='output',
+                        action='store',
+                        help='path name of properly sorted gtf')
+    parser.add_argument('-c',
+                        type=str,
+                        default='',
+                        dest='is_sorted',
+                        action='store',
+                        help='path to gtf file to check if sorted correctly')
     args = parser.parse_args()
 
-    sort_gtf(args.gtf, args.output)  # do the work of sorting
+    if args.gtf and args.output:
+        sort_gtf(args.gtf, args.output)  # do the work of sorting
+    elif args.is_sorted:
+        if is_gtf_sorted(args.is_sorted):
+            print '%s is correctly sorted' % (args.is_sorted)
+        else:
+            print '%s is not correctly sorted. please sort before use.' % (args.is_sorted)
+    else:
+        print 'You must enter either both the -i and -o options or just the -c option.'
