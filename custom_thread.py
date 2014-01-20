@@ -71,11 +71,15 @@ class RunThread(threading.Thread):
         try:
             output = self.tar(*self.args)  # threaded call
 
-            # Only for loading files. Not for when running PrimerSeq.
-            if self.attr and self.label and self.label_text:
-                wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
+            if self.attr == "gtf" and output is None:
+                # special check if GTF is sorted
+                wx.CallAfter(pub.sendMessage, "update_after_unsorted_gtf", (None,))
             else:
-                wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
+                # Only for loading files. Not for when running PrimerSeq.
+                if self.attr and self.label and self.label_text:
+                    wx.CallAfter(pub.sendMessage, "update", ((self.attr, output), (self.label, self.label_text)))
+                else:
+                    wx.CallAfter(pub.sendMessage, "update", (None,))  # need to make this call more elegant
         except:
             logging.debug('Traceback:\n' + traceback.format_exc())
             wx.CallAfter(pub.sendMessage, "update_after_error", (None,))  # need to make this call more elegant

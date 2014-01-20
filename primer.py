@@ -63,6 +63,14 @@ def gene_annotation_reader(file_path, FILTER_FACTOR=2):
             * gene_dict['chr']['My_favorite_gene']['exons'] = the set of exons (nodes)
     """
     # logging.debug('Started reading %s' % file_path)
+
+    # check if GTF file is sorted before reading data
+    logging.debug('Checking if GTF file is sorted  . . .')
+    if not gtf.is_gtf_sorted(file_path):
+        logging.debug('GTF file is not sorted.')
+        return None
+    logging.debug('GTF is sorted.')
+
     # iterate through each gtf feature
     file_input = open(file_path)
     gene_dict = {}

@@ -17,6 +17,7 @@
 import csv
 import re
 import argparse
+from itertools import tee, imap
 
 
 class Gtf(object):

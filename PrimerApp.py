@@ -202,6 +202,7 @@ class PrimerFrame(wx.Frame):
 
         self.gtf, self.bam, self.output, self.fasta = [], [], '', None
         pub.subscribe(self.update_after_dialog, "update")
+        pub.subscribe(self.update_after_unsorted_gtf, "update_after_unsorted_gtf")
         pub.subscribe(self.update_after_run, "update_after_run")
         pub.subscribe(self.update_after_error, "update_after_error")
 
@@ -450,6 +451,15 @@ class PrimerFrame(wx.Frame):
             else:
                 webbrowser.open(abs_path)
 
+    def update_after_unsorted_gtf(self, msg):
+        """Alerts user if their GTF file is not sorted properly"""
+        dlg = wx.MessageDialog(self, 'Your GTF file was not properly sorted. You have two options:\n\n'
+                               '1. Download pre-sorted GTF files from http://sourceforge.net/projects/primerseq/files/GTF/\n'
+                               '2. Sort your GTF file using the menu option Edit->"Sort Gtf"', style=wx.OK)
+        dlg.ShowModal()
+        self.load_progress.Update(100)
+        self.enable_load_buttons()
+
     def update_after_dialog(self, msg):
         '''
         Updates attributes and gui components from a started Process
@@ -659,7 +669,7 @@ class PrimerFrame(wx.Frame):
         GUI to start primer design. Then uses a threaded call to :meth:`~PrimerFrame.run_primer_design`.
         """
         # alert the user there is missing input
-        if self.gtf == [] or self.fasta is None or self.output == '':
+        if not self.gtf or self.fasta is None or self.output == '':
             dlg = wx.MessageDialog(self, 'Please fill in all of the required fields.', style=wx.OK)
             dlg.ShowModal()
             return
