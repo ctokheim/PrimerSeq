@@ -18,6 +18,11 @@
 import anydbm  # probably not necessary since using pyinstaller
 import dbhash  # probably not necessary since using pyinstaller
 
+# set backend to Agg to prevent display/X11 issues
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 # useful imports
 import wx
 # from wx.lib.pubsub import Publisher
