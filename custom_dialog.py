@@ -1028,7 +1028,12 @@ class SavePlotDialog(wx.Dialog):
 
         # make data directory for imgs, etc
         if not os.path.isdir(os.path.join(self.output_directory, self.data_dir)):
-            os.mkdir(os.path.join(self.output_directory, self.data_dir))
+            try:
+                os.mkdir(os.path.join(self.output_directory, self.data_dir))
+            except OSError:
+                # exit if not sufficient privilege to write to directory
+                self.permission_error_dialog()
+                return
 
         # get information from listctrl and make sure user specified data
         counts = self.list.GetItemCount()
@@ -1076,40 +1081,49 @@ class SavePlotDialog(wx.Dialog):
         index_html.add_heading('Alternative Splicing Events')
         index_html.add_text('%d/%d primer designs are successful! ' % (len(self.results), len(self.total_results)))
 
-        # add text file to directory and link from html to it
-        new_output_file = os.path.join(self.output_directory, 'output.txt')
-        if self.output_file != new_output_file:
-            shutil.copy(self.output_file, new_output_file)  # copy the text file
-        index_html.add_text('You can view the entire results ')
-        index_html.add_link('output.txt', 'here')  # add link to text file with results
-        index_html.add_line_break()
-        index_html.add_line_break()
+        try:
+            # add text file to directory and link from html to it
+            new_output_file = os.path.join(self.output_directory, 'output.txt')
+            if self.output_file != new_output_file:
+                shutil.copyfile(self.output_file, new_output_file)  # copy the text file
+            index_html.add_text('You can view the entire results ')
+            index_html.add_link('output.txt', 'here')  # add link to text file with results
+            index_html.add_line_break()
+            index_html.add_line_break()
 
-        # add links to AS events with designed primers
-        for line in self.results:
-            index_html.add_text(line[0] + ', ')
-            index_html.add_link(os.path.join(self.data_dir, line[0] + '.html'),
-                                line[1])  # link to each AS event
-            index_html.add_text(', <i>' + line[-1] + '</i>')  # italicized gene name
+            # add links to AS events with designed primers
+            for line in self.results:
+                index_html.add_text(line[0] + ', ')
+                index_html.add_link(os.path.join(self.data_dir, line[0] + '.html'),
+                                    line[1])  # link to each AS event
+                index_html.add_text(', <i>' + line[-1] + '</i>')  # italicized gene name
 
-            # construct url
-            index_html.add_text(' -- ')
-            ucsc_url = utils.InSilicoPcrUrl(genome=str(self.genome_choice_label.GetValue()),
-                                            assembly=str(self.assembly_choice_label.GetValue()),
-                                            forward=line[4],
-                                            reverse=line[5],
-                                            target='UCSC Genes',
-                                            max_size=4000)
-            index_html.add_link(ucsc_url.get_url(), '<i>In-Silico</i> PCR')  # open url in webbrowser
-            index_html.add_line_break()  # make each link on separate line
+                # construct url
+                index_html.add_text(' -- ')
+                ucsc_url = utils.InSilicoPcrUrl(genome=str(self.genome_choice_label.GetValue()),
+                                                assembly=str(self.assembly_choice_label.GetValue()),
+                                                forward=line[4],
+                                                reverse=line[5],
+                                                target='UCSC Genes',
+                                                max_size=4000)
+                index_html.add_link(ucsc_url.get_url(), '<i>In-Silico</i> PCR')  # open url in webbrowser
+                index_html.add_line_break()  # make each link on separate line
 
-        # Create time stamp
-        index_html.add_line_break()
-        index_html.add_text('Timestamp: ' + str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
+            # Create time stamp
+            index_html.add_line_break()
+            index_html.add_text('Timestamp: ' + str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
 
-        # write list of links to the index.html file
-        with open(os.path.join(self.output_directory, 'index.html'), 'w') as handle:
-            handle.write(str(index_html))
+            # write list of links to the index.html file
+            with open(os.path.join(self.output_directory, 'index.html'), 'w') as handle:
+                handle.write(str(index_html))
+        except IOError:
+            # alert user of likely permission problem
+            self.permission_error_dialog()
+
+    def permission_error_dialog(self):
+        dlg = wx.MessageDialog(self, 'You do not have sufficient privilege to write to this directory.'
+                               'Please choose another directory.', style=wx.OK | wx.ICON_EXCLAMATION)
+        dlg.ShowModal()
 
     def on_cancel(self, event):
         """Event handler for cancel button"""
@@ -1130,36 +1144,33 @@ class SavePlotDialog(wx.Dialog):
 
     def generate_plots(self, options, bigwigs, out_dir, titles):
         """Creates html and plots for each AS event."""
-        try:
-            handle = open(options['output'], 'r')
-            handle.readline()
-            for line in csv.reader(handle, delimiter='\t'):
-                if len(line) <= 1: continue  # skip cases where no good output
-                ID = line[0]
-                start, end = utils.get_pos(line[-2])  # ASM region column
-                chr = utils.get_chr(line[-2])  # ASM region column
-                tgt_pos = utils.get_pos(line[1])
-                plot_domain = utils.construct_coordinate(chr, start, end)
-                # only error msgs and blank lines do not have tabs
-                if len(line) > 1:
-                    # tx_paths, counts, gene = self.get_isforms_and_counts(line, options)
-                    # json_id = int(ID) - 1  # JSON filenames are indexed from zero rather than 1
-                    tx_paths, counts = self.get_count_info(ID)  # get info from json files
-                    gene = line[utils.GENE]  # get gene name from text file
-                    my_html = SavePlotsHTML(style='../style.css')
-                    for index in range(len(tx_paths)):
-                        path, count = tx_paths[index], counts[index]
-                        self.create_plots(ID, index, plot_domain, path, tgt_pos, count, [bigwigs[index]], gene, options['output'], out_dir)
-                        my_html.add_heading(titles[index])
-                        my_html.add_img('%s.%d.depth.png' % (ID, index))
-                        my_html.add_img('%s.%d.isoforms.png' % (ID, index))
-                        my_html.add_line_break()
-                    with open(os.path.join(out_dir, self.data_dir + ID + '.html'), 'wb') as html_writer:
-                        html_writer.write(str(my_html))
-            handle.close()
-            shutil.copy('style.css', out_dir)  # copy css to folder
-        except:
-            print traceback.format_exc()
+        handle = open(options['output'], 'r')
+        handle.readline()
+        for line in csv.reader(handle, delimiter='\t'):
+            if len(line) <= 1: continue  # skip cases where no good output
+            ID = line[0]
+            start, end = utils.get_pos(line[-2])  # ASM region column
+            chr = utils.get_chr(line[-2])  # ASM region column
+            tgt_pos = utils.get_pos(line[1])
+            plot_domain = utils.construct_coordinate(chr, start, end)
+            # only error msgs and blank lines do not have tabs
+            if len(line) > 1:
+                # tx_paths, counts, gene = self.get_isforms_and_counts(line, options)
+                # json_id = int(ID) - 1  # JSON filenames are indexed from zero rather than 1
+                tx_paths, counts = self.get_count_info(ID)  # get info from json files
+                gene = line[utils.GENE]  # get gene name from text file
+                my_html = SavePlotsHTML(style='../style.css')
+                for index in range(len(tx_paths)):
+                    path, count = tx_paths[index], counts[index]
+                    self.create_plots(ID, index, plot_domain, path, tgt_pos, count, [bigwigs[index]], gene, options['output'], out_dir)
+                    my_html.add_heading(titles[index])
+                    my_html.add_img('%s.%d.depth.png' % (ID, index))
+                    my_html.add_img('%s.%d.isoforms.png' % (ID, index))
+                    my_html.add_line_break()
+                with open(os.path.join(out_dir, self.data_dir + ID + '.html'), 'wb') as html_writer:
+                    html_writer.write(str(my_html))
+        handle.close()
+        shutil.copyfile('style.css', os.path.join(out_dir, 'style.css'))  # copy css to folder
 
     def get_count_info(self, id):
         """
