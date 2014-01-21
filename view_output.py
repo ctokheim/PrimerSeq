@@ -163,7 +163,11 @@ class ViewOutputFrame(wx.Frame, listmix.ColumnSorterMixin):
         for i, data in enumerate(self.results):
             index = self.list.InsertStringItem(sys.maxint, data[0])
             for col in range(1, len(data)):
-                self.list.SetStringItem(index, col, data[col])
+                colText = self.list.GetColumn(col).GetText()
+                if (colText == 'Upstream Psi' or colText == 'Downstream Psi') and data[col] == '-1':
+                    self.list.SetStringItem(index, col, 'NA')
+                else:
+                    self.list.SetStringItem(index, col, data[col])
             self.list.SetItemData(index, i)
             if i % 2:
                 # zebra stiped color pattern
