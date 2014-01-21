@@ -16,6 +16,7 @@
 
 import wx
 import wx.lib.mixins.listctrl as listmix
+from bisect import bisect  # packaged used by TextEditMixin
 import json
 
 
@@ -209,6 +210,55 @@ class MyListCtrl(listmix.ListCtrlAutoWidthMixin, wx.ListCtrl, listmix.TextEditMi
                              pos, (-1, 125), style)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
         listmix.TextEditMixin.__init__(self)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftClick)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnLeftClick)
+
+    def OnLeftClick(self, evt=None):
+        col = self.get_col(evt)
+
+        if not col:
+            evt.Skip()
+            return
+
+        colText = self.GetColumn(col).GetText()
+        if colText == "BigWig":
+            # open file dialog for BigWig file selection
+            dlg = wx.FileDialog(self, message='Choose your BigWig file',
+                    wildcard='BigWig file (*.bw)|*.bw|BigWig file(*.bigwig)|*.bigwig')  # open file dialog
+
+            # if they press ok
+            if dlg.ShowModal() == wx.ID_OK:
+                filename = dlg.GetPath()  # get the new filenames from the dialog
+                myitem = self.GetItem(self.curRow, col)  # get item of interest
+                myitem.SetText(filename)
+                self.SetItem(myitem)
+                dlg.Destroy()  # best to do this sooner
+
+            # dlg = wx.MessageDialog(self, 'Row: %d, Col: %d\n%s' % (self.curRow, col, self.GetItem(self.curRow, col).GetText()), style=wx.OK)
+            # dlg.ShowModal()
+        elif colText == "BAM":
+            # make BAM column uneditable
+            return
+        else:
+            super(MyListCtrl, self).OnLeftDown(evt)
+
+    def get_col(self, evt):
+        x, y = evt.GetPosition()
+        row, flags = self.HitTest((x, y))
+        if row != self.curRow:
+            return None
+
+        self.col_locs = [0]
+        loc = 0
+        for n in range(self.GetColumnCount()):
+            loc = loc + self.GetColumnWidth(n)
+            self.col_locs.append(loc)
+
+        col = bisect(self.col_locs, x+self.GetScrollPos(wx.HORIZONTAL)) - 1
+
+        return col
+
+
 
 
 def save_path_info(file_basename, p, cts, save_dir='tmp/isoforms/'):
