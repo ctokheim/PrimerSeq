@@ -196,7 +196,7 @@ class PlotDialog(wx.Dialog):
         if missing_bw:
             dlg = wx.MessageDialog(self.parent, 'One or more BigWig files were not specified. If you intended to'
                                    ' not plot read depth then press OK. If you want to plot read depth then'
-                                   ' press CANCEL and then type the file paths for the BigWig files corresponding'
+                                   ' press CANCEL and then click the BigWig table cell and find the BigWig files corresponding'
                                    ' to the BAM file.', 'Confirm BigWig', wx.OK | wx.CANCEL | wx.ICON_QUESTION)
             result = dlg.ShowModal()
             dlg.Destroy()
@@ -1057,7 +1057,7 @@ class SavePlotDialog(wx.Dialog):
         if missing_bigwig_flag:
             dlg = wx.MessageDialog(self.parent, 'One or more BigWig files were not specified. If you intended to'
                                    ' not plot read depth then press OK. If you want to plot read depth then'
-                                   ' press CANCEL and then type the file paths for the BigWig files corresponding'
+                                   ' press CANCEL and then click on the BigWig table cell and find the BigWig files corresponding'
                                    ' to the BAM file.', 'Confirm BigWig', wx.OK | wx.CANCEL | wx.ICON_QUESTION)
             result = dlg.ShowModal()
             dlg.Destroy()
