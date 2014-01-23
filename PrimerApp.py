@@ -550,7 +550,8 @@ class PrimerFrame(wx.Frame):
 
     def set_output(self, path, filename):
         """Set the output file location for PrimerSeq"""
-        self.output = path
+        self.output = os.path.join(primer.config_options['tmp'], 'results/output.txt')
+        self.user_output = path
         # self.output_choice_label.SetLabel(filename)
         self.output_choice_label.SetValue(filename)
 
@@ -732,7 +733,8 @@ class PrimerFrame(wx.Frame):
         self.options['rnaseq_flag'] = False
         self.options['annotation_flag'] = True if str(self.type_combo_box.GetValue()) == 'Annotation' else False
         self.options['both_flag'] = True if str(self.type_combo_box.GetValue()) == 'RNA-Seq + Annotation' else False
-        self.options['output'] = self.output
+        self.options['output'] = self.output  # primer design results where user specified
+        self.options['user_output'] = self.output  # primer design results in tmp directory
         self.options['read_threshold'] = int(self.read_threshold_text_field.GetValue())
         self.options['keep_temp'] = False if str(self.temp_combo_box.GetValue()) == 'No' else True
         self.options['big_bed'] = None

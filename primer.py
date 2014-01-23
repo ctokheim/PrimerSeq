@@ -153,6 +153,7 @@ def mkdir_tmp():
     if not os.path.isdir(config_options['tmp'] + '/depth_plot'): os.mkdir(config_options['tmp'] + '/depth_plot')
     if not os.path.isdir(config_options['tmp'] + '/isoforms'): os.mkdir(config_options['tmp'] + '/isoforms')
     if not os.path.isdir(config_options['tmp'] + '/indiv_isoforms'): os.mkdir(config_options['tmp'] + '/indiv_isoforms')
+    if not os.path.isdir(config_options['tmp'] + '/results'): os.mkdir(config_options['tmp'] + '/results')
 
 
 def primer_coordinates(p3_output, strand, my_chr, tar, up, down, use_target=True):
@@ -323,13 +324,14 @@ def primer3(options, primer3_options):
                 output_list.append(tmp)
 
     # write output information
-    with open(options['output'], 'wb') as outputfile_tab:
+    with open(options['user_output'], 'wb') as outputfile_tab, open(options['output'], 'wb') as tmp_output:
         # define csv header
         header = ['ID', 'target coordinate', 'primer coordinates', 'PSI target', 'forward primer', 'reverse primer', 'average TM',
                   'skipping product size', 'inclusion product size', 'upstream exon coordinate', 'PSI upstream',
                   'downstream exon coordinate', 'PSI downstream', 'ASM Region', 'Gene']
         output_list = [header] + output_list  # pre-pend header to output file
         csv.writer(outputfile_tab, dialect='excel', delimiter='\t').writerows(output_list)  # output primer design to a tab delimited file
+        csv.writer(tmp_output, dialect='excel', delimiter='\t').writerows(output_list)  # output primer design to a tmp file location
 
 
 def main(options):
