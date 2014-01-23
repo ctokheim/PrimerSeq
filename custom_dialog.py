@@ -1017,14 +1017,17 @@ class SavePlotDialog(wx.Dialog):
         if not self.output_directory:
             dlg = wx.MessageDialog(self, 'Please enter an output directory.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
-            return  # exit if user didn't specify an output
+            return  False  # exit if user didn't specify an output
         elif not os.path.isdir(self.output_directory):
             os.makedirs(self.output_directory)
+            return True
 
     def on_save_plot(self, event):
         """Event handler for user saving plots."""
         # check what the user specified as the output directory
-        self._check_directory()
+        dir_flag = self._check_directory()
+        if not dir_flag:
+            return  # user must input output directory before running
 
         # make data directory for imgs, etc
         if not os.path.isdir(os.path.join(self.output_directory, self.data_dir)):
