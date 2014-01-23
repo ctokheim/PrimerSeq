@@ -1021,6 +1021,8 @@ class SavePlotDialog(wx.Dialog):
         elif not os.path.isdir(self.output_directory):
             os.makedirs(self.output_directory)
             return True
+        else:
+            return True
 
     def on_save_plot(self, event):
         """Event handler for user saving plots."""
