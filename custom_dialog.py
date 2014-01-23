@@ -147,7 +147,7 @@ class PlotDialog(wx.Dialog):
     def on_plot_error(self, msg):
         """Called if exception occurs during running"""
         # self.parent.update_after_error((None,))
-        dlg = wx.MessageDialog(self, 'You likely have mistyped a BigWig file.', style=wx.OK | wx.ICON_ERROR)
+        dlg = wx.MessageDialog(self.parent, 'You likely have mistyped a BigWig file.', style=wx.OK | wx.ICON_ERROR)
         dlg.ShowModal()
         self.plot_button.SetLabel('Plot')
         self.plot_button.Enable()
@@ -185,16 +185,16 @@ class PlotDialog(wx.Dialog):
     def on_plot_button(self, event):
         """Event handler for plot button"""
         if not self.target_combo_box.GetValue():
-            dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self.parent, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return
         missing_bw, bw_typo = self._set_bigwigs()
         if bw_typo:
-            dlg = wx.MessageDialog(self, 'One or more BigWig files are incorrect.', style=wx.OK)
+            dlg = wx.MessageDialog(self.parent, 'One or more BigWig files are incorrect.', style=wx.OK)
             dlg.ShowModal()
             return
         if missing_bw:
-            dlg = wx.MessageDialog(self, 'One or more BigWig files were not specified. If you intended to'
+            dlg = wx.MessageDialog(self.parent, 'One or more BigWig files were not specified. If you intended to'
                                    ' not plot read depth then press OK. If you want to plot read depth then'
                                    ' press CANCEL and then type the file paths for the BigWig files corresponding'
                                    ' to the BAM file.', 'Confirm BigWig', wx.OK | wx.CANCEL | wx.ICON_QUESTION)
@@ -400,7 +400,7 @@ class EvaluateASEventDialog(wx.Dialog):
 
     def plot_button_event(self, event):
         if not self.target_combo_box.GetValue():
-            dlg = wx.MessageDialog(self, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self.parent, 'Please select a BigWig file and the target exon\nyou want to plot.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return
 
@@ -785,7 +785,7 @@ class InSilicoPcrDialog(wx.Dialog):
         """
         # check user input, alert user if missing data
         if not self.target_combo_box.GetValue() or not self.type_combo_box.GetValue or not self.genome_text_field.GetValue() or not self.max_prod_size_text_field.GetValue() or not self.assembly_text_field.GetValue():
-            dlg = wx.MessageDialog(self, 'Please fill in all input fields.', style=wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self.parent, 'Please fill in all input fields.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return
 
@@ -1001,7 +1001,7 @@ class SavePlotDialog(wx.Dialog):
         default browser.
         """
         # testing showed this message dialog threw an exception sometimes on windows vista
-        dlg = wx.MessageDialog(self, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
+        dlg = wx.MessageDialog(self.parent, 'Finished! A webbrowser may open or open a new tab in an existing browser.', style=wx.OK)
         dlg.ShowModal()
         # always reset buttons and open browser
         self.save_plot_button.SetLabel('Generate Report')
@@ -1015,7 +1015,7 @@ class SavePlotDialog(wx.Dialog):
     def _check_directory(self):
         """A simple check if the user specified a output directory"""
         if not self.output_directory:
-            dlg = wx.MessageDialog(self, 'Please enter an output directory.', style=wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self.parent, 'Please enter an output directory.', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
             return  False  # exit if user didn't specify an output
         elif not os.path.isdir(self.output_directory):
@@ -1055,7 +1055,7 @@ class SavePlotDialog(wx.Dialog):
             elif not os.path.exists(bigwig):
                 bigwig_typo = True
         if missing_bigwig_flag:
-            dlg = wx.MessageDialog(self, 'One or more BigWig files were not specified. If you intended to'
+            dlg = wx.MessageDialog(self.parent, 'One or more BigWig files were not specified. If you intended to'
                                    ' not plot read depth then press OK. If you want to plot read depth then'
                                    ' press CANCEL and then type the file paths for the BigWig files corresponding'
                                    ' to the BAM file.', 'Confirm BigWig', wx.OK | wx.CANCEL | wx.ICON_QUESTION)
@@ -1064,7 +1064,7 @@ class SavePlotDialog(wx.Dialog):
             if result == wx.ID_CANCEL:
                 return  # exit if user wanted to specify bigwig files
         if bigwig_typo:
-            dlg = wx.MessageDialog(self, 'One or more BigWig file paths are incorrect.', style=wx.OK)
+            dlg = wx.MessageDialog(self.parent, 'One or more BigWig file paths are incorrect.', style=wx.OK)
             dlg.ShowModal()
             return
 
@@ -1126,7 +1126,7 @@ class SavePlotDialog(wx.Dialog):
             self.permission_error_dialog()
 
     def permission_error_dialog(self):
-        dlg = wx.MessageDialog(self, 'You do not have sufficient privilege to write to this directory.'
+        dlg = wx.MessageDialog(self.parent, 'You do not have sufficient privilege to write to this directory.'
                                'Please choose another directory.', style=wx.OK | wx.ICON_EXCLAMATION)
         dlg.ShowModal()
 
