@@ -230,6 +230,65 @@ several buttons, starting from the left they are:</p>
 <li>&#8220;<em>Exit</em>&#8221; - Exits the results window</li>
 </ol>
 </div></blockquote>
+<div class="section" id="create-plots">
+<h3>4.1 Create Plots<a class="headerlink" href="#create-plots" title="Permalink to this headline">¶</a></h3>
+<img alt="alternate text" class="align-center" src="_images/plot_results_dialog.user_tutorial.png" />
+<p>The &#8220;Create Plots&#8221; dialog generates a figure showing the designed primer juxtaposed
+with RNA-Seq support. You may click the BigWig table cell to select a BigWig file
+for plotting read depth. You must select an exon/AS event that you wish to plot.
+Click plot when done.</p>
+</div>
+<div class="section" id="in-silico-pcr-dialog">
+<h3>4.2 In-Silico PCR Dialog<a class="headerlink" href="#in-silico-pcr-dialog" title="Permalink to this headline">¶</a></h3>
+<img alt="alternate text" class="align-center" src="_images/insilico_pcr.png" />
+<p>The <em>In-Silico</em> PCR dialog runs UCSC&#8217;s <em>In-Silico</em> PCR to check if there is off
+target products. If you are not using Human hg19 then you will need to enter
+the genome and assembly like below:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="75%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Genome</th>
+<th class="head">Assembly</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Human</td>
+<td>hg19, hg18, etc.</td>
+</tr>
+<tr class="row-odd"><td>Chimp</td>
+<td>panTro4, panTro3, etc.</td>
+</tr>
+<tr class="row-even"><td>Rhesus</td>
+<td>rheMac3, rheMac2, etc.</td>
+</tr>
+<tr class="row-odd"><td>Mouse</td>
+<td>mm10, mm9, etc.</td>
+</tr>
+<tr class="row-even"><td>Rat</td>
+<td>rn5, rn4, etc.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="save-plots">
+<h3>4.3 Save Plots<a class="headerlink" href="#save-plots" title="Permalink to this headline">¶</a></h3>
+<img alt="alternate text" class="align-center" src="_images/generate_html.png" />
+<p>You can save all the results as a static web page (HTML) by using the &#8220;Save Plots&#8221;
+dialog. Plots will display read depth if you click on the BigWig cell and select
+your BigWig file. You must select an output directory for the results. If you are
+not using Human hg19 then you can change the genome/assembly by following the
+the instructions in section 4.2.</p>
+</div>
+<div class="section" id="evaluate-as-event">
+<h3>4.4 Evaluate AS Event<a class="headerlink" href="#evaluate-as-event" title="Permalink to this headline">¶</a></h3>
+<p>Similar to the &#8220;Create Plots&#8221; dialog except pooled RNA-Seq counts (from all BAM files)
+are used.</p>
+</div>
+<div class="section" id="further-information">
+<h3>4.5 Further Information<a class="headerlink" href="#further-information" title="Permalink to this headline">¶</a></h3>
 <p>For information on producing the below results, please see the
 <a class="reference external" href="http://primerseq.sf.net/getting_started.html">getting started</a> page. The <a class="reference external" href="http://primerseq.sf.net/user_tutorial">user tutorial</a> has additional documentation describing more advanced features.</p>
 <img alt="alternate text" class="align-center" src="_images/display_plot.png" />
@@ -237,6 +296,7 @@ several buttons, starting from the left they are:</p>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
+</div>
 </div>
 </div>
 </div>
