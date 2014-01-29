@@ -453,9 +453,9 @@ class PrimerFrame(wx.Frame):
 
     def update_after_unsorted_gtf(self, msg):
         """Alerts user if their GTF file is not sorted properly"""
-        dlg = wx.MessageDialog(self, 'Your GTF file was not properly sorted. You have two options:\n\n'
-                               '1. Download pre-sorted GTF files from http://sourceforge.net/projects/primerseq/files/GTF/\n'
-                               '2. Sort your GTF file using the menu option Edit->"Sort Gtf"', style=wx.OK)
+        dlg = wx.MessageDialog(self, 'Your GTF file was not properly sorted. Please read '
+                               'the GTF documentation for details on sorting (http://primerseq.sourceforge.net/gtf.html).'
+                               , style=wx.OK)
         dlg.ShowModal()
         self.load_progress.Update(100)
         self.enable_load_buttons()
