@@ -712,8 +712,10 @@ class PrimerFrame(wx.Frame):
             clist = [item for sublist in coordinates for item in sublist]
             first_indx = bad_coordinate.index(True)
             first_bad_coord = clist[first_indx]
-            dlg = wx.MessageDialog(self, 'One or more coordinates were incorrect. First occurence of bad coordinate'
-                                   ' is %s.' % first_bad_coord, style=wx.OK)
+            dlg = wx.MessageDialog(self, 'One or more exons were not present in the loaded gene annotation (GTF). First occurence of bad coordinate'
+                                   ' is %s.\n\nThere are a few possiblities. First, one or more exons are just not annotated in your loaded gene annotation. '
+                                   'Second, a typo or copy-paste error caused an exon to not be found. Third, you did not use the correct coordinate '
+                                   'system (0-based, see FAQ, http://primerseq.sourceforge.net/faq.html).' % first_bad_coord, style=wx.OK)
             dlg.ShowModal()
             return
         elif all(bad_coordinate):
