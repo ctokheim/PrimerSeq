@@ -211,7 +211,9 @@ class PrimerFrame(wx.Frame):
             with open(os.devnull, 'wb') as f:
                 subprocess.call('java', stdout=f, stderr=f)
         except (subprocess.CalledProcessError, OSError):
-            dlg = wx.MessageDialog(self, 'You need java installed on your computer.\nYou can download java from:\n\nhttp://www.oracle.com/technetwork/java/javase/downloads/java-se-jre-7-download-432155.html', style=wx.OK | wx.ICON_ERROR)
+            dlg = wx.MessageDialog(self, 'You need java installed on your computer.\nYou can download java from:\n\n'
+                                   'Windows: http://www.oracle.com/technetwork/java/javase/downloads/java-se-jre-7-download-432155.html\n'
+                                   'Mac OS X: http://www.java.com/en/download/manual.jsp?locale=en', style=wx.OK | wx.ICON_ERROR)
             dlg.ShowModal()
 
     def __set_properties(self):
