@@ -697,19 +697,33 @@ class PrimerFrame(wx.Frame):
         # make sure exons actually exist in GTF and that upstream/dowstream exons are in correct orderbefore preceeding
         bad_coordinate = []
         for c in coordinates:
-            if len(c) == 3:
-                # check order of upstream and downstream if user specified flanking exons
-                upstream_start = utils.get_start_pos(c[1])  # upstream start
-                downstream_start = utils.get_start_pos(c[2]) # downstream start
-                c_strand = c[0][0]  # strand
-                if (c_strand == '+' and upstream_start > downstream_start) or (c_strand == '-' and upstream_start < downstream_start):
-                    dlg = wx.MessageDialog(self, 'It appears you have incorrectly ordered the upstream and downstream exon.'
-                                           ' Since you have indicated %s strand, the order of exon %s should come after %s.' % (c_strand, c[1], c[2])
-                                           , style=wx.OK)
+            try:
+                if len(c) == 3:
+                    # check order of upstream and downstream if user specified flanking exons
+                    upstream_start = utils.get_start_pos(c[1])  # upstream start
+                    downstream_start = utils.get_start_pos(c[2]) # downstream start
+                    c_strand = c[0][0]  # strand
+                    if (c_strand == '+' and upstream_start > downstream_start) or (c_strand == '-' and upstream_start < downstream_start):
+                        dlg = wx.MessageDialog(self, 'It appears you have incorrectly ordered the upstream and downstream exon.'
+                                               ' Since you have indicated %s strand, the order of exon %s should come after %s.' % (c_strand, c[1], c[2])
+                                               , style=wx.OK)
+                        dlg.ShowModal()
+                        return
+                elif len(c) == 2 or len(c) > 3:
+                    dlg = wx.MessageDialog(self, 'You do not have the correct exon coordinate format for "%s".'
+                                           'There are two possibilities. One, you may not have the proper number of exons (1 or 3). '
+                                           'Second, you may not have the correct number of commas.' % ','.join(c), style=wx.OK | wx.ICON_ERROR)
                     dlg.ShowModal()
                     return
-            found_ex = self.find_exon(c)
-            bad_coordinate += [f == False for f in found_ex]
+                found_ex = self.find_exon(c)
+                bad_coordinate += [f == False for f in found_ex]
+            except:
+                # caution! this message will display regardless of what the exception is
+                dlg = wx.MessageDialog(self, 'The following line is not formated correctly:\n\n'
+                                       '%s\n\nSee http://primerseq.sourceforge.net/faq.html for details.' % ','.join(c),
+                                       style=wx.OK | wx.ICON_ERROR)
+                dlg.ShowModal()
+                return
         if (len(coordinates) == 1 and any(bad_coordinate)) or (not all(bad_coordinate) and any(bad_coordinate)):
             clist = [item for sublist in coordinates for item in sublist]
             first_indx = bad_coordinate.index(True)
