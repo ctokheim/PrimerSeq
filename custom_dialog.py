@@ -274,12 +274,9 @@ class PlotDialog(wx.Dialog):
             with open(f) as handle:
                 my_json = json.load(handle)
                 output_img = os.path.join(opts['output'], '%s.%s.png' % (opts['id'], bam_num))
-                draw.main(my_json['path'],
-                          opts['target_exon'],
-                          my_json['counts'],
-                          coord,
-                          output_img,
-                          opts)
+                strand = draw.get_strand_from_primer_file(self.output_file, opts['id'])
+                draw.main(my_json['path'], opts['target_exon'], my_json['counts'],
+                          coord, strand, output_img, opts)
                 self.draw_imgs.append(output_img)
         logging.debug('Finished drawing isoforms.')
 
@@ -461,8 +458,9 @@ class EvaluateASEventDialog(wx.Dialog):
             my_json = json.load(handle)
 
         coord = draw.read_primer_file(self.output_file, opts['id'])
+        strand = draw.get_strand_from_primer_file(self.output_file, opts['id'])
         draw.main(my_json['path'], opts['target_exon'], my_json['counts'],
-                  coord, opts['output'], opts)
+                  coord, strand, opts['output'], opts)
         logging.debug('Finished drawing isoforms.')
 
     def depth_plot(self, opts):
@@ -1220,7 +1218,8 @@ class SavePlotDialog(wx.Dialog):
         '''
         logging.debug('Drawing isoforms %s . . .' % str(opts))
         coord = draw.read_primer_file(self.output_file, opts['id'])
-        draw.main(opts['path'], opts['target_exon'], opts['counts'], coord,
+        strand = draw.get_strand_from_primer_file(self.output_file, opts['id'])
+        draw.main(opts['path'], opts['target_exon'], opts['counts'], coord, strand,
                   opts['output'], opts)
         logging.debug('Finished drawing isoforms.')
 

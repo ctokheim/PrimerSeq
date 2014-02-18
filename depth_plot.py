@@ -217,10 +217,10 @@ def read_depth_plot(my_bigwigs, output, options):
 
         # make text box to display chromosome information
         if i == num_subplots - 1:
-            offset_text(ax, '%s:' % chr, 3, (-.15, -.16))
+            offset_text(ax, '%s:' % chr, 3, (-.15, -.17))
 
         # adjust spacing between subplots
-        fig.subplots_adjust(wspace=0.05, hspace=0.05)
+        fig.subplots_adjust(wspace=0.05, hspace=0.05, bottom=.12)
 
         # save figure
         plt.savefig(output)

@@ -133,7 +133,7 @@ def editAxis(ax, include=[], notInclude=[]):
             raise ValueError('unknown spine location: %s' % loc)
 
 
-def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # exons was coords
+def exonDrawSubplot(ax, exons, tgt_exon, strand, pct, options, prod_length=False):  # exons was coords
     # move/remove axis
     includedAxes = ["bottom"]
     notIncludedAxes = ["left", "right", "top"]
@@ -160,8 +160,21 @@ def exonDrawSubplot(ax, exons, tgt_exon, pct, options, prod_length=False):  # ex
     exon_lines = my_junction_line.get_exon_lines()
 
     # exonLines could be empty
+    span_length = exonRectangles[-1].stop - exonRectangles[0].start
+    triangle_rate = 5
+    marker_symbol = '$>$' if strand == '+' else '$<$'
     for tmp_line in exon_lines:
-        ax.plot([tmp_line[0][0], tmp_line[1][0]], [tmp_line[0][1], tmp_line[1][1]], linewidth=1, color='black')
+        tmp_x, tmp_y = zip(*tmp_line)
+        dist = tmp_x[1] - tmp_x[0]
+        num_triangles = (dist * triangle_rate) / float(span_length)
+        if num_triangles:
+            ax.plot(tmp_x, tmp_y, linewidth=1, color='black')
+            triangle_x_pos = np.linspace(tmp_x[0], tmp_x[1], num_triangles + 2)[1:-1]
+            triangle_y_pos = (tmp_y[0] - .02) * np.ones((len(triangle_x_pos), 1))
+            ax.scatter(triangle_x_pos, triangle_y_pos, marker=marker_symbol, color='black')
+        else:
+            ax.plot(tmp_x, tmp_y, linewidth=1, color='black')
+
 
     ### start plotting exons ###
     # plot exons
@@ -228,6 +241,13 @@ def read_primer_file(primer_file, ID):
                               key=lambda x: (x[0], x[1]))  # make sure primer is in numerical order
 
 
+def get_strand_from_primer_file(primer_file, ID):
+    with open(primer_file) as handle:
+        for line in csv.reader(handle, delimiter='\t'):
+            if line[0] == ID:
+                return line[1][0]
+
+
 def calc_product_length(path, primer_coord):
     """
     Calculate product length based on the primer coordinates
@@ -264,7 +284,7 @@ def calc_product_length(path, primer_coord):
     return final_len
 
 
-def main(tx_paths, target_exon, counts, primer_coord, output, options):
+def main(tx_paths, target_exon, counts, primer_coord, strand, output, options):
     # configurations
     matplotlib.rcParams['font.size'] = 16  # edit font size of title
     matplotlib.rcParams['xtick.labelsize'] = 13
@@ -287,11 +307,11 @@ def main(tx_paths, target_exon, counts, primer_coord, output, options):
         # exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], percent_estimate[i])
 
         if i == 0:
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, None, 'primers', options)
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, primer_coord, None, strand, 'primers', options)
         else:
             i -= 1
             prod_length = calc_product_length(tx_paths[i], primer_coord)
-            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], target_exon, percent_estimate[i], options, prod_length)
+            exonDrawAxis, new_start, new_stop = exonDrawSubplot(ax, tx_paths[i], target_exon, strand, percent_estimate[i], options, prod_length)
             lowest_start = lowest_start if lowest_start < new_start else new_start
             highest_stop = highest_stop if highest_stop > new_stop else new_stop
 
