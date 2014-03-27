@@ -835,7 +835,12 @@ class PrimerFrame(wx.Frame):
         Alternatively, you can design primers that are always on constitutive exons. PrimerSeq does not limit the use of gene annotations and can be used for a wide array of species.
 
 PrimerSeq redistributes primer3 which is licensed under GPLv2, the SAM-JDK which is licensed under Apache License V2.0, MIT, and the BigWig api which
-is licensed under LGPL v2.1. There is no source code modification to any of the previous work."""
+is licensed under LGPL v2.1. There is no source code modification to any of the previous work.
+
+The following versions were used:
+sam jdk v1.77
+bigwig api r39 (revision 39)
+Primer3 version 2.3.4"""
 
         licence = """Copyright (C) 2012-2013  Collin Tokheim
 
