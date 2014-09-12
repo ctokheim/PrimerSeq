@@ -532,8 +532,11 @@ class SortGtfDialog(wx.Dialog):
         event.Skip()
 
     def choose_output_gtf_event(self, event):
-        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', defaultDir=os.getcwd(),
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', 
+                            defaultDir=os.getcwd(),
+                            style=wx.SAVE | wx.OVERWRITE_PROMPT,
                             wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
+
         # if they press ok
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()  # get the new filenames from the dialog

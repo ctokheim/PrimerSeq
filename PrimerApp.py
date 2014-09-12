@@ -124,7 +124,7 @@ class PrimerFrame(wx.Frame):
         self.choose_gtf_button.SetToolTip(wx.ToolTip('Select your gene annotation\nin a sorted GTF format'))
         self.gtf_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
         self.gtf_choice_label.SetBackgroundColour(self.primer_notebook.GetBackgroundColour())
-        self.bam_label = wx.StaticText(self.primer_notebook_pane_1, -1, "SAM/BAM(s):")
+        self.bam_label = wx.StaticText(self.primer_notebook_pane_1, -1, "(Optional) SAM/BAM(s):")
         self.choose_bam_button = wx.Button(self.primer_notebook_pane_1, -1, "Choose . . .")
         self.choose_bam_button.SetToolTip(wx.ToolTip('Select one or multiple SAM or BAM file(s).\nWhen selecting, hold ctrl to select multiple'))
         self.bam_choice_label = wx.TextCtrl(self.primer_notebook_pane_1, -1, "None", style=wx.NO_BORDER | wx.TE_READONLY)
@@ -410,7 +410,8 @@ class PrimerFrame(wx.Frame):
 
     def delete_tmp_directory(self):
         """Remove all temporary files"""
-        shutil.rmtree(primer.config_options['tmp'])
+        if os.path.isdir(primer.config_options['tmp']):
+            shutil.rmtree(primer.config_options['tmp'])
 
     def on_help(self, event):
         """Open documentation in default webbrowser"""
