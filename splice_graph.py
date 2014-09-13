@@ -55,6 +55,7 @@ import sys
 from wig import Wig
 from exon_seek import ExonSeek
 import multinomial_em as mem
+import copy
 
 # logging imports
 import logging
@@ -292,7 +293,8 @@ def predefined_exons_case(id, target, sGraph, genome, upstream_exon, downstream_
     3. get sequence information
     """
     # get possible exons for primer amplification
-    tmp = sorted(sGraph.get_graph().nodes(), key=lambda x: (x[0], x[1]))
+    tmp_exons = copy.deepcopy(sGraph.get_graph().nodes())
+    tmp = sorted(tmp_exons, key=lambda x: (x[0], x[1]))
     if sGraph.strand == '+':
         my_exons = tmp[tmp.index(upstream_exon):tmp.index(downstream_exon) + 1]
     else:
@@ -301,7 +303,8 @@ def predefined_exons_case(id, target, sGraph, genome, upstream_exon, downstream_
     # Use correct tx's and estimate counts/psi
     all_paths = algs.AllPaths(sGraph, my_exons, target, chr=sGraph.chr, strand=sGraph.strand)
     # all_paths.trim_tx_paths()
-    all_paths.trim_tx_paths_using_flanking_exons(sGraph.strand, upstream_exon, downstream_exon)
+    #all_paths.trim_tx_paths_using_flanking_exons(sGraph.strand, upstream_exon, downstream_exon)
+    all_paths.trim_tx_paths_using_flanking_exons_and_target(sGraph.strand, target, upstream_exon, downstream_exon)
     all_paths.set_all_path_coordinates()
     # all_paths.keep_weakly_connected()  # hack to prevent extraneous exons causing problems in EM alg
     paths, counts = all_paths.estimate_counts()  # run EM algorithm

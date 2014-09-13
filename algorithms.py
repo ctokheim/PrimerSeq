@@ -253,6 +253,34 @@ class AllPaths(object):
         # self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
         self.tx_paths = list(tmp)
 
+    def trim_tx_paths_using_flanking_exons_and_target(self, strand, 
+                                                      target_exon, up_exon, down_exon):
+        tmp = set()
+        for p in self.tx_paths:
+            # make sure this tx path has the biconnected component
+            flank_exon_flag = (up_exon in p and down_exon in p)
+            target_exon_flag = target_exon in p
+            if flank_exon_flag:
+                if strand == '+':
+                    first_index, second_index = p.index(up_exon), p.index(down_exon)
+                elif strand == '-':
+                    first_index, second_index = p.index(down_exon), p.index(up_exon)
+                tmp.add(tuple(
+                    sorted(p[first_index:second_index + 1], key=lambda x: (x[0], x[1]))))  # make sure there is no redundant paths
+            elif target_exon_flag:
+                tmp_p = []
+                for ex in p:
+                    if strand == "+":
+                        if (up_exon[0] <= ex[0] <= down_exon[1]) or (up_exon[0] <= ex[1] <= down_exon[1]):
+                            tmp_p.append(ex)
+                    elif strand == "-":
+                        if (down_exon[0] <= ex[0] <= up_exon[1]) or (down_exon[0] <= ex[1] <= up_exon[1]):
+                            tmp_p.append(ex)
+                tmp.add(tuple(sorted(tmp_p, key=lambda x: (x[0], x[1]))))
+
+        # self.tx_paths = sorted(list(tmp), key=lambda x: (x[0], x[1]))
+        self.tx_paths = list(tmp)
+
     def trim_tx_paths_using_flanking_exons(self, strand, up_exon, down_exon):
         tmp = set()
         for p in self.tx_paths:
@@ -307,7 +335,10 @@ class AllPaths(object):
         # check the connectivity of the graph -- deprecated checking
         # if not nx.is_weakly_connected(self.sub_graph): raise utils.PrimerSeqError('Error: SpliceGraph should be connected')
         # make sure graph (self.sub_graph) is weakly connected
+        tmp_sub_graph = self.sub_graph.copy()
         self.keep_weakly_connected()
+        if not len(self.sub_graph.nodes()) > 1:
+            self.sub_graph = tmp_sub_graph
 
         # AFE/ALE testing
         num_first_exons = len(filter(lambda x: len(self.sub_graph.predecessors(x)) == 0, self.sub_graph.nodes()))

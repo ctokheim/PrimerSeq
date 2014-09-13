@@ -141,7 +141,7 @@ def estimate_psi(exon_of_interest, paths, counts):
     inc_count, skip_count = 0, 0
     for i, num in enumerate(counts):
         if exon_of_interest in paths[i]:
-            inc_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
+            inc_count += num / float(len(paths[i]) - 1)  if len(paths[i]) > 1 else 0 # read counts / number of edges
         else:
             skip_count += num / float(len(paths[i]) - 1)  # read counts / number of edges
     if not inc_count and not skip_count:
