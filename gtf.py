@@ -28,10 +28,9 @@ class Gtf(object):
     def __init__(self, gtf_line):
         self.gtf_list = gtf_line
         self.seqname, self.source, self.feature, self.start, self.end, self.score, self.strand, self.frame, self.attribute = gtf_line  # These indexes are defined by the GTF spec
-        self.attribute = dict(
-            map(lambda x: re.split('\s+', x.replace('"', '')),
-                re.split('\s*;\s*', self.attribute.strip().strip(';'))))  # convert attrs to dict
-
+        tmp = map(lambda x: re.split('\s+', x.replace('"', '')),
+                  re.split('\s*;\s*', self.attribute.strip().strip(';')))
+        self.attribute = dict([x for x in tmp if len(x)==2])  # convert attrs to dict
         self.start, self.end = int(self.start) - 1, int(self.end)
 
     def __str__(self):
