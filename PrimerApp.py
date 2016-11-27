@@ -15,8 +15,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # these imports are to prevent import errors when I distribute the code
-import anydbm  # probably not necessary since using pyinstaller
-import dbhash  # probably not necessary since using pyinstaller
+#import anydbm  # probably not necessary since using pyinstaller
+#import dbhash  # probably not necessary since using pyinstaller
 
 # set backend to Agg to prevent display/X11 issues
 import matplotlib
