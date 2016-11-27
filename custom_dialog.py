@@ -42,6 +42,7 @@ from exon_seek import ExonSeek
 from save_plots_html import SavePlotsHTML
 import shutil
 import algorithms as algs
+import add_UCSC_gene_name as gn
 
 import datetime  # import for marking html output with date
 import traceback  # debugging import
@@ -532,7 +533,7 @@ class SortGtfDialog(wx.Dialog):
         event.Skip()
 
     def choose_output_gtf_event(self, event):
-        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted', 
+        dlg = wx.FileDialog(self, message='Choose your GTF file to be sorted',
                             defaultDir=os.getcwd(),
                             style=wx.SAVE | wx.OVERWRITE_PROMPT,
                             wildcard='GTF file (*.gtf)|*.gtf')  # open file dialog
