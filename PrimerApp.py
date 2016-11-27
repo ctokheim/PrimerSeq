@@ -862,7 +862,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>."""
         tmp_icon = wx.EmptyIcon()
         tmp_icon.CopyFromBitmap(wx.Bitmap("about.ico", wx.BITMAP_TYPE_ANY))
         info.SetName('PrimerSeq')
-        info.SetVersion('1.1.13')
+        info.SetVersion('1.1.14')
         info.SetDescription(description)
         info.SetCopyright('(C) 2012-2016 Collin Tokheim')
         info.SetWebSite('http://primerseq.sf.net')
